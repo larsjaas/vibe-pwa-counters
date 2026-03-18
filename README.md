@@ -19,7 +19,7 @@ Using:
 
 # Development
 
-Launch pi with
+Launch pi with the following command, and let it rip!
 
     $ pi -e tools/tools.ts
 
