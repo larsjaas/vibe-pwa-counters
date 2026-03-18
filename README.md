@@ -33,7 +33,9 @@ Launch the backend dependencies (postgres, nginx):
 
 Launch the backend
 
-    $ go run backend/main.go
+    $ export DATABASE_URL="postgres://postgres:postgres@localhost:5432/app?sslmode=disable"
+    $ ( cd backend && go mod download github.com/lib/pq )
+    $ ( cd backend && go run main.go )
 
 Point a browser to `http://hostname:8080/`.
 
