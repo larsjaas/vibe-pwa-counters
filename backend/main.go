@@ -12,8 +12,8 @@ func main() {
     // Catch-all handler for other routes
     mux.HandleFunc("/", catchAllHandler)
 
-    fmt.Println("Listening on :8080")
-    if err := http.ListenAndServe(":8080", mux); err != nil {
+    fmt.Println("Listening on :8081")
+    if err := http.ListenAndServe(":8081", mux); err != nil {
         panic(err)
     }
 }

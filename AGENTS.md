@@ -5,7 +5,7 @@ This project is two components.
 
 ### Component 1
 
-The first component is a REST backend written in golang, using a PostgreSQL database for persistent storage.
+The first component is a REST backend written in Go, using a PostgreSQL database for persistent storage.
 The REST API pattern is CRUD for the most part. It is located in the subdirectory backend/.
 
 Goals:
@@ -55,7 +55,7 @@ Parameters:
 
 Example:
 {
-  "path": "src/main.c",
+  "path": "backend/main.go",
   "contents": "#include <stdio.h>\nint main(){printf(\"hi\");}"
 }
 
@@ -70,7 +70,7 @@ Use this tool to locate functions, structs, or code fragments.
 Example:
 
 {
-  "path": "src",
+  "path": "backend",
   "query": "read_counters"
 }
 
