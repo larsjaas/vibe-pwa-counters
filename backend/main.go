@@ -7,7 +7,10 @@ import (
 
 func main() {
     mux := http.NewServeMux()
+    // Health check endpoint.
     mux.HandleFunc("/health", healthHandler)
+    // Ping endpoint used for quick connectivity tests.
+    mux.HandleFunc("/api/ping", pingHandler)
 
     // Catch-all handler for other routes
     mux.HandleFunc("/", catchAllHandler)
@@ -16,6 +19,15 @@ func main() {
     if err := http.ListenAndServe(":8081", mux); err != nil {
         panic(err)
     }
+}
+
+func pingHandler(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet {
+        methodNotAllowed(w, r)
+        return
+    }
+    w.WriteHeader(http.StatusOK)
+    w.Write([]byte("pong"))
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {

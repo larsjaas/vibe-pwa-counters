@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="/manifest.json">
     <title>Hello World PWA</title>
     <style>
         html, body {
@@ -24,6 +25,23 @@
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js').catch(console.error);
         }
+
+        // Perform a quick GET to /api/ping and display the response.
+        // The result is appended as a paragraph under the existing content.
+        fetch('/api/ping')
+            .then(resp => {
+                if (!resp.ok) throw new Error('Network response was not ok');
+                return resp.text();
+            })
+            .then(text => {
+                const appDiv = document.getElementById('app');
+                const p = document.createElement('p');
+                p.textContent = text;
+                appDiv.appendChild(p);
+            })
+            .catch(err => {
+                console.error('Failed to ping server:', err);
+            });
     </script>
 </body>
 </html>
