@@ -33,7 +33,7 @@ func main() {
     mux.HandleFunc("/health", healthHandler)
     mux.HandleFunc("/api/ping", pingHandler)
     mux.HandleFunc("/api/login", loginHandler)
-    mux.HandleFunc("/api/auth/callback", authCallbackHandler)
+    mux.HandleFunc("/api/auth/google/callback", authCallbackHandler)
     mux.HandleFunc("/api/validate-session", validateSessionHandler)
     mux.HandleFunc("/", catchAllHandler)
 

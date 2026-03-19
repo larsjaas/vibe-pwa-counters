@@ -10,7 +10,15 @@ import (
 // validateSessionHandler is a stub that always returns 200 OK.
 // It acts as a health check for authentication.
 func validateSessionHandler(w http.ResponseWriter, r *http.Request) {
-    // In a real implementation, verify the session cookie or token here.
+    log.Printf("/api/validate-session called: method=%s path=%s", r.Method, r.URL.Path)
+    // Expect a "session" cookie set by the OAuth callback.
+    // Return 200 if present, otherwise 401 to trigger a redirect in nginx.
+    _, err := r.Cookie("session")
+    if err != nil {
+        // No cookie: authentication has failed.
+        w.WriteHeader(http.StatusUnauthorized)
+        return
+    }
     w.WriteHeader(http.StatusOK)
 }
 
@@ -37,7 +45,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 // to the application. FIXME: Real implementations should exchange the code for
 // tokens and verify the ID token.
 func authCallbackHandler(w http.ResponseWriter, r *http.Request) {
-    log.Printf("/api/auth/callback called: method=%s path=%s", r.Method, r.URL.Path)
+    log.Printf("/api/auth/google/callback called: method=%s path=%s", r.Method, r.URL.Path)
     code := r.URL.Query().Get("code")
     if code == "" {
         http.Error(w, "Missing code", http.StatusBadRequest)
