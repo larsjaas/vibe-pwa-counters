@@ -26,6 +26,16 @@ Launch pi with the following command, and let it rip!
 
 # Running
 
+You need a Google Auth Client Id to run the backend with OAuth. TODO: also be able to launch without requiring auth (fallback to testuser@example.com userid?)
+
+Set up environment variables.
+
+    $ export GOOGLE_CLIENT_ID=...
+    $ export GOOGLE_REDIRECT_URI=...
+    $ export DATABASE_URL="postgres://postgres:postgres@localhost:5432/app?sslmode=disable"
+
+Add server IP + hostname to /etc/hosts if not registered with DNS.
+
 Launch the backend dependencies (postgres, nginx):
 
     $ docker compose pull
@@ -33,11 +43,10 @@ Launch the backend dependencies (postgres, nginx):
 
 Launch the backend
 
-    $ export DATABASE_URL="postgres://postgres:postgres@localhost:5432/app?sslmode=disable"
     $ ( cd backend && go mod download github.com/lib/pq )
     $ ( cd backend && go run main.go )
 
-Point a browser to `http://hostname:8080/`.
+Point a browser to `http://server:8080/` (whatever hostname it is served from).
 
 
 # License

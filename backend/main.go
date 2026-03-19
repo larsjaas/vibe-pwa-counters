@@ -3,13 +3,13 @@ package main
 import (
     "database/sql"
     "fmt"
+    "log"
     "net/http"
     "os"
 
     _ "github.com/lib/pq"
 )
 
-// db holds the global database connection pool.
 var db *sql.DB
 
 func main() {
@@ -17,7 +17,6 @@ func main() {
     // otherwise fall back to the default Postgres container settings.
     dsn := os.Getenv("DATABASE_URL")
     if dsn == "" {
-        // Default connection string for docker-compose service.
         dsn = "postgres://postgres:postgres@localhost:5432/app?sslmode=disable"
     }
     var err error
@@ -25,19 +24,17 @@ func main() {
     if err != nil {
         panic(err)
     }
-    // Verify connection.
     if err = db.Ping(); err != nil {
         panic(err)
     }
 
-    // HTTP/REST server:
+    // HTTP/REST server setup
     mux := http.NewServeMux()
-    // Health check endpoint.
     mux.HandleFunc("/health", healthHandler)
-    // Ping endpoint used for quick connectivity tests.
     mux.HandleFunc("/api/ping", pingHandler)
-
-    // Catch-all handler for other routes
+    mux.HandleFunc("/api/login", loginHandler)
+    mux.HandleFunc("/api/auth/callback", authCallbackHandler)
+    mux.HandleFunc("/api/validate-session", validateSessionHandler)
     mux.HandleFunc("/", catchAllHandler)
 
     fmt.Println("Listening on :8081")
@@ -47,6 +44,7 @@ func main() {
 }
 
 func pingHandler(w http.ResponseWriter, r *http.Request) {
+    log.Printf("/api/ping called: method=%s", r.Method)
     if r.Method != http.MethodGet {
         methodNotAllowed(w, r)
         return
@@ -56,6 +54,7 @@ func pingHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
+    log.Printf("/health called: method=%s", r.Method)
     if r.Method != http.MethodGet {
         methodNotAllowed(w, r)
         return
@@ -65,15 +64,29 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func catchAllHandler(w http.ResponseWriter, r *http.Request) {
+    log.Printf("Catch-all handler called: method=%s path=%s", r.Method, r.URL.Path)
     if r.Method != http.MethodGet {
         w.WriteHeader(http.StatusBadRequest)
         return
     }
-    // For GET requests to paths other than /health, return 404
-    w.WriteHeader(http.StatusNotFound)
+    _, err := r.Cookie("session")
+    if err != nil {
+        log.Printf("No session cookie; redirecting to /api/login")
+        http.Redirect(w, r, "/api/login", http.StatusFound)
+        return
+    }
+    // Serve the main index.html after successful authentication.
+    data, err := os.ReadFile("html/index.html")
+    if err != nil {
+        http.Error(w, "Failed to load index.html", http.StatusInternalServerError)
+        log.Printf("Failed to read index.html: %v", err)
+        return
+    }
+    w.Header().Set("Content-Type", "text/html")
+    w.Write(data)
 }
 
 func methodNotAllowed(w http.ResponseWriter, r *http.Request) {
-    // For methods other than GET, respond with 400 Bad Request
+    log.Printf("/api method not allowed: method=%s path=%s", r.Method, r.URL.Path)
     w.WriteHeader(http.StatusBadRequest)
 }
