@@ -17,7 +17,8 @@ func main() {
     // otherwise fall back to the default Postgres container settings.
     dsn := os.Getenv("DATABASE_URL")
     if dsn == "" {
-        dsn = "postgres://postgres:postgres@localhost:5432/app?sslmode=disable"
+        // Use the default database created by Docker Compose
+        dsn = "postgres://postgres:postgres@localhost:5432/counters?sslmode=disable"
     }
     var err error
     db, err = sql.Open("postgres", dsn)
