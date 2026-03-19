@@ -1,21 +1,5 @@
 package main
 
-// logoutHandler clears the session cookie, forcing a re‑login.
-func logoutHandler(w http.ResponseWriter, r *http.Request) {
-    log.Printf("/api/logout called: method=%s path=%s", r.Method, r.URL.Path)
-    // Overwrite the cookie with an expired one.
-    http.SetCookie(w, &http.Cookie{
-        Name:     "session",
-        Value:    "",
-        Path:     "/",
-        MaxAge:   -1,
-        Expires:  time.Unix(0, 0),
-        HttpOnly: true,
-    })
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte("logged out"))
-}
-
 import (
     "bytes"
     "encoding/base64"
@@ -28,6 +12,22 @@ import (
     "strings"
     "time"
 )
+
+// logoutHandler clears the session cookie, forcing a re‑login.
+func logoutHandler(w http.ResponseWriter, r *http.Request) {
+    log.Printf("/api/logout called: method=%s path=%s", r.Method, r.URL.Path)
+    // Clear the session cookie by expiring it.
+    http.SetCookie(w, &http.Cookie{
+        Name:     "session",
+        Value:    "",
+        Path:     "/",
+        MaxAge:   -1,
+        Expires:  time.Unix(0, 0),
+        HttpOnly: true,
+    })
+    // Redirect to the public landing page.
+    http.Redirect(w, r, "/landing_page", http.StatusFound)
+}
 
 // validateSessionHandler checks for a session cookie and returns 200 if present.
 func validateSessionHandler(w http.ResponseWriter, r *http.Request) {
