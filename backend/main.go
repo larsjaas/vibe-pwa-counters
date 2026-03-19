@@ -32,6 +32,7 @@ func main() {
     mux := http.NewServeMux()
     mux.HandleFunc("/health", healthHandler)
     mux.HandleFunc("/api/ping", pingHandler)
+    mux.HandleFunc("/api/logout", logoutHandler)
     mux.HandleFunc("/api/login", loginHandler)
     mux.HandleFunc("/api/auth/google/callback", authCallbackHandler)
     mux.HandleFunc("/api/validate-session", validateSessionHandler)
