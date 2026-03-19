@@ -12,9 +12,11 @@ Using:
 
 # Purpose
 
-- Explore Go programming
+- Learn some Go programming
+- Learn setting up OAuth 2.0 with Google for a Web app from scratch
 - Learn to set up a PWA that will behave like an app on mobile (and work offline)
 - Create the mobile app equivalent of the @larsjaas/vibe-cmdline-counters utility
+- Familiarize myself with AI-agentic coding and how far it can go with local/self-hosted models
 
 
 # Development
