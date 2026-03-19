@@ -57,7 +57,7 @@ Launch the backend dependencies (postgres, nginx):
 Launch the backend
 
     $ ( cd backend && go mod download github.com/lib/pq )
-    $ ( cd backend && go run main.go auth.go )
+    $ ( cd backend && go run main.go auth.go landing_page.go )
 
 Point a browser to `http://<server.com>:8080/` (whatever hostname it is served from).
 
