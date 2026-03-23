@@ -7,33 +7,36 @@ import (
     "os"
 
     _ "github.com/lib/pq"
+    "github.com/larsa/pwa-counter/backend/internal/db"
     httpHandlers "github.com/larsa/pwa-counter/backend/internal/http"
-    mdb "github.com/larsa/pwa-counter/backend/internal/db"
-    // The migrate source driver is pulled in via the db package.
 )
 
-var db *sql.DB
+var dbConn *sql.DB
 
 func main() {
     // Initialize database connection. Use DATABASE_URL env var if set,
     // otherwise fall back to the default Postgres container settings.
     dsn := os.Getenv("DATABASE_URL")
     if dsn == "" {
-        // Use the default database created by Docker Compose
         dsn = "postgres://postgres:postgres@localhost:5432/counters?sslmode=disable"
     }
+
     var err error
-    db, err = sql.Open("postgres", dsn)
+    dbConn, err = sql.Open("postgres", dsn)
     if err != nil {
         panic(err)
     }
-    if err = db.Ping(); err != nil {
+    if err = dbConn.Ping(); err != nil {
         panic(err)
     }
 
+    // Register the database handle with the internal db package so that
+    // other packages can use it.
+    db.SetDB(dbConn)
+
     // Run database migrations on startup. Delegated to the internal
     // database package for better separation of concerns.
-    mdb.RunMigrations(db)
+    db.RunMigrations(dbConn)
 
     // HTTP/REST server setup
     mux := http.NewServeMux()

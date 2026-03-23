@@ -18,6 +18,7 @@ import (
     "log"
     "strings"
     "time"
+    db "github.com/larsa/pwa-counter/backend/internal/db"
 )
 
 // LogoutHandler clears the session cookie and redirects the user to the
@@ -82,6 +83,19 @@ func AuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
         log.Printf("Failed to parse id_token: %v", err)
     } else {
         log.Printf("User logged in: email=%s, name=%s", email, name)
+        // Persist the user into the database if it does not already exist.
+        if email != "" {
+            exists, e := db.UserExists(email)
+            if e != nil {
+                log.Printf("DB check failed: %v", e)
+            } else if !exists {
+                if _, e := db.AddUser(email, name); e != nil {
+                    log.Printf("Failed to add new user: %v", e)
+                } else {
+                    log.Printf("Inserted new user: %s (%s)", email, name)
+                }
+            }
+        }
     }
 
     http.SetCookie(w, &http.Cookie{
