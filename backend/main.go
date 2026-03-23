@@ -3,15 +3,13 @@ package main
 import (
     "database/sql"
     "fmt"
-    "log"
     "net/http"
     "os"
 
     _ "github.com/lib/pq"
-    migrate "github.com/golang-migrate/migrate/v4"
-    "github.com/golang-migrate/migrate/v4/database/postgres"
     httpHandlers "github.com/larsa/pwa-counter/backend/internal/http"
-    _ "github.com/golang-migrate/migrate/v4/source/file"
+    mdb "github.com/larsa/pwa-counter/backend/internal/db"
+    // The migrate source driver is pulled in via the db package.
 )
 
 var db *sql.DB
@@ -33,23 +31,9 @@ func main() {
         panic(err)
     }
 
-    // Run database migrations on startup. The migration source is
-    // externalised in ./migrations folder next to this main.go file.
-    driver, err := postgres.WithInstance(db, &postgres.Config{})
-    if err != nil {
-        log.Fatalf("Failed to create postgres driver for migrations: %v", err)
-    }
-    mig, err := migrate.NewWithDatabaseInstance(
-        "file://./migrations",
-        "postgres",
-        driver,
-    )
-    if err != nil {
-        log.Fatalf("Failed to initialise migrations: %v", err)
-    }
-    if err := mig.Up(); err != nil && err != migrate.ErrNoChange {
-        log.Fatalf("Database migration failed: %v", err)
-    }
+    // Run database migrations on startup. Delegated to the internal
+    // database package for better separation of concerns.
+    mdb.RunMigrations(db)
 
     // HTTP/REST server setup
     mux := http.NewServeMux()
