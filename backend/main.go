@@ -8,6 +8,9 @@ import (
     "os"
 
     _ "github.com/lib/pq"
+    migrate "github.com/golang-migrate/migrate/v4"
+    "github.com/golang-migrate/migrate/v4/database/postgres"
+    _ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 var db *sql.DB
@@ -27,6 +30,24 @@ func main() {
     }
     if err = db.Ping(); err != nil {
         panic(err)
+    }
+
+    // Run database migrations on startup. The migration source is
+    // externalised in ./migrations folder next to this main.go file.
+    driver, err := postgres.WithInstance(db, &postgres.Config{})
+    if err != nil {
+        log.Fatalf("Failed to create postgres driver for migrations: %v", err)
+    }
+    mig, err := migrate.NewWithDatabaseInstance(
+        "file://./migrations",
+        "postgres",
+        driver,
+    )
+    if err != nil {
+        log.Fatalf("Failed to initialise migrations: %v", err)
+    }
+    if err := mig.Up(); err != nil && err != migrate.ErrNoChange {
+        log.Fatalf("Database migration failed: %v", err)
     }
 
     // HTTP/REST server setup
