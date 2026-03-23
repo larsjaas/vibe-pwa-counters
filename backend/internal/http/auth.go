@@ -1,4 +1,11 @@
-package main
+package http
+
+// Package http provides authentication handlers for the REST backend.
+// These handlers are exported and used by the main server package.
+// The handlers are deliberately named with a leading capital letter to
+// make them visible across packages. The internal package name is
+// `http` but aliased when imported to avoid clashing with the standard
+// library `net/http`.
 
 import (
     "bytes"
@@ -13,10 +20,10 @@ import (
     "time"
 )
 
-// logoutHandler clears the session cookie, forcing a re‑login.
-func logoutHandler(w http.ResponseWriter, r *http.Request) {
+// LogoutHandler clears the session cookie and redirects the user to the
+// landing page.
+func LogoutHandler(w http.ResponseWriter, r *http.Request) {
     log.Printf("/api/logout called: method=%s path=%s", r.Method, r.URL.Path)
-    // Clear the session cookie by expiring it.
     http.SetCookie(w, &http.Cookie{
         Name:     "session",
         Value:    "",
@@ -25,12 +32,11 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
         Expires:  time.Unix(0, 0),
         HttpOnly: true,
     })
-    // Redirect to the public landing page bundled with the PWA.
     http.Redirect(w, r, "/landing_page/index.html", http.StatusFound)
 }
 
-// validateSessionHandler checks for a session cookie and returns 200 if present.
-func validateSessionHandler(w http.ResponseWriter, r *http.Request) {
+// ValidateSessionHandler verifies the presence of a session cookie.
+func ValidateSessionHandler(w http.ResponseWriter, r *http.Request) {
     log.Printf("/api/validate-session called: method=%s path=%s", r.Method, r.URL.Path)
     _, err := r.Cookie("session")
     if err != nil {
@@ -40,8 +46,8 @@ func validateSessionHandler(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusOK)
 }
 
-// loginHandler redirects the user to Google's OAuth 2.0 consent screen.
-func loginHandler(w http.ResponseWriter, r *http.Request) {
+// LoginHandler redirects to Google's OAuth 2.0 consent screen.
+func LoginHandler(w http.ResponseWriter, r *http.Request) {
     log.Printf("/api/login called: method=%s path=%s", r.Method, r.URL.Path)
     clientID := os.Getenv("GOOGLE_CLIENT_ID")
     redirectURI := os.Getenv("GOOGLE_REDIRECT_URI")
@@ -54,9 +60,9 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
     http.Redirect(w, r, authURL, http.StatusFound)
 }
 
-// authCallbackHandler handles the OAuth callback, exchanges the code for tokens
-// and parses the id_token to extract user information.
-func authCallbackHandler(w http.ResponseWriter, r *http.Request) {
+// AuthCallbackHandler handles the OAuth callback, exchanging the code for
+// tokens and storing the access token in a cookie.
+func AuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
     log.Printf("/api/auth/google/callback called: method=%s path=%s", r.Method, r.URL.Path)
     code := r.URL.Query().Get("code")
     if code == "" {
@@ -64,7 +70,6 @@ func authCallbackHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Exchange code for access token and id token.
     accessToken, idToken, err := exchangeCode(code)
     if err != nil {
         log.Printf("Token exchange failed: %v", err)
@@ -72,7 +77,6 @@ func authCallbackHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Parse user info from the id_token.
     email, name, err := parseUserInfoFromIDToken(idToken)
     if err != nil {
         log.Printf("Failed to parse id_token: %v", err)
@@ -80,7 +84,6 @@ func authCallbackHandler(w http.ResponseWriter, r *http.Request) {
         log.Printf("User logged in: email=%s, name=%s", email, name)
     }
 
-    // Store the access token in a session cookie.
     http.SetCookie(w, &http.Cookie{
         Name:     "session",
         Value:    accessToken,
@@ -88,7 +91,6 @@ func authCallbackHandler(w http.ResponseWriter, r *http.Request) {
         HttpOnly: true,
     })
 
-    // For debugging: log the codes and tokens.
     log.Printf("Auth code: %s", code)
     log.Printf("Access token: %s", accessToken)
     log.Printf("ID token: %s", idToken)
@@ -97,7 +99,7 @@ func authCallbackHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // exchangeCode posts the OAuth authorization code to the token endpoint and
-// returns the access token along with the id_token.
+// returns the access token and id_token.
 func exchangeCode(code string) (accessToken string, idToken string, err error) {
     tokenURL := "https://oauth2.googleapis.com/token"
     clientID := os.Getenv("GOOGLE_CLIENT_ID")
@@ -140,8 +142,8 @@ func exchangeCode(code string) (accessToken string, idToken string, err error) {
     return
 }
 
-// parseUserInfoFromIDToken decodes the JWT id_token and extracts the "email"
-// and "name" claims.
+// parseUserInfoFromIDToken decodes the JWT id_token and extracts the
+// "email" and "name" claims.
 func parseUserInfoFromIDToken(idToken string) (email, name string, err error) {
     parts := strings.Split(idToken, ".")
     if len(parts) != 3 {

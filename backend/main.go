@@ -10,6 +10,7 @@ import (
     _ "github.com/lib/pq"
     migrate "github.com/golang-migrate/migrate/v4"
     "github.com/golang-migrate/migrate/v4/database/postgres"
+    internalAuth "github.com/larsa/pwa-counter/backend/internal/http"
     _ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
@@ -54,10 +55,10 @@ func main() {
     mux := http.NewServeMux()
     mux.HandleFunc("/health", healthHandler)
     mux.HandleFunc("/api/ping", pingHandler)
-    mux.HandleFunc("/api/logout", logoutHandler)
-    mux.HandleFunc("/api/login", loginHandler)
-    mux.HandleFunc("/api/auth/google/callback", authCallbackHandler)
-    mux.HandleFunc("/api/validate-session", validateSessionHandler)
+    mux.HandleFunc("/api/logout", internalAuth.LogoutHandler)
+    mux.HandleFunc("/api/login", internalAuth.LoginHandler)
+    mux.HandleFunc("/api/auth/google/callback", internalAuth.AuthCallbackHandler)
+    mux.HandleFunc("/api/validate-session", internalAuth.ValidateSessionHandler)
     // After logout we redirect to the landing page.
     mux.HandleFunc("/", catchAllHandler)
 
