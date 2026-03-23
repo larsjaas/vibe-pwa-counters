@@ -8,17 +8,42 @@
     <style>
         html, body {
             margin: 0; padding: 0; height: 100%; width: 100%;
-            display: flex; justify-content: center; align-items: center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
             font-family: Arial, sans-serif;
             background: #f0f0f0;
         }
         #app {
             text-align: center;
+            flex: 1 0 auto;
+        }
+        .page-selector {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            padding: 10px 0;
+            background: #fff;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        .page-selector button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <div id="app">Hello World</div>
+    <!-- Page selector row -->
+    <div class="page-selector">
+        <button id="prev-page" title="Previous Page">
+            <span aria-hidden="true">✓</span>
+        </button>
+        <button id="settings-page" title="Settings">
+            <span aria-hidden="true">⚙</span>
+        </button>
+    </div>
 
     <script>
         // Service worker registration for PWA behaviour
