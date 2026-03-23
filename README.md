@@ -5,7 +5,7 @@ This is a vibe-coded project for launching an Progressive Web App reimagination 
 frontend.
 
 Using:
-- pi / pi-coding-agents
+- pi / @mariozechner/pi-coding-agent
 - ollama + gpt-oss:20b
 - node
 
