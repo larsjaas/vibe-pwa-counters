@@ -10,7 +10,7 @@ import (
     _ "github.com/lib/pq"
     migrate "github.com/golang-migrate/migrate/v4"
     "github.com/golang-migrate/migrate/v4/database/postgres"
-    internalAuth "github.com/larsa/pwa-counter/backend/internal/http"
+    httpHandlers "github.com/larsa/pwa-counter/backend/internal/http"
     _ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
@@ -53,14 +53,14 @@ func main() {
 
     // HTTP/REST server setup
     mux := http.NewServeMux()
-    mux.HandleFunc("/health", healthHandler)
-    mux.HandleFunc("/api/ping", pingHandler)
-    mux.HandleFunc("/api/logout", internalAuth.LogoutHandler)
-    mux.HandleFunc("/api/login", internalAuth.LoginHandler)
-    mux.HandleFunc("/api/auth/google/callback", internalAuth.AuthCallbackHandler)
-    mux.HandleFunc("/api/validate-session", internalAuth.ValidateSessionHandler)
+    mux.HandleFunc("/health", httpHandlers.HealthHandler)
+    mux.HandleFunc("/api/ping", httpHandlers.PingHandler)
+    mux.HandleFunc("/api/logout", httpHandlers.LogoutHandler)
+    mux.HandleFunc("/api/login", httpHandlers.LoginHandler)
+    mux.HandleFunc("/api/auth/google/callback", httpHandlers.AuthCallbackHandler)
+    mux.HandleFunc("/api/validate-session", httpHandlers.ValidateSessionHandler)
     // After logout we redirect to the landing page.
-    mux.HandleFunc("/", catchAllHandler)
+    mux.HandleFunc("/", httpHandlers.CatchAllHandler)
 
     fmt.Println("Listening on :8081")
     if err := http.ListenAndServe(":8081", mux); err != nil {
@@ -68,50 +68,6 @@ func main() {
     }
 }
 
-func pingHandler(w http.ResponseWriter, r *http.Request) {
-    log.Printf("/api/ping called: method=%s", r.Method)
-    if r.Method != http.MethodGet {
-        methodNotAllowed(w, r)
-        return
-    }
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte("pong"))
-}
-
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-    log.Printf("/health called: method=%s", r.Method)
-    if r.Method != http.MethodGet {
-        methodNotAllowed(w, r)
-        return
-    }
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte("OK"))
-}
-
-func catchAllHandler(w http.ResponseWriter, r *http.Request) {
-    log.Printf("Catch-all handler called: method=%s path=%s", r.Method, r.URL.Path)
-    if r.Method != http.MethodGet {
-        w.WriteHeader(http.StatusBadRequest)
-        return
-    }
-    _, err := r.Cookie("session")
-    if err != nil {
-        log.Printf("No session cookie; redirecting to /api/login")
-        http.Redirect(w, r, "/api/login", http.StatusFound)
-        return
-    }
-    // Serve the main index.html after successful authentication.
-    data, err := os.ReadFile("html/index.html")
-    if err != nil {
-        http.Error(w, "Failed to load index.html", http.StatusInternalServerError)
-        log.Printf("Failed to read index.html: %v", err)
-        return
-    }
-    w.Header().Set("Content-Type", "text/html")
-    w.Write(data)
-}
-
-func methodNotAllowed(w http.ResponseWriter, r *http.Request) {
-    log.Printf("/api method not allowed: method=%s path=%s", r.Method, r.URL.Path)
-    w.WriteHeader(http.StatusBadRequest)
-}
+// These original handler implementations have been moved to the
+// internal `http` package (see `backend/internal/http/handlers.go`).
+// Keeping them out of `main.go` makes the server wiring easier to read.
