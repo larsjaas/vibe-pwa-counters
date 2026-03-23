@@ -25,8 +25,8 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
         Expires:  time.Unix(0, 0),
         HttpOnly: true,
     })
-    // Redirect to the public landing page.
-    http.Redirect(w, r, "/landing_page", http.StatusFound)
+    // Redirect to the public landing page bundled with the PWA.
+    http.Redirect(w, r, "/landing_page/index.html", http.StatusFound)
 }
 
 // validateSessionHandler checks for a session cookie and returns 200 if present.

@@ -49,6 +49,10 @@ Set up the environment variables the Go backend needs:
     $ export GOOGLE_REDIRECT_URI="http://<server.com>:8080/api/auth/google/callback"
     $ export DATABASE_URL="postgres://postgres:postgres@localhost:5432/app?sslmode=disable"
 
+Create the HTML directory.
+
+    $ npm run build
+
 Launch the backend dependencies (postgres, nginx):
 
     $ docker compose pull

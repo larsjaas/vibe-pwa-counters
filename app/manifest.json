@@ -1,6 +1,6 @@
 {
-  "short_name": "Hello",
-  "name": "Hello World PWA",
+  "short_name": "Counters",
+  "name": "Counters PWA",
   "icons": [
     {
       "src": "icon-192.png",

@@ -37,7 +37,6 @@ func main() {
     mux.HandleFunc("/api/login", loginHandler)
     mux.HandleFunc("/api/auth/google/callback", authCallbackHandler)
     mux.HandleFunc("/api/validate-session", validateSessionHandler)
-    mux.HandleFunc("/landing_page", landingPageHandler)
     // After logout we redirect to the landing page.
     mux.HandleFunc("/", catchAllHandler)
 

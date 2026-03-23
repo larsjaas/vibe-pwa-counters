@@ -1,4 +1,5 @@
-version: "3.8"
+# version is deprecated warning
+# version: "3.8"
 
 services:
 

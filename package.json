@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Node setup to package PWA for nginx",
   "scripts": {
-    "build": "mkdir -p html && cp -r app/* html"
+    "build": "mkdir -p html/landing_page && cp -r app/* html"
   },
   "private": true
 }
