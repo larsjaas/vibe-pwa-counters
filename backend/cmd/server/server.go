@@ -51,7 +51,3 @@ func main() {
         panic(err)
     }
 }
-
-// These original handler implementations have been moved to the
-// internal `http` package (see `backend/internal/http/handlers.go`).
-// Keeping them out of `main.go` makes the server wiring easier to read.
