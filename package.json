@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "Node setup to package PWA for nginx",
   "scripts": {
+  "optionalDependencies": {
+    "lucide-react": "^2.0.0"
+  },
     "build": "npm run build-sw && mkdir -p html/landing_page && cp -r app/* html",
     "build-sw": "npx tsc"
   },

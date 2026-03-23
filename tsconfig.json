@@ -8,7 +8,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["ES2020", "WebWorker"]
+    "lib": ["ES2020", "WebWorker", "dom"]
   },
   "include": ["app/**/*.ts", "app/**/*.tsx"],
   "exclude": ["node_modules"]
