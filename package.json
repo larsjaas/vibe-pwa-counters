@@ -5,5 +5,17 @@
   "scripts": {
     "build": "mkdir -p html/landing_page && cp -r app/* html"
   },
-  "private": true
+  "private": true,
+  "dependencies": {
+    "vite-plugin-pwa": "^1.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "typescript": "^5.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0"
+  }
 }
