@@ -4,3 +4,5 @@ manifest.json
 *.ico
 *.png
 *.ts
+css/
+svg/

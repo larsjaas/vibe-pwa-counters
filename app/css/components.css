@@ -1,6 +1,29 @@
 /* app/css/components.css */
 /* Additional component styles can be added here if needed. */
 /* Example: Simple button styling */
+
+/* Styling for the page‑selector buttons to keep them visible
+   (override the default background:none defined in layout.css) */
+
+/* Align the embedded SVG vertically within the button */
+.page-selector button svg {
+    vertical-align: middle;
+}
+.page-selector button {
+    background: var(--color-primary, #6200ee) !important;
+    color: #fff !important;
+    padding: 8px 16px;
+    border-radius: 4px;
+}
+
+/* Separator between left and right selector buttons */
+.btn-separator {
+    width: 1px;
+    background: var(--color-divider, #c0c0c0);
+    /* Align center vertically with the buttons */
+    align-self: center;
+    height: 1.5rem; /* match button height roughly */
+}
 button {
     padding: var(--spacing-small, 8px) var(--spacing-medium, 16px);
     font-size: var(--font-size-base, 16px);

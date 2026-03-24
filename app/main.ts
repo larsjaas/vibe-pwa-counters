@@ -72,13 +72,29 @@ const init = (): void => {
     document.body.appendChild(selector);
 
     const leftBtn = document.createElement('button');
-    leftBtn.textContent = 'Left';
+    // Use a Lucide-style SVG check icon instead of text
     leftBtn.addEventListener('click', () => switchView('left'));
+    leftBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="1.5rem" height="1.5rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-check-icon lucide-check-check">
+            <path d="M18 6 7 17l-5-5"/>
+            <path d="m22 10-7.5 7.5L13 16"/>
+        </svg>`;
     selector.appendChild(leftBtn);
 
+    // Create a vertical separator between the two buttons
+    const separator = document.createElement('div');
+    separator.className = 'btn-separator';
+    selector.appendChild(separator);
+
     const rightBtn = document.createElement('button');
-    rightBtn.textContent = 'Right';
+    // Replace the text button with a Lucide-style "settings" icon. The
+    // icon size matches the left button (1.5 rem).
     rightBtn.addEventListener('click', () => switchView('right'));
+    rightBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="1.5rem" height="1.5rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/>
+            <circle cx="12" cy="12" r="3"/>
+        </svg>`;
     selector.appendChild(rightBtn);
 
     const switchView = (view: 'left' | 'right'): void => {
