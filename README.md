@@ -13,7 +13,7 @@ Using:
 # Purpose
 
 - Learn a bit of Go programming
-- Set up OAuth 2.0 with Google for a Web app from scratch
+- Set up OAuth 2.0 with Google for a Web service from scratch
 - Learn to set up a PWA that will behave like an app on mobile, and also work offline
 - Create the mobile app equivalent of the @larsjaas/vibe-cmdline-counters utility
 - Familiarize myself with AI-agentic coding and how far it can be pushed with local/self-hosted models
@@ -49,7 +49,7 @@ Set up the environment variables the Go backend needs:
     $ export GOOGLE_REDIRECT_URI="http://<server.com>:8080/api/auth/google/callback"
     $ export DATABASE_URL="postgres://postgres:postgres@localhost:5432/app?sslmode=disable"
 
-Create the HTML directory.
+Create/build the HTML (pwa frontend) directory.
 
     $ npm run build
 
@@ -60,7 +60,7 @@ Launch the backend dependencies (postgres, nginx):
 
 Launch the backend
 
-    $ ( cd backend && go mod download github.com/lib/pq && go build cmd/server/server.go )
+    $ ( cd backend && go mod download github.com/lib/pq && go run cmd/server/server.go )
     $ ./backend/server
 
 Point a browser to `http://<server.com>:8080/` (or whatever hostname it is served from).
@@ -68,5 +68,5 @@ Point a browser to `http://<server.com>:8080/` (or whatever hostname it is serve
 
 # License
 
-This is on purpose 99% vibe-coded. No license will probably hold up in court.
+This is on purpose 95% vibe-coded. No license will probably hold up in court.
 
