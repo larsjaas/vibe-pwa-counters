@@ -1,0 +1,16 @@
+/* app/css/components.css */
+/* Additional component styles can be added here if needed. */
+/* Example: Simple button styling */
+button {
+    padding: var(--spacing-small, 8px) var(--spacing-medium, 16px);
+    font-size: var(--font-size-base, 16px);
+    border-radius: 4px;
+    cursor: pointer;
+    background: var(--color-primary, #6200ee);
+    color: #fff;
+}
+
+/* Hover effect */
+button:hover {
+    background: var(--color-primary-light, #bb86fc);
+}

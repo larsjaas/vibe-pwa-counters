@@ -1,0 +1,20 @@
+/* app/css/variables.css */
+/* Variable definitions used across the application */
+:root {
+    /* Colors */
+    --color-primary: #6200ee;
+    --color-primary-light: #bb86fc;
+    --color-primary-dark: #3700b3;
+    --color-secondary: #03dac5;
+    --color-background: #f0f0f0;
+    --color-text: #000000;
+
+    /* Spacing */
+    --spacing-small: 8px;
+    --spacing-medium: 16px;
+    --spacing-large: 24px;
+
+    /* Font sizes */
+    --font-size-base: 16px;
+    --font-size-lg: 1.5rem;
+}

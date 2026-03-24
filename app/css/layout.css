@@ -1,0 +1,39 @@
+/* app/css/layout.css */
+/* Basic layout styles for the PWA */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    font-family: Arial, sans-serif;
+    background: var(--color-background);
+    color: var(--color-text);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#app {
+    flex: 1 0 auto;
+    text-align: center;
+}
+
+/* Page selector style (we keep the same but reference CSS variables) */
+.page-selector {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    padding: var(--spacing-medium, 16px) 0;
+    background: #ffffff;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+/* Keep button defaults for selector */
+.page-selector button {
+    background: none;
+    border: none;
+    font-size: var(--font-size-lg, 1.5rem);
+    cursor: pointer;
+}

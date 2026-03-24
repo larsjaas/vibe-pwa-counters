@@ -6,7 +6,7 @@
     "optionalDependencies": {
       "lucide-react": "^2.0.0"
     },
-    "build": "npm run build-sw && mkdir -p html/landing_page && rsync -av --include='*/' --include='*.html' --include='*.png' --include='manifest.json' --exclude='*' app/ html/",
+    "build": "npm run build-sw && mkdir -p html/landing_page && rsync -av --include='*/' --include='*.html' --include='*.png' --include='manifest.json' --include='*.css' --exclude='*' app/ html/",
     "build-sw": "rm -rf html/*.js && npx tsc"
   },
   "private": true,

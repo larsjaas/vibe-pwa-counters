@@ -5,33 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="/manifest.json">
     <title>Hello World PWA</title>
-    <style>
-        html, body {
-            margin: 0; padding: 0; height: 100%; width: 100%;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            font-family: Arial, sans-serif;
-            background: #f0f0f0;
-        }
-        #app {
-            text-align: center;
-            flex: 1 0 auto;
-        }
-        .page-selector {
-            display: flex;
-            justify-content: space-around;
-            width: 100%;
-            padding: 10px 0;
-            background: #fff;
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-            flex-shrink: 0;
-        }
-        .page-selector button {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
-    </style>
+    <!-- External stylesheet resources -->
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/components.css">
 </head>
 <body>
     <div id="app">Hello World</div>
