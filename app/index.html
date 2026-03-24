@@ -36,37 +36,10 @@
 <body>
     <div id="app">Hello World</div>
     <!-- Page selector row -->
-    <div class="page-selector">
-        <button id="prev-page" title="Previous Page">
-            <span aria-hidden="true">✓</span>
-        </button>
-        <button id="settings-page" title="Settings">
-            <span aria-hidden="true">⚙</span>
-        </button>
-    </div>
+        <!-- Button placeholders removed; selector added by script -->
+    <!-- The view selector will be injected by the main TypeScript script -->
 
-    <script>
-        // Service worker registration for PWA behaviour
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').catch(console.error);
-        }
-
-        // Perform a quick GET to /api/ping and display the response.
-        // The result is appended as a paragraph under the existing content.
-        fetch('/api/ping')
-            .then(resp => {
-                if (!resp.ok) throw new Error('Network response was not ok');
-                return resp.text();
-            })
-            .then(text => {
-                const appDiv = document.getElementById('app');
-                const p = document.createElement('p');
-                p.textContent = text;
-                appDiv.appendChild(p);
-            })
-            .catch(err => {
-                console.error('Failed to ping server:', err);
-            });
-    </script>
+    <!-- Main application script compiled from TypeScript -->
+    <script type="module" src="/main.js"></script>
 </body>
 </html>
