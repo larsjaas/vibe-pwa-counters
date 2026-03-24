@@ -28,6 +28,14 @@ const init = (): void => {
     rightPage.textContent = 'Right Page';
     rightPage.style.display = 'none';
     appContainer.appendChild(rightPage);
+    
+    // --- New middle page ---
+    const middlePage = document.createElement('div');
+    middlePage.id = 'middle-page';
+    middlePage.className = 'page';
+    middlePage.textContent = 'Middle Page';
+    middlePage.style.display = 'none';
+    appContainer.appendChild(middlePage);
 
     /* ---- Page specific UI elements ---- */
     // Left page '+` button at top-right
@@ -86,6 +94,21 @@ const init = (): void => {
     separator.className = 'btn-separator';
     selector.appendChild(separator);
 
+    // --- New middle button ---
+    const middleBtn = document.createElement('button');
+    middleBtn.addEventListener('click', () => switchView('middle'));
+    middleBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="1.5rem" height="1.5rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v16a2 2 0 0 0 2 2h16"/>
+            <path d="m19 9-5 5-4-4-3 3"/>
+        </svg>`;
+    selector.appendChild(middleBtn);
+
+    // Add another separator for visual spacing
+    const separator2 = document.createElement('div');
+    separator2.className = 'btn-separator';
+    selector.appendChild(separator2);
+
     const rightBtn = document.createElement('button');
     // Replace the text button with a Lucide-style "settings" icon. The
     // icon size matches the left button (1.5 rem).
@@ -97,13 +120,20 @@ const init = (): void => {
         </svg>`;
     selector.appendChild(rightBtn);
 
-    const switchView = (view: 'left' | 'right'): void => {
-        if (view === 'left') {
-            leftPage.style.display = 'block';
-            rightPage.style.display = 'none';
-        } else {
-            leftPage.style.display = 'none';
-            rightPage.style.display = 'block';
+    const switchView = (view: 'left' | 'right' | 'middle'): void => {
+        leftPage.style.display = 'none';
+        rightPage.style.display = 'none';
+        middlePage.style.display = 'none';
+        switch (view) {
+            case 'left':
+                leftPage.style.display = 'block';
+                break;
+            case 'right':
+                rightPage.style.display = 'block';
+                break;
+            case 'middle':
+                middlePage.style.display = 'block';
+                break;
         }
     };
 
