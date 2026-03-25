@@ -175,10 +175,12 @@ const init = (): void => {
                 })
                 .then((data) => {
                     console.log('Counter created:', data);
+                    // Close the modal only on successful creation
+                    document.body.removeChild(overlay);
                     // Placeholder: you might refresh counter list here
                 })
                 .catch((err) => console.error('Create fail', err));
-            document.body.removeChild(overlay);
+            // No additional chaining needed; modal will close on success above.
         });
         btnContainer.appendChild(createBtn);
 
