@@ -178,8 +178,9 @@ const init = (): void => {
                     return r;
                 })
                 .then(() => {
-                    // Successful creation – we could refresh the list here.
+                    // Successful creation – refresh the counter list so the new entry appears immediately.
                     console.log('Counter created successfully');
+                    loadCounters();
                 })
                 .catch((err) => console.error('Create fail', err));
             // No additional chaining needed; modal will close on success above.
@@ -305,8 +306,78 @@ const init = (): void => {
         }
     };
 
+    /* ---- Helpers for fetching & rendering counters ---- */
+    const renderCountersTable = (counters: Array<{ id: number; name: string }>): void => {
+        // Clear any existing content
+        leftPage.textContent = '';
+        const table = document.createElement('table');
+        table.style.width = '90%';
+        table.style.borderCollapse = 'collapse';
+        const headerRow = document.createElement('tr');
+        ['ID', 'Name', 'Delete'].forEach((col) => {
+            const th = document.createElement('th');
+            th.textContent = col;
+            th.style.border = '1px solid #ccc';
+            th.style.padding = '6px';
+            th.style.background = '#f9f9f9';
+            headerRow.appendChild(th);
+        });
+        table.appendChild(headerRow);
+
+        const deleteCounter = async (id: number): Promise<void> => {
+            try {
+                const r = await fetch(`/api/counters/${id}`, {
+                    method: 'DELETE',
+                });
+                if (r.status !== 200) {
+                    throw new Error(`Delete failed: ${r.status}`);
+                }
+                // Refresh table after deletion
+                loadCounters();
+            } catch (e) {
+                console.error('Error deleting counter', e);
+            }
+        };
+
+        counters.forEach((c) => {
+            const tr = document.createElement('tr');
+            const idTd = document.createElement('td');
+            idTd.textContent = c.id.toString();
+            tr.appendChild(idTd);
+            const nameTd = document.createElement('td');
+            nameTd.textContent = c.name;
+            tr.appendChild(nameTd);
+            const delTd = document.createElement('td');
+            const delBtn = document.createElement('span');
+            delBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6z"/><path d="M19 10v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V10"/><path d="M10 14h4"/><path d="M12 10v3"/></svg>`;
+            delBtn.style.cursor = 'pointer';
+            delBtn.addEventListener('click', () => deleteCounter(c.id));
+            delTd.appendChild(delBtn);
+            tr.appendChild(delTd);
+            table.appendChild(tr);
+        });
+        leftPage.appendChild(table);
+        leftPage.appendChild(addBtn);
+    };
+
+    const loadCounters = async (): Promise<void> => {
+        try {
+            const r = await fetch('/api/counters');
+            if (r.status !== 200) {
+                throw new Error(`Failed to fetch counters: ${r.status}`);
+            }
+            const data: Array<{ id: number; name: string }> = await r.json();
+            renderCountersTable(data);
+        } catch (e) {
+            console.error('Error loading counters', e);
+        }
+    };
+
+
     // Show the initial view immediately
     switchView('left');
+    // Load counters when app first loads
+    loadCounters();
 
     /* ---- Register service worker ---- */
     if ('serviceWorker' in navigator) {
