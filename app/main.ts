@@ -156,7 +156,28 @@ const init = (): void => {
             const name = nameInput.value;
             const initial = parseInt(initInput.value) || 0;
             const step = parseInt(stepInput.value) || 1;
-            console.log({ name, initial, step });
+            const payload = {
+                name,
+                initial,
+                step,
+            };
+            // Send the payload to the backend. Errors are logged; UI feedback can be added later.
+            fetch('/api/counters', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            })
+                .then((r) => {
+                    if (!r.ok) throw new Error(`Server error: ${r.status}`);
+                    return r.json();
+                })
+                .then((data) => {
+                    console.log('Counter created:', data);
+                    // Placeholder: you might refresh counter list here
+                })
+                .catch((err) => console.error('Create fail', err));
             document.body.removeChild(overlay);
         });
         btnContainer.appendChild(createBtn);
