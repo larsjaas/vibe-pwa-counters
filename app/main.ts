@@ -19,7 +19,8 @@ const init = (): void => {
     const leftPage = document.createElement('div');
     leftPage.id = 'left-page';
     leftPage.className = 'page';
-    leftPage.textContent = 'Left Page';
+    // No default text – the view will be populated when needed
+    leftPage.textContent = '';
     appContainer.appendChild(leftPage);
 
     const rightPage = document.createElement('div');
@@ -49,6 +50,111 @@ const init = (): void => {
     addBtn.style.background = 'none';
     addBtn.style.cursor = 'pointer';
     leftPage.appendChild(addBtn);
+
+    // ----- Modal UI -----
+    const createModal = (): HTMLElement => {
+        const overlay = document.createElement('div');
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.background = 'rgba(0,0,0,0.5)';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.zIndex = '1000';
+
+        const modal = document.createElement('div');
+        modal.style.background = '#fff';
+        modal.style.padding = '20px';
+        modal.style.borderRadius = '8px';
+        modal.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+        modal.style.maxWidth = '90%';
+        modal.style.width = '320px';
+
+        const title = document.createElement('h2');
+        title.textContent = 'Create Counter';
+        title.style.marginTop = '0';
+        modal.appendChild(title);
+
+        const nameLbl = document.createElement('label');
+        nameLbl.textContent = 'Name:';
+        nameLbl.style.display = 'block';
+        nameLbl.style.marginTop = '12px';
+        modal.appendChild(nameLbl);
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.style.width = '100%';
+        nameInput.style.boxSizing = 'border-box';
+        modal.appendChild(nameInput);
+
+        const initLbl = document.createElement('label');
+        initLbl.textContent = 'Initial:';
+        initLbl.style.display = 'block';
+        initLbl.style.marginTop = '12px';
+        modal.appendChild(initLbl);
+
+        const initInput = document.createElement('input');
+        initInput.type = 'number';
+        initInput.style.width = '100%';
+        initInput.style.boxSizing = 'border-box';
+        modal.appendChild(initInput);
+
+        const stepLbl = document.createElement('label');
+        stepLbl.textContent = 'Step:';
+        stepLbl.style.display = 'block';
+        stepLbl.style.marginTop = '12px';
+        modal.appendChild(stepLbl);
+
+        const stepInput = document.createElement('input');
+        stepInput.type = 'number';
+        stepInput.style.width = '100%';
+        stepInput.style.boxSizing = 'border-box';
+        modal.appendChild(stepInput);
+
+        const btnContainer = document.createElement('div');
+        btnContainer.style.display = 'flex';
+        btnContainer.style.justifyContent = 'flex-end';
+        btnContainer.style.marginTop = '20px';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.style.marginRight = '10px';
+        cancelBtn.addEventListener('click', () => {
+            document.body.removeChild(overlay);
+        });
+        btnContainer.appendChild(cancelBtn);
+
+        const createBtn = document.createElement('button');
+        createBtn.textContent = 'Create';
+        createBtn.style.background = '#0070f3';
+        createBtn.style.color = '#fff';
+        createBtn.style.border = 'none';
+        createBtn.style.padding = '6px 12px';
+        createBtn.style.borderRadius = '4px';
+        createBtn.addEventListener('click', () => {
+            const name = nameInput.value;
+            const initial = parseInt(initInput.value) || 0;
+            const step = parseInt(stepInput.value) || 1;
+            console.log({ name, initial, step });
+            document.body.removeChild(overlay);
+        });
+        btnContainer.appendChild(createBtn);
+
+        modal.appendChild(btnContainer);
+        overlay.appendChild(modal);
+        return overlay;
+    };
+
+    addBtn.addEventListener('click', () => {
+        // Prevent duplicate modals
+        if (document.querySelector('#counter-modal')) return;
+        const modal = createModal();
+        modal.id = 'counter-modal';
+        document.body.appendChild(modal);
+    });
 
     // Right page Log Out button (bottom‑center)
     const logoutBtn = document.createElement('button');
