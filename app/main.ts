@@ -43,14 +43,26 @@ const init = (): void => {
     /* ---- Page specific UI elements ---- */
     // Left page '+` button at top-right
     const addBtn = document.createElement('button');
-    addBtn.textContent = '+';
-    addBtn.style.position = 'absolute';
+    // Embed the official Lucide list‑plus icon for the add button
+    addBtn.style.position = 'fixed';
     addBtn.style.top = '10px';
     addBtn.style.right = '10px';
-    addBtn.style.fontSize = '2rem';
-    addBtn.style.border = 'none';
     addBtn.style.background = 'none';
+    // Add a subtle circular backdrop to emphasize the icon
+    addBtn.style.width = '2rem';
+    addBtn.style.height = '2rem';
+    addBtn.style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
+    addBtn.style.borderRadius = '50%';
+    addBtn.style.display = 'flex';
+    addBtn.style.justifyContent = 'center';
+    addBtn.style.alignItems = 'center';
+    addBtn.style.border = 'none';
+    addBtn.style.padding = '0';
     addBtn.style.cursor = 'pointer';
+    addBtn.innerHTML = `
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list-plus-icon lucide-list-plus"><path d="M16 5H3"/><path d="M11 12H3"/><path d="M16 19H3"/><path d="M18 9v6"/><path d="M21 12h-6"/></svg>
+        `;
+    addBtn.title = 'New Counter';
     leftPage.appendChild(addBtn);
 
     // ----- Modal UI -----
