@@ -159,17 +159,36 @@ const init = (): void => {
     });
 
     // Right page Log Out button (bottom‑center)
+    // Replace the bottom logout button with a top‑right SVG icon
     const logoutBtn = document.createElement('button');
-    logoutBtn.textContent = 'Log Out';
-    logoutBtn.style.position = 'absolute';
-    logoutBtn.style.left = '50%';
-    logoutBtn.style.bottom = '20px';
-    logoutBtn.style.transform = 'translateX(-50%)';
-    logoutBtn.style.padding = '5px 15px';
-    logoutBtn.style.fontSize = '1rem';
+    logoutBtn.style.position = 'fixed';
+    logoutBtn.style.top = '10px';
+    logoutBtn.style.right = '10px';
+    logoutBtn.style.background = 'none';
+    // Add a subtle circular backdrop to emphasize the icon
+    logoutBtn.style.width = '2rem';
+    logoutBtn.style.height = '2rem';
+    logoutBtn.style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
+    logoutBtn.style.borderRadius = '50%';
+    logoutBtn.style.display = 'flex';
+    logoutBtn.style.justifyContent = 'center';
+    logoutBtn.style.alignItems = 'center';
+    logoutBtn.style.border = 'none';
+    logoutBtn.style.padding = '0';
+    logoutBtn.style.cursor = 'pointer';
+    // Inline SVG for log-out icon
+    // Use the proper Lucide log‑out icon
+    logoutBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="1.5rem" height="1.5rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m16 17 5-5-5-5"/>
+            <path d="M21 12H9"/>
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        </svg>`;
     logoutBtn.addEventListener('click', () => {
         window.location.href = '/api/logout';
     });
+    // Tooltip for logout button
+    logoutBtn.setAttribute('title', 'Log Out');
     rightPage.appendChild(logoutBtn);
 
     /* ---- Bottom‑row view switcher ---- */
