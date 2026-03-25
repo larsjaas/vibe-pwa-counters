@@ -1,13 +1,27 @@
 # Description
 
-This is a vibe-coded project for launching an Progressive Web App reimagination of the
-@larsjaas/vibe-cmdline-counters project. It has a REST backend in Go, and a javascript
-frontend.
+This is a vibe-coded project for launching an Progressive Web App reimagination
+of the (github.com/larsjaas/vibe-cmdline-counters)[vibe-cmdline-counters]
+project. It has a REST backend in Go, and a javascript web app that is served
+by nginx.
+
+I am using this project to explore what is possible with what is available for
+free and reasonable to run on my M4 Mac Book Pro. I am intentionally not
+interfering with the code the LLM creates more than strictly necessary. For
+instance, my bundled LLM tool set is not 100% and will oftentimes cause
+incorrect edits that I might go in and correct by hand. Because of this
+*least-amount-of-manual-coding* policy, the aesthetics of the app will likely be
+very cumbersome to get pleasing, and is therefore not a priority before the app
+is fully functional.
 
 Using:
-- pi / @mariozechner/pi-coding-agent
-- ollama + gpt-oss:20b
-- node
+- Raspberry Pi Sandbox
+  - node, go, docker
+  - pi / @mariozechner/pi-coding-agent
+- 48GB M4 Mac Book Pro
+  - ollama + gpt-oss:20b
+  - ssh/mosh, VSCode w/SSH
+- Tailscale private network
 
 
 # Purpose
@@ -21,7 +35,7 @@ Using:
 
 # Development
 
-Launch pi with the following command, and let it rip!
+Launch pi-coding-agents with the following command, and let it rip!
 
     $ pi -e tools/tools.ts
 
