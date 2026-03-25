@@ -14,6 +14,7 @@ type Counter struct {
     Name      string         `json:"name"`
     CreateTime time.Time     `json:"createtime"`
     DeleteTime sql.NullTime  `json:"deletetime"`
+    Step      int            `json:"step"`
 }
 
 // InsertCounter inserts a new counter for the supplied user ID and name.
@@ -23,16 +24,21 @@ func InsertCounter(userID int, name string) (*Counter, error) {
     if db == nil {
         return nil, fmt.Errorf("database not initialized")
     }
-    const query = `INSERT INTO counters ("user", name) VALUES ($1, $2) RETURNING id, createtime`
+    // Insert the new counter. The "step" column defaults to 1 in the
+    // database, so we don't need to provide a value. We return the id,
+    // createtime and step for the inserted row.
+    const query = `INSERT INTO counters ("user", name) VALUES ($1, $2) RETURNING id, createtime, step`
     var c Counter
     c.UserID = userID
     c.Name = name
     var createTime time.Time
-    err := db.QueryRow(query, userID, name).Scan(&c.ID, &createTime)
+    var step int
+    err := db.QueryRow(query, userID, name).Scan(&c.ID, &createTime, &step)
     if err != nil {
         return nil, err
     }
     c.CreateTime = createTime
+    c.Step = step
     return &c, nil
 }
 
@@ -42,7 +48,7 @@ func GetCountersForUser(userID int) ([]*Counter, error) {
     if db == nil {
         return nil, fmt.Errorf("database not initialized")
     }
-    const query = `SELECT id, "user", name, createtime, deletetime FROM counters WHERE "user"=$1 ORDER BY id`
+    const query = `SELECT id, "user", name, createtime, step, deletetime FROM counters WHERE "user"=$1 ORDER BY id`
     rows, err := db.Query(query, userID)
     if err != nil {
         return nil, err
@@ -53,10 +59,12 @@ func GetCountersForUser(userID int) ([]*Counter, error) {
     for rows.Next() {
         var c Counter
         var deleteTime sql.NullTime
-        if err := rows.Scan(&c.ID, &c.UserID, &c.Name, &c.CreateTime, &deleteTime); err != nil {
+        var step int
+        if err := rows.Scan(&c.ID, &c.UserID, &c.Name, &c.CreateTime, &step, &deleteTime); err != nil {
             return nil, err
         }
         c.DeleteTime = deleteTime
+        c.Step = step
         counters = append(counters, &c)
     }
     if err := rows.Err(); err != nil {
