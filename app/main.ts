@@ -170,14 +170,16 @@ const init = (): void => {
                 body: JSON.stringify(payload),
             })
                 .then((r) => {
-                    if (!r.ok) throw new Error(`Server error: ${r.status}`);
-                    return r.json();
-                })
-                .then((data) => {
-                    console.log('Counter created:', data);
-                    // Close the modal only on successful creation
+                    if (r.status !== 200) {
+                        throw new Error(`Server error: ${r.status}`);
+                    }
+                    // Response body is empty; close modal and skip parsing.
                     document.body.removeChild(overlay);
-                    // Placeholder: you might refresh counter list here
+                    return r;
+                })
+                .then(() => {
+                    // Successful creation – we could refresh the list here.
+                    console.log('Counter created successfully');
                 })
                 .catch((err) => console.error('Create fail', err));
             // No additional chaining needed; modal will close on success above.

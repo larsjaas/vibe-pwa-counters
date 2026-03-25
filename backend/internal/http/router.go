@@ -21,6 +21,11 @@ func NewRouter() http.Handler {
     mux.HandleFunc("/api/auth/google/callback", AuthCallbackHandler)
     mux.HandleFunc("/api/validate-session", ValidateSessionHandler)
 
+    // Register counters CRUD handler. The trailing slash variant ensures
+    // DELETE /api/counters/:id works.
+    mux.HandleFunc("/api/counters", CountersHandler)
+    mux.HandleFunc("/api/counters/", CountersHandler)
+
     // Catch‑all for authenticated app entry point
     mux.HandleFunc("/", CatchAllHandler)
 
