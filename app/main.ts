@@ -114,6 +114,8 @@ const init = (): void => {
         initInput.type = 'number';
         initInput.style.width = '100%';
         initInput.style.boxSizing = 'border-box';
+        // Set default value for initial counter value
+        initInput.value = '0';
         modal.appendChild(initInput);
 
         const stepLbl = document.createElement('label');
@@ -126,6 +128,8 @@ const init = (): void => {
         stepInput.type = 'number';
         stepInput.style.width = '100%';
         stepInput.style.boxSizing = 'border-box';
+        // Set default value for step
+        stepInput.value = '1';
         modal.appendChild(stepInput);
 
         const btnContainer = document.createElement('div');
