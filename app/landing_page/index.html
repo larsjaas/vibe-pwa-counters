@@ -1,7 +1,10 @@
 <!doctype html>
 <html lang="en">
 <body style="display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:Arial,sans-serif;">
-<button id="login" style="padding:1rem 2rem;font-size:1.2rem;cursor:pointer;">Log In</button>
+<button id="login" style="display:flex;align-items:center;padding:1rem 2rem;font-size:1.2rem;cursor:pointer;">
+  <img src="../svg/lucide/log-in.svg" alt="log in icon" style="width:1.5rem;height:1.5rem;margin-right:0.5rem;vertical-align:middle;" />
+  Log In
+</button>
 <script>
   document.getElementById('login').addEventListener('click', function() {
     window.location.href = '/api/login';
