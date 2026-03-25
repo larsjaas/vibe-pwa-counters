@@ -8,43 +8,69 @@ package http
 // library `net/http`.
 
 import (
-    "bytes"
-    "encoding/base64"
-    "encoding/json"
-    "fmt"
-    "io"
-    "net/http"
-    "os"
-    "log"
-    "strings"
-    "time"
-    db "github.com/larsa/pwa-counter/backend/internal/db"
+	"bytes"
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+
+	db "github.com/larsa/pwa-counter/backend/internal/db"
+	redis "github.com/redis/go-redis/v9"
 )
+
+// redisClient holds a global Redis client shared across handlers.
+var redisClient *redis.Client
+
+// SetRedisClient allows the server bootstrap code to inject a Redis client.
+func SetRedisClient(rdb *redis.Client) {
+    redisClient = rdb
+}
 
 // LogoutHandler clears the session cookie and redirects the user to the
 // landing page.
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
     log.Printf("/api/logout called: method=%s path=%s", r.Method, r.URL.Path)
+    // Delete the session cookie and remove the session entry from Redis.
     http.SetCookie(w, &http.Cookie{
-        Name:     "session",
+        Name:     "session_id",
         Value:    "",
         Path:     "/",
         MaxAge:   -1,
         Expires:  time.Unix(0, 0),
         HttpOnly: true,
     })
+    cookie, err := r.Cookie("session_id")
+    if err == nil && redisClient != nil {
+        // Ensure we delete the key to avoid stale entries.
+        _ = redisClient.Del(context.Background(), cookie.Value)
+    }
     http.Redirect(w, r, "/landing_page/index.html", http.StatusFound)
 }
 
 // ValidateSessionHandler verifies the presence of a session cookie.
 func ValidateSessionHandler(w http.ResponseWriter, r *http.Request) {
     log.Printf("/api/validate-session called: method=%s path=%s", r.Method, r.URL.Path)
-    _, err := r.Cookie("session")
-    if err != nil {
-        w.WriteHeader(http.StatusUnauthorized)
+    cookie, err := r.Cookie("session_id")
+    if err != nil || redisClient == nil {
+        http.Error(w, "Invalid session", http.StatusUnauthorized)
         return
     }
-    w.WriteHeader(http.StatusOK)
+    ctx := context.Background()
+    val, err := redisClient.Get(ctx, cookie.Value).Result()
+    if err == redis.Nil || err != nil {
+        http.Error(w, "Invalid session", http.StatusUnauthorized)
+        return
+    }
+    log.Printf("Session data for %s: %s", cookie.Value, val)
+    fmt.Fprintf(w, "Ping: %s", "ok")
 }
 
 // LoginHandler redirects to Google's OAuth 2.0 consent screen.
@@ -62,15 +88,20 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // AuthCallbackHandler handles the OAuth callback, exchanging the code for
-// tokens and storing the access token in a cookie.
+// tokens, persisting user data, creating a session stored in Redis, and
+// setting a session_id cookie.
 func AuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
+    // Log request details for tracing.
     log.Printf("/api/auth/google/callback called: method=%s path=%s", r.Method, r.URL.Path)
+
+    // 1. Extract the authorization code from query string.
     code := r.URL.Query().Get("code")
     if code == "" {
         http.Error(w, "Missing code", http.StatusBadRequest)
         return
     }
 
+    // 2. Exchange the code for tokens.
     accessToken, idToken, err := exchangeCode(code)
     if err != nil {
         log.Printf("Token exchange failed: %v", err)
@@ -78,37 +109,71 @@ func AuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    // 3. Decode user information from id_token.
     email, name, err := parseUserInfoFromIDToken(idToken)
     if err != nil {
         log.Printf("Failed to parse id_token: %v", err)
-    } else {
-        log.Printf("User logged in: email=%s, name=%s", email, name)
-        // Persist the user into the database if it does not already exist.
-        if email != "" {
-            exists, e := db.UserExists(email)
-            if e != nil {
-                log.Printf("DB check failed: %v", e)
-            } else if !exists {
-                if _, e := db.AddUser(email, name); e != nil {
-                    log.Printf("Failed to add new user: %v", e)
-                } else {
-                    log.Printf("Inserted new user: %s (%s)", email, name)
-                }
+    }
+
+    // 4. Persist user in database if not present.
+    var userID int
+    if email != "" {
+        exists, err := db.UserExists(email)
+        if err != nil {
+            log.Printf("DB check failed: %v", err)
+        }
+        if !exists {
+            if _, err = db.AddUser(email, name); err != nil {
+                log.Printf("Failed to add user: %v", err)
             }
+        }
+        uid, err := db.GetUserIDByEmail(email)
+        if err == nil {
+            userID = uid
         }
     }
 
+    // 5. Build session payload.
+    sessionID := generateSessionID()
+    session := map[string]interface{}{
+        "session_id": sessionID,
+        "user_id":    userID,
+        "user_email": email,
+        "user_name":  name,
+        "access_token": accessToken,
+        "created_at": time.Now().Format(time.RFC3339),
+        "expires_at": time.Now().Add(6 * time.Hour).Format(time.RFC3339),
+    }
+
+    // Add client metadata.
+    ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+    if ip == "" {
+        ip = r.RemoteAddr
+    }
+    session["user_ip"] = ip
+    session["user_agent"] = r.Header.Get("User-Agent")
+
+    // Store session in Redis.
+    if redisClient != nil {
+        ctx := context.Background()
+        payload, _ := json.Marshal(session)
+        err := redisClient.Set(ctx, sessionID, string(payload), 6*time.Hour).Err()
+        if err != nil {
+            log.Printf("Redis session store error: %v", err)
+        }
+    }
+
+    // Set the session_id cookie.
     http.SetCookie(w, &http.Cookie{
-        Name:     "session",
-        Value:    accessToken,
+        Name:     "session_id",
+        Value:    sessionID,
         Path:     "/",
         HttpOnly: true,
+        Secure:   true,
+        SameSite: http.SameSiteLaxMode,
     })
 
-    log.Printf("Auth code: %s", code)
-    log.Printf("Access token: %s", accessToken)
-    log.Printf("ID token: %s", idToken)
-
+    // Redirect the user to the home page.
     http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -181,4 +246,17 @@ func parseUserInfoFromIDToken(idToken string) (email, name string, err error) {
         name = v
     }
     return
+}
+
+
+// generateSessionID creates a cryptographically secure, base64 URL
+// encoded session identifier.
+func generateSessionID() string {
+    b := make([]byte, 32) // 256 bits
+    if _, err := rand.Read(b); err != nil {
+        // Fallback to time-based seed; extremely unlikely to hit.
+        now := time.Now().UnixNano()
+        return base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf("%d", now)))
+    }
+    return base64.RawURLEncoding.EncodeToString(b)
 }
