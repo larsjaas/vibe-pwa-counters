@@ -26,7 +26,8 @@ const init = (): void => {
     const rightPage = document.createElement('div');
     rightPage.id = 'right-page';
     rightPage.className = 'page';
-    rightPage.textContent = 'Right Page';
+    // No default text – right view shows only the logout button
+    rightPage.textContent = '';
     rightPage.style.display = 'none';
     appContainer.appendChild(rightPage);
     
@@ -34,7 +35,8 @@ const init = (): void => {
     const middlePage = document.createElement('div');
     middlePage.id = 'middle-page';
     middlePage.className = 'page';
-    middlePage.textContent = 'Middle Page';
+    // No default placeholder – the view is blank until data is loaded
+    middlePage.textContent = '';
     middlePage.style.display = 'none';
     appContainer.appendChild(middlePage);
 
