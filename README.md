@@ -53,16 +53,16 @@ Set up the environment variables the Go backend needs:
     $ export GOOGLE_REDIRECT_URI="http://<server.com>:8080/api/auth/google/callback"
     $ export DATABASE_URL="postgres://postgres:postgres@localhost:5432/app?sslmode=disable"
 
-Create/build the HTML (pwa frontend) directory.
+Create/build the HTML (PWA frontend) directory. Needs to be done when changing frontend code.
 
     $ npm run build
 
-Launch the backend dependencies (postgres, nginx):
+Launch the backend dependencies (postgres, nginx).
 
     $ docker compose pull
     $ docker compose up -d
 
-Launch the backend
+Launch the backend API server.
 
     $ ( cd backend && go mod download github.com/lib/pq && go run cmd/server/server.go )
     $ ./backend/server
