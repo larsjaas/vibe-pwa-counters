@@ -52,16 +52,8 @@ func main() {
     // database package for better separation of concerns.
     db.RunMigrations(dbConn)
 
-    // HTTP/REST server setup
-    mux := http.NewServeMux()
-    mux.HandleFunc("/health", httpHandlers.HealthHandler)
-    mux.HandleFunc("/api/ping", httpHandlers.PingHandler)
-    mux.HandleFunc("/api/logout", httpHandlers.LogoutHandler)
-    mux.HandleFunc("/api/login", httpHandlers.LoginHandler)
-    mux.HandleFunc("/api/auth/google/callback", httpHandlers.AuthCallbackHandler)
-    mux.HandleFunc("/api/validate-session", httpHandlers.ValidateSessionHandler)
-    // After logout we redirect to the landing page.
-    mux.HandleFunc("/", httpHandlers.CatchAllHandler)
+    // HTTP/REST server setup – routes registered in router.go
+    mux := httpHandlers.NewRouter()
 
     fmt.Println("Listening on :8081")
     if err := http.ListenAndServe(":8081", mux); err != nil {

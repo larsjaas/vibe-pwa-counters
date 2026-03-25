@@ -1,27 +1,5 @@
 package db
 
-// SoftDeleteCounter marks a counter as deleted by setting its
-// `deletetime` column to the current timestamp. The deletion is
-// scoped to the specified `userID` to prevent one user from
-// deleting another's counters. The function returns true if a row was
-// updated and false if no matching counter was found.
-func SoftDeleteCounter(userID int, counterID int) (bool, error) {
-    if db == nil {
-        return false, fmt.Errorf("database not initialized")
-    }
-    const query = `UPDATE counters SET deletetime = now()
-    WHERE "user" = $1 AND id = $2 AND deletetime IS NULL`
-    res, err := db.Exec(query, userID, counterID)
-    if err != nil {
-        return false, err
-    }
-    rows, err := res.RowsAffected()
-    if err != nil {
-        return false, err
-    }
-    return rows > 0, nil
-}
-
 import (
     "database/sql"
     "fmt"
@@ -94,3 +72,26 @@ func GetCountersForUser(userID int) ([]*Counter, error) {
     }
     return counters, nil
 }
+
+// SoftDeleteCounter marks a counter as deleted by setting its
+// `deletetime` column to the current timestamp. The deletion is
+// scoped to the specified `userID` to prevent one user from
+// deleting another's counters. The function returns true if a row was
+// updated and false if no matching counter was found.
+func SoftDeleteCounter(userID int, counterID int) (bool, error) {
+    if db == nil {
+        return false, fmt.Errorf("database not initialized")
+    }
+    const query = `UPDATE counters SET deletetime = now()
+    WHERE "user" = $1 AND id = $2 AND deletetime IS NULL`
+    res, err := db.Exec(query, userID, counterID)
+    if err != nil {
+        return false, err
+    }
+    rows, err := res.RowsAffected()
+    if err != nil {
+        return false, err
+    }
+    return rows > 0, nil
+}
+
