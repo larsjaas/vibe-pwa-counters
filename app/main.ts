@@ -321,10 +321,17 @@ const init = (): void => {
         table.style.fontSize = '200%';
 
         // Load the icon once and reuse it for each row
-        const iconSvg = `
+        const squareCheckSvg = `
             <svg xmlns="http://www.w3.org/2000/svg" width="1.5rem" height="1.5rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-square-check-big-icon lucide-square-check-big">
                 <path d="M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344"/>
                 <path d="m9 11 3 3L22 4"/>
+            </svg>`;
+        const filePenSvg = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="1.5rem" height="1.5rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-pen-line-icon lucide-file-pen-line">
+                <path d="M14.364 13.634a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506l4.013-4.009a1 1 0 0 0-3.004-3.004z"/>
+                <path d="M14.487 7.858A1 1 0 0 1 14 7V2"/>
+                <path d="M20 19.645V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l2.516 2.516"/>
+                <path d="M8 18h1"/>
             </svg>`;
 
         counters.forEach((c) => {
@@ -334,11 +341,10 @@ const init = (): void => {
             nameTd.style.textAlign = 'left';
             tr.appendChild(nameTd);
 
+            // Second column – square‑check icon
             const iconTd = document.createElement('td');
             iconTd.style.textAlign = 'right';
             iconTd.style.paddingRight = '10px';
-
-            // Container with a filled circle background
             const iconContainer = document.createElement('div');
             iconContainer.style.display = 'inline-flex';
             iconContainer.style.alignItems = 'center';
@@ -347,9 +353,24 @@ const init = (): void => {
             iconContainer.style.height = '1.8rem';
             iconContainer.style.borderRadius = '50%';
             iconContainer.style.background = '#e0e0e0';
-            iconContainer.innerHTML = iconSvg;
+            iconContainer.innerHTML = squareCheckSvg;
             iconTd.appendChild(iconContainer);
             tr.appendChild(iconTd);
+            // Third column – file‑pen icon
+            const fileTd = document.createElement('td');
+            fileTd.style.textAlign = 'right';
+            fileTd.style.paddingRight = '10px';
+            const fileContainer = document.createElement('div');
+            fileContainer.style.display = 'inline-flex';
+            fileContainer.style.alignItems = 'center';
+            fileContainer.style.justifyContent = 'center';
+            fileContainer.style.width = '1.8rem';
+            fileContainer.style.height = '1.8rem';
+            fileContainer.style.borderRadius = '50%';
+            fileContainer.style.background = '#e0e0e0';
+            fileContainer.innerHTML = filePenSvg;
+            fileTd.appendChild(fileContainer);
+            tr.appendChild(fileTd);
             table.appendChild(tr);
         });
         leftPage.appendChild(table);
