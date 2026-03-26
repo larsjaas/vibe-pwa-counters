@@ -311,18 +311,14 @@ const init = (): void => {
         // Clear any existing content
         leftPage.textContent = '';
         const table = document.createElement('table');
-        table.style.width = '90%';
+        // Set the table to always take 90% of the viewport width
+        table.style.width = '90vw';
+        // Add vertical space equal to two line heights; assuming 1em line-height
+        table.style.marginTop = '2em';
         table.style.borderCollapse = 'collapse';
-        const headerRow = document.createElement('tr');
-        ['Name'].forEach((col) => {
-            const th = document.createElement('th');
-            th.textContent = col;
-            th.style.border = '1px solid #ccc';
-            th.style.padding = '6px';
-            th.style.background = '#f9f9f9';
-            headerRow.appendChild(th);
-        });
-        table.appendChild(headerRow);
+        // Increase font size to double current height – this makes rows visibly larger
+        // while keeping the layout responsive.
+        table.style.fontSize = '200%';
 
         counters.forEach((c) => {
             const tr = document.createElement('tr');
