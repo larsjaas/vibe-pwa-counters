@@ -16,7 +16,7 @@ Using:
 
 # Purpose
 
-- Learn a bit of Go programming
+- Learn basic Go programming
 - Set up OAuth 2.0 with Google for a Web service from scratch
 - Learn to set up a PWA that will behave like an app on mobile, and also work offline
 - Create the mobile app equivalent of the @larsjaas/vibe-cmdline-counters utility

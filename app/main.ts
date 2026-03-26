@@ -314,7 +314,7 @@ const init = (): void => {
         table.style.width = '90%';
         table.style.borderCollapse = 'collapse';
         const headerRow = document.createElement('tr');
-        ['ID', 'Name', 'Delete'].forEach((col) => {
+        ['Name'].forEach((col) => {
             const th = document.createElement('th');
             th.textContent = col;
             th.style.border = '1px solid #ccc';
@@ -324,36 +324,12 @@ const init = (): void => {
         });
         table.appendChild(headerRow);
 
-        const deleteCounter = async (id: number): Promise<void> => {
-            try {
-                const r = await fetch(`/api/counters/${id}`, {
-                    method: 'DELETE',
-                });
-                if (r.status !== 200) {
-                    throw new Error(`Delete failed: ${r.status}`);
-                }
-                // Refresh table after deletion
-                loadCounters();
-            } catch (e) {
-                console.error('Error deleting counter', e);
-            }
-        };
-
         counters.forEach((c) => {
             const tr = document.createElement('tr');
-            const idTd = document.createElement('td');
-            idTd.textContent = c.id.toString();
-            tr.appendChild(idTd);
             const nameTd = document.createElement('td');
             nameTd.textContent = c.name;
+            nameTd.style.textAlign = 'left';
             tr.appendChild(nameTd);
-            const delTd = document.createElement('td');
-            const delBtn = document.createElement('span');
-            delBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6z"/><path d="M19 10v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V10"/><path d="M10 14h4"/><path d="M12 10v3"/></svg>`;
-            delBtn.style.cursor = 'pointer';
-            delBtn.addEventListener('click', () => deleteCounter(c.id));
-            delTd.appendChild(delBtn);
-            tr.appendChild(delTd);
             table.appendChild(tr);
         });
         leftPage.appendChild(table);
