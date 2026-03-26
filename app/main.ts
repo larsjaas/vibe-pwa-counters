@@ -320,12 +320,36 @@ const init = (): void => {
         // while keeping the layout responsive.
         table.style.fontSize = '200%';
 
+        // Load the icon once and reuse it for each row
+        const iconSvg = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="1.5rem" height="1.5rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-square-check-big-icon lucide-square-check-big">
+                <path d="M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344"/>
+                <path d="m9 11 3 3L22 4"/>
+            </svg>`;
+
         counters.forEach((c) => {
             const tr = document.createElement('tr');
             const nameTd = document.createElement('td');
             nameTd.textContent = c.name;
             nameTd.style.textAlign = 'left';
             tr.appendChild(nameTd);
+
+            const iconTd = document.createElement('td');
+            iconTd.style.textAlign = 'right';
+            iconTd.style.paddingRight = '10px';
+
+            // Container with a filled circle background
+            const iconContainer = document.createElement('div');
+            iconContainer.style.display = 'inline-flex';
+            iconContainer.style.alignItems = 'center';
+            iconContainer.style.justifyContent = 'center';
+            iconContainer.style.width = '1.8rem';
+            iconContainer.style.height = '1.8rem';
+            iconContainer.style.borderRadius = '50%';
+            iconContainer.style.background = '#e0e0e0';
+            iconContainer.innerHTML = iconSvg;
+            iconTd.appendChild(iconContainer);
+            tr.appendChild(iconTd);
             table.appendChild(tr);
         });
         leftPage.appendChild(table);
