@@ -301,7 +301,22 @@ const init = (): void => {
                 rightPage.style.display = 'block';
                 break;
             case 'middle':
-                middlePage.style.display = 'block';
+                // Show the middle page and display a placeholder message. We use a flex
+                // layout to center the text horizontally and vertically.
+                middlePage.style.display = 'flex';
+                middlePage.style.justifyContent = 'center';
+                middlePage.style.width = '90%';
+                middlePage.style.alignItems = 'center';
+                middlePage.style.textAlign = 'center';
+                middlePage.style.width = '90%';
+                middlePage.style.margin = 'auto';
+                // Center horizontally and vertically
+                middlePage.style.height = '100%';
+                middlePage.style.alignItems = 'center';
+                middlePage.textContent =
+                    'Statistics are not implemented yet, but they will arrive in a future update.';
+                // Double the font size in relation to the normal size.
+                middlePage.style.fontSize = '200%';
                 break;
         }
     };
