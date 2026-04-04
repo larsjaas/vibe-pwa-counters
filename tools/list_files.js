@@ -3,8 +3,6 @@
 const fs = require("fs/promises");
 const path = require("path");
 
-// fs.appendFile("/tmp/pi-tool-debug.log", "Called list_files.js\n");
-
 let input = "";
 
 process.stdin.on("data", d => input += d);
@@ -22,6 +20,39 @@ process.stdin.on("end", async () => {
   if (basePath.includes("..")) {
     process.stdout.write("Error: invalid path");
     return;
+  }
+
+  // ---- Load .aiignore ----
+
+  let ignorePatterns = [];
+
+  try {
+    const ignoreFile = await fs.readFile(".aiignore", "utf8");
+    ignorePatterns = ignoreFile
+      .split(/\r?\n/)
+      .map(l => l.trim())
+      .filter(l => l && !l.startsWith("#"));
+  } catch {
+    // no .aiignore → ignore nothing
+  }
+
+  // ---- Simple matcher ----
+
+  function matchesIgnore(relPath) {
+    return ignorePatterns.some(pattern => {
+      if (pattern.endsWith("/")) {
+        // directory match
+        return relPath.startsWith(pattern);
+      }
+
+      if (pattern.includes("*")) {
+        // very simple glob
+        const regex = new RegExp("^" + pattern.replace(/\*/g, ".*") + "$");
+        return regex.test(relPath);
+      }
+
+      return relPath === pattern || relPath.startsWith(pattern + "/");
+    });
   }
 
   try {
@@ -45,9 +76,17 @@ process.stdin.on("end", async () => {
         const full = path.join(dir, entry.name);
         const rel = path.relative(process.cwd(), full);
 
+        // ---- Ignore check ----
+        if (matchesIgnore(rel)) continue;
+
         if (entry.isDirectory()) {
           results.push(rel + "/");
-          await walk(full, depth + 1);
+
+          // skip recursion into ignored dirs
+          if (!matchesIgnore(rel + "/")) {
+            await walk(full, depth + 1);
+          }
+
         } else {
           results.push(rel);
         }
