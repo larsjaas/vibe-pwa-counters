@@ -92,29 +92,44 @@ Example:
 
 ---
 
-## apply_patch
+## apply_patch(patch)
 
-Apply a unified patch to modify files.
-Always prefer patches instead of rewriting entire files.
-Use two lines of context above and below the changes to help patch behave correctly.
-Patch must follow this format:
+Apply a unified diff patch to modify files.
+
+IMPORTANT:
+- You MUST include line numbers in all hunk headers.
+- Use standard unified diff format: @@ -start,count +start,count @@
+- Do NOT omit line numbers.
+- Do NOT use simplified @@ blocks.
+
+Format:
 
 *** Begin Patch
-*** Update File: src/main.c
-@@
-  // some comment
-  if (true) {
--   printf("hello");
-+   printf("hello world");
-  }
-
+*** Update File: path/to/file
+@@ -START,COUNT +START,COUNT @@
+ context line
+-old line
++new line
+ context line
 *** End Patch
+
+Rules:
+- Always include at least one context line before and after changes when possible.
+- The hunk header MUST include correct line numbers.
+- Do not generate patches without @@ headers.
 
 Example:
 
-{
-  "patch": "..."
-}
+*** Begin Patch
+*** Update File: src/main.c
+@@ -10,3 +10,4 @@
+ int main() {
+-    printf("hello");
++    printf("hello world");
++    return 0;
+ }
+*** End Patch
+
 
 ---
 
