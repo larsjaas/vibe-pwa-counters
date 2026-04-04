@@ -1,8 +1,8 @@
 package http
 
 import (
-    "fmt"
-    "net/http"
+	"fmt"
+	"net/http"
 )
 
 // NewRouter instantiates a new ServeMux and registers all
@@ -30,6 +30,9 @@ func NewRouter() http.Handler {
 
     // New endpoint for account info
     mux.HandleFunc("/api/account", AccountHandler)
+
+    // GET /api/count to retrieve the number of counters for the authenticated user.
+    mux.HandleFunc("/api/count", CountHandler)
 
     fmt.Println("HTTP routes registered – listening on :8081")
     return mux

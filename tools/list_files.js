@@ -22,18 +22,18 @@ process.stdin.on("end", async () => {
     return;
   }
 
-  // ---- Load .aiignore ----
+  // ---- Load .rgignore ----
 
   let ignorePatterns = [];
 
   try {
-    const ignoreFile = await fs.readFile(".aiignore", "utf8");
+    const ignoreFile = await fs.readFile(".rgignore", "utf8");
     ignorePatterns = ignoreFile
       .split(/\r?\n/)
       .map(l => l.trim())
       .filter(l => l && !l.startsWith("#"));
   } catch {
-    // no .aiignore → ignore nothing
+    // no .rgignore → ignore nothing
   }
 
   // ---- Simple matcher ----
