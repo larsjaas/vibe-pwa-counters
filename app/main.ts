@@ -26,10 +26,48 @@ const init = (): void => {
     const rightPage = document.createElement('div');
     rightPage.id = 'right-page';
     rightPage.className = 'page';
-    // No default text – right view shows only the logout button
+    // No default text – will be populated after fetching account
     rightPage.textContent = '';
+    // Initially hidden until data is loaded
+    // The right page should be hidden initially; we only show it when the
+    // user switches to the right view. Do **not** set display to 'flex' here
+    // because the switchView function will apply the proper display mode.
     rightPage.style.display = 'none';
+    // Style for the account info: centered, 90% width and enlarged text
+    rightPage.style.width = '90%';
+    rightPage.style.margin = '0 auto';
+    rightPage.style.flexDirection = 'column';
+    rightPage.style.justifyContent = 'center';
+    rightPage.style.alignItems = 'center';
+    rightPage.style.fontSize = '1.5em';
+    // Container for the user account text – keep it separate from logout button
+    const accountInfo = document.createElement('div');
+    accountInfo.style.marginBottom = '20px';
+    rightPage.appendChild(accountInfo);
     appContainer.appendChild(rightPage);
+
+    // ------ Fetch account info on start -----
+    // This will populate the right page with user details.
+    const fetchAccount = async (): Promise<void> => {
+        try {
+            const res = await fetch('/api/account');
+            if (!res.ok) {
+                console.error(`Failed to fetch account: ${res.status}`);
+                return;
+            }
+            const data = await res.json();
+            const { name, email } = data;
+            if (name && email) {
+                accountInfo.textContent = `Logged in as '${name}' <${email}>`;
+                // Do *not* force the right page to display here; the page
+                // visibility is controlled by switchView. The account text
+                // will become visible when the user selects the right view.
+            }
+        } catch (e) {
+            console.error('Error fetching account info', e);
+        }
+    };
+    fetchAccount();
     
     // --- New middle page ---
     const middlePage = document.createElement('div');
@@ -298,7 +336,8 @@ const init = (): void => {
                 leftPage.style.display = 'block';
                 break;
             case 'right':
-                rightPage.style.display = 'block';
+                // Use flex layout for the right page for consistent styling
+                rightPage.style.display = 'flex';
                 break;
             case 'middle':
                 // Show the middle page and display a placeholder message. We use a flex
@@ -327,7 +366,8 @@ const init = (): void => {
         leftPage.textContent = '';
         const table = document.createElement('table');
         // Set the table to always take 90% of the viewport width
-        table.style.width = '90vw';
+        // Use a percentage width relative to the container, not viewport.
+        table.style.width = '90%';
         // Add vertical space equal to two line heights; assuming 1em line-height
         table.style.marginTop = '2em';
         table.style.borderCollapse = 'collapse';

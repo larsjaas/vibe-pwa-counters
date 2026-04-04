@@ -1,6 +1,5 @@
 package http
 
-
 import (
     "fmt"
     "net/http"
@@ -28,6 +27,9 @@ func NewRouter() http.Handler {
 
     // Catch‑all for authenticated app entry point
     mux.HandleFunc("/", CatchAllHandler)
+
+    // New endpoint for account info
+    mux.HandleFunc("/api/account", AccountHandler)
 
     fmt.Println("HTTP routes registered – listening on :8081")
     return mux
