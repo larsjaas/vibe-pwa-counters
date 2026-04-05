@@ -13,6 +13,8 @@ Using:
   - ssh/mosh, VSCode w/SSH
 - Tailscale private network
 
+I started having problems getting gpt-oss:20b to behave as wanted approximately at commit 2829137c72427081dc860a82b08b86dcfd108d24, so I am currently exploring new models. Could also be token config parameters that are too restricted or something similar, but I think I regardless should see if there are other well-performing LLMs out there. Currently looking at qwen3-coder-30b-a3b-instruct.
+
 
 # Purpose
 
