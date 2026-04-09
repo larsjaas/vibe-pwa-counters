@@ -361,7 +361,7 @@ const init = (): void => {
     };
 
     /* ---- Helpers for fetching & rendering counters ---- */
-    const renderCountersTable = (counters: Array<{ id: number; name: string }>): void => {
+    const renderCountersTable = (counters: Array<{ id: number; name: string; step: number }>): void => {
         // Clear any existing content
         leftPage.textContent = '';
         const table = document.createElement('table');
@@ -438,7 +438,7 @@ const init = (): void => {
             if (r.status !== 200) {
                 throw new Error(`Failed to fetch counters: ${r.status}`);
             }
-            const data: Array<{ id: number; name: string }> = await r.json();
+            const data: Array<{ id: number; name: string; step: number }> = await r.json();
             renderCountersTable(data);
         } catch (e) {
             console.error('Error loading counters', e);
