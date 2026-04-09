@@ -9,17 +9,17 @@ import (
     db "github.com/larsa/pwa-counter/backend/internal/db"
 )
 
-// CountHandler handles POST /api/count requests.
-// It inserts a new record into the `count` table. The request body must
+// CountHandler handles GET and POST /api/count requests.
+// GET returns all count records for counters owned by the authenticated user.
+// POST inserts a new record into the `count` table. The request body must
 // contain a JSON object with at least the fields `counter` (the ID of the
-// counter to update) and `delta` (the integer change to record).  The
+// counter to update) and `delta` (the integer change to record). The
 // handler validates that the counter belongs to the authenticated user via
-// a quick ownership check.  If the counter does not belong to the user or
+// a quick ownership check. If the counter does not belong to the user or
 // does not exist / has been deleted, a 403 Forbidden is returned.
-// If the request is not a POST the handler will respond with StatusMethodNotAllowed.
 func CountHandler(w http.ResponseWriter, r *http.Request) {
     log.Printf("/api/count called: method=%s", r.Method)
-    if r.Method != http.MethodPost {
+    if r.Method != http.MethodPost && r.Method != http.MethodGet {
         http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
         return
     }
@@ -50,6 +50,20 @@ func CountHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    if r.Method == http.MethodGet {
+        counts, err := db.GetCountsForUser(userID)
+        if err != nil {
+            http.Error(w, "internal server error", http.StatusInternalServerError)
+            return
+        }
+        w.Header().Set("Content-Type", "application/json")
+        if err := json.NewEncoder(w).Encode(counts); err != nil {
+            log.Printf("JSON encode failed: %v", err)
+        }
+        return
+    }
+
+    // POST logic follows.
     // Parse request body.
     var payload struct {
         Counter int `json:"counter"`

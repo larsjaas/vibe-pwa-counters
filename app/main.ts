@@ -361,7 +361,7 @@ const init = (): void => {
     };
 
     /* ---- Helpers for fetching & rendering counters ---- */
-    const renderCountersTable = (counters: Array<{ id: number; name: string; step: number }>): void => {
+    const renderCountersTable = (counters: Array<{ id: number; name: string; step: number; count: number }>): void => {
         // Clear any existing content
         leftPage.textContent = '';
         const table = document.createElement('table');
@@ -391,6 +391,12 @@ const init = (): void => {
 
         counters.forEach((c) => {
             const tr = document.createElement('tr');
+            const countTd = document.createElement('td');
+            countTd.textContent = c.count.toString();
+            countTd.style.textAlign = 'right';
+            countTd.style.paddingRight = '20px';
+            tr.appendChild(countTd);
+
             const nameTd = document.createElement('td');
             nameTd.textContent = c.name;
             nameTd.style.textAlign = 'left';
@@ -408,7 +414,24 @@ const init = (): void => {
             iconContainer.style.height = '1.8rem';
             iconContainer.style.borderRadius = '50%';
             iconContainer.style.background = '#e0e0e0';
+            iconContainer.style.cursor = 'pointer';
             iconContainer.innerHTML = squareCheckSvg;
+
+            iconContainer.addEventListener('click', async () => {
+                try {
+                    const r = await fetch('/api/count', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ counter: c.id, delta: c.step }),
+                    });
+                    if (!r.ok) {
+                        throw new Error(`Failed to increment counter: ${r.status}`);
+                    }
+                    console.log(`Counter ${c.name} incremented by ${c.step}`);
+                } catch (e) {
+                    console.error('Error incrementing counter', e);
+                }
+            });
             iconTd.appendChild(iconContainer);
             tr.appendChild(iconTd);
             // Third column – file‑pen icon
@@ -434,12 +457,26 @@ const init = (): void => {
 
     const loadCounters = async (): Promise<void> => {
         try {
-            const r = await fetch('/api/counters');
-            if (r.status !== 200) {
-                throw new Error(`Failed to fetch counters: ${r.status}`);
+            const [resCounters, resUpdates] = await Promise.all([
+                fetch('/api/counters'),
+                fetch('/api/count')
+            ]);
+
+            if (!resCounters.ok || !resUpdates.ok) {
+                throw new Error(`Failed to fetch counters or updates`);
             }
-            const data: Array<{ id: number; name: string; step: number }> = await r.json();
-            renderCountersTable(data);
+
+            const counters: Array<{ id: number; name: string; step: number }> = await resCounters.json();
+            const updates: Array<{ counter: number; delta: number }> = await resUpdates.json();
+
+            const countersWithCount = counters.map(c => {
+                const count = updates
+                    .filter(u => u.counter === c.id)
+                    .reduce((sum, u) => sum + u.delta, 0);
+                return { ...c, count };
+            });
+
+            renderCountersTable(countersWithCount);
         } catch (e) {
             console.error('Error loading counters', e);
         }
