@@ -427,6 +427,8 @@ const init = (): void => {
                     if (!r.ok) {
                         throw new Error(`Failed to increment counter: ${r.status}`);
                     }
+                    const currentCount = parseInt(countTd.textContent || '0');
+                    countTd.textContent = (currentCount + c.step).toString();
                     console.log(`Counter ${c.name} incremented by ${c.step}`);
                 } catch (e) {
                     console.error('Error incrementing counter', e);
