@@ -437,9 +437,9 @@ const init = (): void => {
                     if (!r.ok) {
                         throw new Error(`Failed to increment counter: ${r.status}`);
                     }
-                    const currentCount = parseInt(countTd.textContent || '0');
-                    countTd.textContent = (currentCount + c.step).toString();
                     console.log(`Counter ${c.name} incremented by ${c.step}`);
+                    // Refresh the table to update counts and re-sort by last used
+                    loadCounters();
                 } catch (e) {
                     console.error('Error incrementing counter', e);
                 }
@@ -485,8 +485,15 @@ const init = (): void => {
                 const count = updates
                     .filter(u => u.counter === c.id)
                     .reduce((sum, u) => sum + u.delta, 0);
-                return { ...c, count };
+                
+                // Find the last index of this counter in the updates list to determine "last used"
+                const lastUsedIndex = updates.findLastIndex(u => u.counter === c.id);
+                
+                return { ...c, count, lastUsedIndex };
             });
+
+            // Sort by lastUsedIndex descending (most recent first)
+            countersWithCount.sort((a, b) => b.lastUsedIndex - a.lastUsedIndex);
 
             renderCountersTable(countersWithCount);
         } catch (e) {

@@ -8,7 +8,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["ES2020", "WebWorker", "dom"],
+    "lib": ["ES2023", "WebWorker", "dom"],
     "rootDir": "app",
     "outDir": "html"
   },
