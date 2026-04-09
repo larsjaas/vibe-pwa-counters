@@ -240,6 +240,75 @@ const init = (): void => {
         return overlay;
     };
 
+    const createEditModal = (counter: { id: number; name: string; step: number }): HTMLElement => {
+        const overlay = document.createElement('div');
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.background = 'rgba(0,0,0,0.5)';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.zIndex = '1000';
+
+        const modal = document.createElement('div');
+        modal.style.background = '#fff';
+        modal.style.padding = '20px';
+        modal.style.borderRadius = '8px';
+        modal.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+        modal.style.maxWidth = '90%';
+        modal.style.width = '320px';
+
+        const title = document.createElement('h2');
+        title.textContent = 'Edit Counter';
+        title.style.marginTop = '0';
+        modal.appendChild(title);
+
+        const nameLbl = document.createElement('label');
+        nameLbl.textContent = 'Name:';
+        nameLbl.style.display = 'block';
+        nameLbl.style.marginTop = '12px';
+        modal.appendChild(nameLbl);
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.value = counter.name;
+        nameInput.style.width = '100%';
+        nameInput.style.boxSizing = 'border-box';
+        modal.appendChild(nameInput);
+
+        const stepLbl = document.createElement('label');
+        stepLbl.textContent = 'Step:';
+        stepLbl.style.display = 'block';
+        stepLbl.style.marginTop = '12px';
+        modal.appendChild(stepLbl);
+
+        const stepInput = document.createElement('input');
+        stepInput.type = 'number';
+        stepInput.value = counter.step.toString();
+        stepInput.style.width = '100%';
+        stepInput.style.boxSizing = 'border-box';
+        modal.appendChild(stepInput);
+
+        const btnContainer = document.createElement('div');
+        btnContainer.style.display = 'flex';
+        btnContainer.style.justifyContent = 'flex-end';
+        btnContainer.style.marginTop = '20px';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.addEventListener('click', () => {
+            document.body.removeChild(overlay);
+        });
+        btnContainer.appendChild(cancelBtn);
+
+        modal.appendChild(btnContainer);
+        overlay.appendChild(modal);
+        return overlay;
+    };
+
     addBtn.addEventListener('click', () => {
         // Prevent duplicate modals
         if (document.querySelector('#counter-modal')) return;
@@ -459,6 +528,11 @@ const init = (): void => {
             fileContainer.style.borderRadius = '50%';
             fileContainer.style.background = '#e0e0e0';
             fileContainer.innerHTML = filePenSvg;
+            fileContainer.style.cursor = 'pointer';
+            fileContainer.addEventListener('click', () => {
+                const modal = createEditModal(c);
+                document.body.appendChild(modal);
+            });
             fileTd.appendChild(fileContainer);
             tr.appendChild(fileTd);
             table.appendChild(tr);
