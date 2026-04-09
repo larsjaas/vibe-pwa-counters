@@ -90,6 +90,33 @@ func CountersHandler(w http.ResponseWriter, r *http.Request) {
             log.Printf("JSON encode failed: %v", err)
         }
         return
+    case http.MethodPatch, http.MethodPut:
+        // PATCH/PUT /api/counters
+        if r.URL.Path != "/api/counters" && r.URL.Path != "/api/counters/" {
+            http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+            return
+        }
+        var body struct {
+            ID   int    `json:"id"`
+            Name string `json:"name"`
+            Step int    `json:"step"`
+        }
+        if e := json.NewDecoder(r.Body).Decode(&body); e != nil {
+            http.Error(w, "bad request", http.StatusBadRequest)
+            return
+        }
+        updated, err := db.UpdateCounter(userID, body.ID, body.Name, body.Step)
+        if err != nil {
+            log.Printf("Update counter failed: %v", err)
+            http.Error(w, "internal server error", http.StatusInternalServerError)
+            return
+        }
+        if updated {
+            w.WriteHeader(http.StatusOK)
+        } else {
+            http.Error(w, "not found", http.StatusNotFound)
+        }
+        return
     case http.MethodDelete:
         // DELETE /api/counters/:id
         if !strings.HasPrefix(r.URL.Path, "/api/counters/") {

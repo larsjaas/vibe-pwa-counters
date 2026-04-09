@@ -87,6 +87,25 @@ func GetCountersForUser(userID int) ([]*Counter, error) {
     return counters, nil
 }
 
+// UpdateCounter updates the name and step of a counter.
+// It returns true if the counter was updated, false if it wasn't found or belongs to another user.
+func UpdateCounter(userID int, counterID int, name string, step int) (bool, error) {
+	if db == nil {
+		return false, fmt.Errorf("database not initialized")
+	}
+	const query = `UPDATE counters SET name = $1, step = $2
+	WHERE "user" = $3 AND id = $4 AND deletetime IS NULL`
+	res, err := db.Exec(query, name, step, userID, counterID)
+	if err != nil {
+		return false, err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return rows > 0, nil
+}
+
 // SoftDeleteCounter marks a counter as deleted by setting its
 // `deletetime` column to the current timestamp. The deletion is
 // scoped to the specified `userID` to prevent one user from

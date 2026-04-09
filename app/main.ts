@@ -299,10 +299,46 @@ const init = (): void => {
 
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = 'Cancel';
+        cancelBtn.style.marginRight = '10px';
         cancelBtn.addEventListener('click', () => {
             document.body.removeChild(overlay);
         });
         btnContainer.appendChild(cancelBtn);
+
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = 'Save';
+        saveBtn.style.background = '#0070f3';
+        saveBtn.style.color = '#fff';
+        saveBtn.style.border = 'none';
+        saveBtn.style.padding = '6px 12px';
+        saveBtn.style.borderRadius = '4px';
+        saveBtn.addEventListener('click', () => {
+            const payload = {
+                id: counter.id,
+                name: nameInput.value,
+                step: parseInt(stepInput.value) || 1,
+            };
+
+            fetch('/api/counters', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            })
+                .then(async (r) => {
+                    if (!r.ok) {
+                        throw new Error(`Server error: ${r.status}`);
+                    }
+                    document.body.removeChild(overlay);
+                })
+                .then(() => {
+                    console.log('Counter updated successfully');
+                    loadCounters();
+                })
+                .catch((err) => console.error('Update fail', err));
+        });
+        btnContainer.appendChild(saveBtn);
 
         modal.appendChild(btnContainer);
         overlay.appendChild(modal);
