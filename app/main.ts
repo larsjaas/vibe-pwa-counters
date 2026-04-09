@@ -207,11 +207,21 @@ const init = (): void => {
                 },
                 body: JSON.stringify(payload),
             })
-                .then((r) => {
+                .then(async (r) => {
                     if (r.status !== 200) {
                         throw new Error(`Server error: ${r.status}`);
                     }
-                    // Response body is empty; close modal and skip parsing.
+                    const newCounter = await r.json();
+                    
+                    // If initial value is non-zero, set it by posting a delta to /api/count
+                    if (initial !== 0) {
+                        await fetch('/api/count', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ counter: newCounter.id, delta: initial }),
+                        });
+                    }
+                    
                     document.body.removeChild(overlay);
                     return r;
                 })

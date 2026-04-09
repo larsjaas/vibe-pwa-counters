@@ -60,13 +60,19 @@ func CountersHandler(w http.ResponseWriter, r *http.Request) {
             http.Error(w, "bad request", http.StatusBadRequest)
             return
         }
-        // Ignore Initial and Step per specification. Step defaults in DB.
-        if _, err := db.InsertCounter(userID, body.Name); err != nil {
+        // Use the step provided in the request body.
+        counter, err := db.InsertCounter(userID, body.Name, body.Step)
+        if err != nil {
             log.Printf("Insert counter failed: %v", err)
             http.Error(w, "internal server error", http.StatusInternalServerError)
             return
         }
-        w.WriteHeader(http.StatusOK)
+        w.Header().Set("Content-Type", "application/json")
+        if err := json.NewEncoder(w).Encode(counter); err != nil {
+            log.Printf("JSON encode failed: %v", err)
+            http.Error(w, "internal server error", http.StatusInternalServerError)
+            return
+        }
         return
     case http.MethodGet:
         // GET /api/counters
