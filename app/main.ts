@@ -29,10 +29,9 @@ const init = (): void => {
     // No default text – will be populated after fetching account
     rightPage.textContent = '';
     // Initially hidden until data is loaded
-    // The right page should be hidden initially; we only show it when the
-    // user switches to the right view. Do **not** set display to 'flex' here
-    // because the switchView function will apply the proper display mode.
     rightPage.style.display = 'none';
+    // Ensure the right page takes up full height to allow vertical centering
+    rightPage.style.height = '100%';
     // Style for the account info: centered, 90% width and enlarged text
     rightPage.style.width = '90%';
     rightPage.style.margin = '0 auto';
