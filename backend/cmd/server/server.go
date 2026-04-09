@@ -29,7 +29,12 @@ func main() {
     }
     httpHandlers.SetRedisClient(rdb)
 
-    // Initialize database connection. Use DATABASE_URL env var if set,
+    // Ensure required environment variables are set.
+    redirectURI := os.Getenv("GOOGLE_REDIRECT_URI")
+    if redirectURI == "" {
+        fmt.Println("Error: GOOGLE_REDIRECT_URI environment variable is not set")
+        os.Exit(1)
+    }
     // otherwise fall back to the default Postgres container settings.
     dsn := os.Getenv("DATABASE_URL")
     if dsn == "" {
