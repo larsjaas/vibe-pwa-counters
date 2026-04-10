@@ -293,8 +293,55 @@ const init = (): void => {
 
         const btnContainer = document.createElement('div');
         btnContainer.style.display = 'flex';
-        btnContainer.style.justifyContent = 'flex-end';
+        btnContainer.style.justifyContent = 'space-between';
+        btnContainer.style.alignItems = 'center';
         btnContainer.style.marginTop = '20px';
+
+        const leftBtnContainer = document.createElement('div');
+        leftBtnContainer.style.display = 'flex';
+        leftBtnContainer.style.gap = '10px';
+
+        const archiveBtn = document.createElement('button');
+        archiveBtn.style.display = 'flex';
+        archiveBtn.style.alignItems = 'center';
+        archiveBtn.style.justifyContent = 'center';
+        archiveBtn.style.width = '1.8rem';
+        archiveBtn.style.height = '1.8rem';
+        archiveBtn.style.borderRadius = '50%';
+        archiveBtn.style.background = 'none';
+        archiveBtn.style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
+        archiveBtn.style.border = 'none';
+        archiveBtn.style.padding = '0';
+        archiveBtn.style.cursor = 'pointer';
+        archiveBtn.style.color = '#333';
+
+        archiveBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>`;
+        archiveBtn.title = 'Archive';
+        leftBtnContainer.appendChild(archiveBtn);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.style.display = 'flex';
+        deleteBtn.style.alignItems = 'center';
+        deleteBtn.style.justifyContent = 'center';
+        deleteBtn.style.width = '1.8rem';
+        deleteBtn.style.height = '1.8rem';
+        deleteBtn.style.borderRadius = '50%';
+        deleteBtn.style.background = '#e0e0e0';
+        deleteBtn.style.border = 'none';
+        deleteBtn.style.padding = '0';
+        deleteBtn.style.cursor = 'pointer';
+        deleteBtn.style.color = '#333';
+        deleteBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+        deleteBtn.title = 'Delete';
+        leftBtnContainer.appendChild(deleteBtn);
+
+        btnContainer.appendChild(leftBtnContainer);
+
+        const rightBtnContainer = document.createElement('div');
+        rightBtnContainer.style.display = 'flex';
+        rightBtnContainer.style.gap = '10px';
 
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = 'Cancel';
@@ -302,7 +349,7 @@ const init = (): void => {
         cancelBtn.addEventListener('click', () => {
             document.body.removeChild(overlay);
         });
-        btnContainer.appendChild(cancelBtn);
+        rightBtnContainer.appendChild(cancelBtn);
 
         const saveBtn = document.createElement('button');
         saveBtn.textContent = 'Save';
@@ -337,7 +384,8 @@ const init = (): void => {
                 })
                 .catch((err) => console.error('Update fail', err));
         });
-        btnContainer.appendChild(saveBtn);
+        rightBtnContainer.appendChild(saveBtn);
+        btnContainer.appendChild(rightBtnContainer);
 
         modal.appendChild(btnContainer);
         overlay.appendChild(modal);
