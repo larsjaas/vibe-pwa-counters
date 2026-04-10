@@ -116,6 +116,12 @@ const init = (): void => {
         overlay.style.justifyContent = 'center';
         overlay.style.zIndex = '1000';
 
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
+            }
+        });
+
         const modal = document.createElement('div');
         modal.style.background = '#fff';
         modal.style.padding = '20px';
@@ -251,6 +257,12 @@ const init = (): void => {
         overlay.style.alignItems = 'center';
         overlay.style.justifyContent = 'center';
         overlay.style.zIndex = '1000';
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
+            }
+        });
 
         const modal = document.createElement('div');
         modal.style.background = '#fff';
