@@ -190,7 +190,7 @@ When modifying code:
 
 ## Constraints
 
-- No external dependencies
+- Avoid external dependencies unless they are de-facto standard best practice for the task at hand
 - No platform-specific code unless necessary
 
 ---
