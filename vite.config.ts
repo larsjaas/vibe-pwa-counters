@@ -4,14 +4,14 @@ import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [react()],
-  root: 'app',
+  root: 'src',
   build: {
     outDir: '../html',
     emptyOutDir: true,
     rollupOptions: {
       input: {
-	main: resolve(__dirname, 'app/index.html'),
-        sw: resolve(__dirname, 'app/sw.ts'),
+        main: resolve(__dirname, 'src/index.html'),
+        sw: resolve(__dirname, 'src/sw.ts'),
       },
       output: {
         entryFileNames: (chunk) => {
@@ -22,5 +22,13 @@ export default defineConfig({
         },
       },
     },
+  },
+  server: {
+    proxy: {
+      '/api': 'http://localhost:8081'
+    },
+    allowedHosts: [
+      "localhost",
+    ],
   },
 });

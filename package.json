@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Node setup to package PWA for nginx",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
     "build-old": "npm run build-sw-old && mkdir -p html/landing_page && rsync -av --include='*/' --include='*.html' --include='*.png' --include='manifest.json' --include='favicon.ico' --include='*.css' --include='*.svg' --exclude='*' app/ html/",
@@ -11,7 +11,7 @@
   },
   "private": true,
   "dependencies": {
-    "lucide-react": "npm:null@^2.0.0",
+    "lucide-react": "^0.378.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "vite-plugin-pwa": "^1.2.0"
