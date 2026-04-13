@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { CounterList, Counter } from './CounterList';
 import { CounterCreate } from './CounterCreate';
 import { CounterDetail } from './CounterDetail';
-import { IconButton } from './components/IconButton';
-import { LayoutDashboard, BarChart3, UserCircle } from 'lucide-react';
+import { NavBar } from './components/NavBar';
 
-type View = 'left' | 'middle' | 'right';
 
 const App: React.FC = () => {
-    const [view, setView] = useState<View>('left');
     const [editingCounter, setEditingCounter] = useState<Counter | null>(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -55,80 +53,49 @@ const App: React.FC = () => {
             
             {/* Main Content Area */}
             <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '70px' }}>
-                {view === 'left' && (
-                    <CounterList 
-                        onEdit={(c) => setEditingCounter(c)} 
-                        onCreate={() => setShowCreateModal(true)} 
-                    />
-                )}
-
-                {view === 'middle' && (
-                    <div style={{ 
-                        display: 'flex', 
-                        justifyContent: 'center', 
-                        alignItems: 'center', 
-                        textAlign: 'center', 
-                        height: '100%', 
-                        fontSize: '2em', 
-                        padding: '20px' 
-                    }}>
-                        Statistics are not implemented yet, but they will arrive in a future update.
-                    </div>
-                )}
-
-                {view === 'right' && (
-                    <div style={{ 
-                        display: 'flex', 
-                        flexDirection: 'column', 
-                        justifyContent: 'center', 
-                        alignItems: 'center', 
-                        height: '100%', 
-                        fontSize: '1.5em', 
-                        padding: '20px' 
-                    }}>
-                        <div style={{ marginBottom: '20px' }}>Account Information</div>
-                        <button 
-                            onClick={() => window.location.href = '/api/logout'} 
-                            style={{ padding: '8px 16px', cursor: 'pointer' }}
-                        >
-                            Log Out
-                        </button>
-                    </div>
-                )}
+                <Routes>
+                    <Route path="/" element={
+                        <CounterList 
+                            onEdit={(c) => setEditingCounter(c)} 
+                            onCreate={() => setShowCreateModal(true)} 
+                        />
+                    } />
+                    <Route path="/stats" element={
+                        <div style={{ 
+                            display: 'flex', 
+                            justifyContent: 'center', 
+                            alignItems: 'center', 
+                            textAlign: 'center', 
+                            height: '100%', 
+                            fontSize: '2em', 
+                            padding: '20px' 
+                        }}>
+                            Statistics are not implemented yet, but they will arrive in a future update.
+                        </div>
+                    } />
+                    <Route path="/profile" element={
+                        <div style={{ 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            justifyContent: 'center', 
+                            alignItems: 'center', 
+                            height: '100%', 
+                            fontSize: '1.5em', 
+                            padding: '20px' 
+                        }}>
+                            <div style={{ marginBottom: '20px' }}>Account Information</div>
+                            <button 
+                                onClick={() => window.location.href = '/api/logout'} 
+                                style={{ padding: '8px 16px', cursor: 'pointer' }}
+                            >
+                                Log Out
+                            </button>
+                        </div>
+                    } />
+                </Routes>
             </div>
 
-            {/* Bottom Navigation Bar */}
-            <div style={{ 
-                position: 'fixed', 
-                bottom: 0, 
-                left: 0, 
-                width: '100%', 
-                display: 'flex', 
-                justifyContent: 'space-around', 
-                padding: '10px 0', 
-                background: '#fff', 
-                boxShadow: '0 -2px 5px rgba(0,0,0,0.1)',
-                zIndex: 100
-            }}>
-                <IconButton 
-                    icon={LayoutDashboard} 
-                    onClick={() => setView('left')} 
-                    title="Counters" 
-                    backgroundColor={view === 'left' ? '#e0e0e0' : 'transparent'}
-                />
-                <IconButton 
-                    icon={BarChart3} 
-                    onClick={() => setView('middle')} 
-                    title="Statistics" 
-                    backgroundColor={view === 'middle' ? '#e0e0e0' : 'transparent'}
-                />
-                <IconButton 
-                    icon={UserCircle} 
-                    onClick={() => setView('right')} 
-                    title="Account" 
-                    backgroundColor={view === 'right' ? '#e0e0e0' : 'transparent'}
-                />
-            </div>
+            <NavBar />
 
             {/* Modals Overlay */}
             {showCreateModal && (

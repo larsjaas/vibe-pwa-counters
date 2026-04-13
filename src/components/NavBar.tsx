@@ -1,13 +1,18 @@
-// src/components/NavBar.tsx
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { IconButton } from './IconButton';
+import { LayoutDashboard, BarChart3, UserCircle } from 'lucide-react';
 
-interface NavBarProps {
-  currentView: string;
-  setView: (view: string) => void;
-}
+export const NavBar: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
 
-export const NavBar: React.FC<NavBarProps> = ({ currentView, setView }) => {
+  const views = [
+    { path: '/', icon: LayoutDashboard, label: 'Counters' },
+    { path: '/stats', icon: BarChart3, label: 'Statistics' },
+    { path: '/profile', icon: UserCircle, label: 'Account' },
+  ] as const;
+
   return (
     <nav style={{
       position: 'fixed',
@@ -22,24 +27,15 @@ export const NavBar: React.FC<NavBarProps> = ({ currentView, setView }) => {
       alignItems: 'center',
       zIndex: 1000
     }}>
-      <IconButton
-        icon="🏠"
-        label="Home"
-        isActive={currentView === 'home'}
-        onClick={() => setView('home')}
-      />
-      <IconButton
-        icon="⚙️ "
-        label="Settings"
-        isActive={currentView === 'settings'}
-        onClick={() => setView('settings')}
-      />
-      <IconButton
-        icon="👤"
-        label="Profile"
-        isActive={currentView === 'profile'}
-        onClick={() => setView('profile')}
-      />
+      {views.map((view) => (
+        <IconButton
+          key={view.path}
+          icon={view.icon}
+          title={view.label}
+          onClick={() => navigate(view.path)}
+          backgroundColor={location.pathname === view.path ? '#e0e0e0' : 'transparent'}
+        />
+      ))}
     </nav>
   );
 };
