@@ -11,7 +11,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
 	main: resolve(__dirname, 'app/index.html'),
-	landing_page: resolve(__dirname, 'app/landing_page/index.html'),
         sw: resolve(__dirname, 'app/sw.ts'),
       },
       output: {

@@ -66,10 +66,13 @@ Launch the backend dependencies (postgres, nginx).
 
 Launch the backend API server.
 
-    $ ( cd backend && go mod download github.com/lib/pq && go run cmd/server/server.go )
+    $ ( cd backend && \
+        go mod download github.com/lib/pq && \
+        go build cmd/server/server.go )
     $ ./backend/server
 
 Point a browser to `http://<server.com>:8080/` (or whatever hostname it is served from).
+
 
 # SSL / https
 
