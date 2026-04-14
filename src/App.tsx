@@ -4,6 +4,7 @@ import { CounterList, Counter } from './CounterList';
 import { CounterCreate } from './CounterCreate';
 import { CounterDetail } from './CounterDetail';
 import { NavBar } from './components/NavBar';
+import { AccountPage } from './AccountPage';
 
 
 const App: React.FC = () => {
@@ -73,25 +74,7 @@ const App: React.FC = () => {
                             Statistics are not implemented yet, but they will arrive in a future update.
                         </div>
                     } />
-                    <Route path="/profile" element={
-                        <div style={{ 
-                            display: 'flex', 
-                            flexDirection: 'column', 
-                            justifyContent: 'center', 
-                            alignItems: 'center', 
-                            height: '100%', 
-                            fontSize: '1.5em', 
-                            padding: '20px' 
-                        }}>
-                            <div style={{ marginBottom: '20px' }}>Account Information</div>
-                            <button 
-                                onClick={() => window.location.href = '/api/logout'} 
-                                style={{ padding: '8px 16px', cursor: 'pointer' }}
-                            >
-                                Log Out
-                            </button>
-                        </div>
-                    } />
+                    <Route path="/profile" element={<AccountPage />} />
                 </Routes>
             </div>
 
