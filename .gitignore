@@ -1,5 +1,6 @@
-/secrets.sh
+/html/
 /node_modules/
-/app/*.js
+/tmp/
+/TODO.md
 /certs/
-/tmp
+/secrets.sh

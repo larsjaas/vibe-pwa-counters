@@ -66,10 +66,62 @@ Launch the backend dependencies (postgres, nginx).
 
 Launch the backend API server.
 
-    $ ( cd backend && go mod download github.com/lib/pq && go run cmd/server/server.go )
+    $ ( cd backend && \
+        go mod download github.com/lib/pq && \
+        go build cmd/server/server.go )
     $ ./backend/server
 
 Point a browser to `http://<server.com>:8080/` (or whatever hostname it is served from).
+
+
+# SSL / https
+
+To use SSL/TLS, you need to update nginx.conf and docker-compose.yml. The diffs look something like this:
+
+    diff --git a/nginx.conf b/nginx.conf
+    index 8da09ac..33a985c 100644
+    --- a/nginx.conf
+    +++ b/nginx.conf
+    @@ -6,7 +6,10 @@ http {
+         default_type  application/octet-stream;
+    
+         server {
+    -        listen 80;
+    +        listen 443 ssl;
+    +        server_name hostname.taild6axxx.ts.net;
+    +        ssl_certificate /etc/ssl/certs/cert.crt;
+    +        ssl_certificate_key /etc/ssl/private/key.key;
+    
+             # Proxy API requests to the Go backend
+             location /api/ {
+
+and
+
+    diff --git a/docker-compose.yml b/docker-compose.yml
+    index e23921e..261a2ce 100644
+    --- a/docker-compose.yml
+    +++ b/docker-compose.yml
+    @@ -33,6 +33,8 @@ services:
+           - "443:443"
+         volumes:
+           - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    +      - ./certs/cert.crt:/etc/ssl/certs/cert.crt:ro
+    +      - ./certs/key.key:/etc/ssl/private/key.key:ro
+           - ./html:/usr/share/nginx/html:ro
+         depends_on:
+           postgres:
+
+The way to obtain certs for your development setup depends on your environment.
+
+
+## Internet Node or Production
+
+Use letsencrypt/certbot and copy the certificates under certs/, or integrate them with your webserver of choice.
+
+
+## Tailscale Node
+
+Find the node fully qualified Tailscale-net hostname, and request SSL certificates for the server on the Tailscale website. Put the certificates under certs/.
 
 
 # License
