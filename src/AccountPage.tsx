@@ -7,18 +7,30 @@ interface UserInfo {
     name?: string;
 }
 
+const FRONTEND_VERSION = "0.6";
+
 export const AccountPage: React.FC = () => {
     const [user, setUser] = useState<UserInfo | null>(null);
+    const [beVersion, setBeVersion] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchUser = async () => {
+        const fetchData = async () => {
             try {
-                const res = await fetch('/api/account');
-                if (!res.ok) throw new Error('Failed to fetch account information');
-                const data = await res.json();
-                setUser(data);
+                const [userRes, infoRes] = await Promise.all([
+                    fetch('/api/account'),
+                    fetch('/api/info'),
+                ]);
+                
+                if (!userRes.ok) throw new Error('Failed to fetch account information');
+                if (!infoRes.ok) throw new Error('Failed to fetch system information');
+
+                const userData = await userRes.json();
+                const infoData = await infoRes.json();
+
+                setUser(userData);
+                setBeVersion(infoData.version);
             } catch (e: any) {
                 setError(e.message);
             } finally {
@@ -26,7 +38,7 @@ export const AccountPage: React.FC = () => {
             }
         };
 
-        fetchUser();
+        fetchData();
     }, []);
 
     const handleLogout = () => {
@@ -79,6 +91,14 @@ export const AccountPage: React.FC = () => {
                     title="Log Out" 
                 />
                 <span style={{ fontSize: '0.6em', color: '#666' }}>Log Out</span>
+            </div>
+            <div style={{ 
+                marginTop: '40px', 
+                fontSize: '0.5em', 
+                color: '#999', 
+                fontStyle: 'italic' 
+            }}>
+                Frontend version {FRONTEND_VERSION}, backend version {beVersion}
             </div>
         </div>
     );

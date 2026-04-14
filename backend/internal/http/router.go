@@ -30,6 +30,7 @@ func NewRouter() http.Handler {
 
     // New endpoint for account info
     mux.HandleFunc("/api/account", AccountHandler)
+    mux.HandleFunc("/api/info", InfoHandler)
 
     // GET /api/count to retrieve the number of counters for the authenticated user.
     mux.HandleFunc("/api/count", CountHandler)
