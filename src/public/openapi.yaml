@@ -1,0 +1,210 @@
+openapi: 3.0.3
+info:
+  title: PWA Counter API
+  description: API for managing counters and tracking counts in a Progressive Web App.
+  version: 1.0.0
+servers:
+  - url: /api
+    description: Local server
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: http
+      scheme: basic
+      description: Authentication via session_id cookie.
+
+  schemas:
+    User:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          example: "john.doe@example.com"
+
+    Counter:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "My Counter"
+        step:
+          type: integer
+          example: 1
+        archived:
+          type: boolean
+          default: false
+        archivetime:
+          type: string
+          format: date-time
+          example: "2023-10-27T10:00:00Z"
+
+    Count:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        counter_id:
+          type: integer
+          example: 1
+        delta:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-10-27T10:00:00Z"
+
+security:
+  - cookieAuth: []
+
+paths:
+  /account:
+    get:
+      summary: Get account information
+      description: Returns JSON information of the authenticated user.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+    
+  /count:
+    get:
+      summary: Get user counts
+      description: Returns all count records for counters owned by the authenticated user.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Count'
+        '401':
+          description: Unauthorized
+    post:
+      summary: Record a count change
+      description: Records a new count delta for a specific counter.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                counter:
+                  type: integer
+                  description: The ID of the counter to update.
+                delta:
+                  type: integer
+                  description: The integer change to record.
+      responses:
+        '200':
+        - description: Successfully recorded the count change
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Count'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - counter not owned by user
+        '404':
+          description: Not found - counter does not exist
+    
+  /counters:
+    get:
+      summary: List user counters
+      description: Returns a list of all counters for the authenticated user.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Counter'
+        '401':
+          description: Unauthorized
+    post:
+      summary: Create a new counter
+      description: Creates a new counter for the authenticated user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                initial:
+                  type: integer
+                step:
+                  type: integer
+              required:
+                - name
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Counter'
+        '401':
+          description: Unauthorized
+    patch:
+      summary: Update a counter
+      description: Updates an existing counter.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                name:
+                  type: string
+                step:
+                  type: integer
+      responses:
+        '200':
+          description: Successfully updated
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+    
+  /counters/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    delete:
+      summary: Delete a counter
+      description: Soft deletes a counter.
+      responses:
+        '200':
+          description: Successfully deleted
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
