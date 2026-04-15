@@ -12,9 +12,10 @@ export interface Counter {
 interface CounterListProps {
     onEdit: (counter: Counter) => void;
     onCreate: () => void;
+    refreshTrigger?: number;
 }
 
-export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate }) => {
+export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refreshTrigger }) => {
     const [counters, setCounters] = useState<Counter[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -30,6 +31,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate }) =>
             const countersData: Array<{ id: number; name: string; step: number }> = await resCounters.json();
             const updates: Array<{ counter: number; delta: number }> = await resUpdates.json();
 
+            // Calculate current counts
             const countersWithCount = countersData.map(c => {
                 const count = updates
                     .filter(u => u.counter === c.id)
@@ -37,7 +39,20 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate }) =>
                 return { ...c, count };
             });
 
-            setCounters(countersWithCount);
+            // MRU Ordering: Most recently updated counters first.
+            // Since /api/count returns in insert order, the last occurrence of a counter ID is the most recent.
+            const lastUsedMap = new Map<number, number>();
+            updates.forEach((u, index) => {
+                lastUsedMap.set(u.counter, index);
+            });
+
+            const sortedCounters = countersWithCount.sort((a, b) => {
+                const aLastUsed = lastUsedMap.get(a.id) ?? -1;
+                const bLastUsed = lastUsedMap.get(b.id) ?? -1;
+                return bLastUsed - aLastUsed;
+            });
+
+            setCounters(sortedCounters);
         } catch (e) {
             console.error('Error loading counters', e);
         } finally {
@@ -47,7 +62,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate }) =>
 
     useEffect(() => {
         loadCounters();
-    }, []);
+    }, [refreshTrigger]);
 
     if (loading) return <div style={{ padding: '20px' }}>Loading counters...</div>;
 

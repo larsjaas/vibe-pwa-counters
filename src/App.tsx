@@ -10,6 +10,7 @@ import { AccountPage } from './AccountPage';
 const App: React.FC = () => {
     const [editingCounter, setEditingCounter] = useState<Counter | null>(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [refreshCount, setRefreshCount] = useState(0);
 
     const handleUpdateCounter = async (id: number, name: string, step: number) => {
         try {
@@ -20,6 +21,7 @@ const App: React.FC = () => {
             });
             if (!res.ok) throw new Error('Update failed');
             setEditingCounter(null);
+            setRefreshCount(prev => prev + 1);
         } catch (e) {
             alert('Failed to update counter');
         }
@@ -30,6 +32,7 @@ const App: React.FC = () => {
             const res = await fetch(`/api/counters/${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Delete failed');
             setEditingCounter(null);
+            setRefreshCount(prev => prev + 1);
         } catch (e) {
             alert('Failed to delete counter');
         }
@@ -44,6 +47,7 @@ const App: React.FC = () => {
             });
             if (!res.ok) throw new Error('Archive failed');
             setEditingCounter(null);
+            setRefreshCount(prev => prev + 1);
         } catch (e) {
             alert('Failed to archive counter');
         }
@@ -59,6 +63,7 @@ const App: React.FC = () => {
                         <CounterList 
                             onEdit={(c) => setEditingCounter(c)} 
                             onCreate={() => setShowCreateModal(true)} 
+                            refreshTrigger={refreshCount}
                         />
                     } />
                     <Route path="/stats" element={
@@ -89,7 +94,10 @@ const App: React.FC = () => {
                 }} onClick={(e) => e.target === e.currentTarget && setShowCreateModal(false)}>
                     <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
                         <CounterCreate 
-                            onCreated={() => setShowCreateModal(false)} 
+                            onCreated={() => {
+                               setShowCreateModal(false);
+                               setRefreshCount(prev => prev + 1);
+                            }} 
                             onCancel={() => setShowCreateModal(false)} 
                         />
                     </div>
