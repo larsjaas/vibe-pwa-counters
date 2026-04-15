@@ -46,46 +46,46 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
     };
 
     return (
-        <div style={{ padding: '20px', maxWidth: '400px', margin: '0 auto' }}>
-            <h2>Create Counter</h2>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                <div>
-                    <label style={{ display: 'block', marginBottom: '5px' }}>Name:</label>
+        <div className="form-container">
+            <h2 className="form-title">Create Counter</h2>
+            <form onSubmit={handleSubmit} className="form-group">
+                <div className="form-field">
+                    <label className="form-label">Name:</label>
                     <input 
                         type="text" 
                         value={name} 
                         onChange={(e) => setName(e.target.value)} 
                         required 
-                        style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                        className="form-input"
                     />
                 </div>
-                <div>
-                    <label style={{ display: 'block', marginBottom: '5px' }}>Initial Value:</label>
+                <div className="form-field">
+                    <label className="form-label">Initial Value:</label>
                     <input 
                         type="number" 
                         value={initial} 
                         onChange={(e) => setInitial(parseInt(e.target.value) || 0)} 
-                        style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                        className="form-input"
                     />
                 </div>
-                <div>
-                    <label style={{ display: 'block', marginBottom: '5px' }}>Step:</label>
+                <div className="form-field">
+                    <label className="form-label">Step:</label>
                     <input 
                         type="number" 
                         value={step} 
                         onChange={(e) => setStep(parseInt(e.target.value) || 1)} 
-                        style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                        className="form-input"
                     />
                 </div>
 
-                {error && <div style={{ color: 'red', fontSize: '0.9em' }}>{error}</div>}
+                {error && <div className="form-error">{error}</div>}
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                <div className="form-actions">
                     <button type="button" onClick={onCancel} disabled={loading}>Cancel</button>
                     <button 
                         type="submit" 
                         disabled={loading} 
-                        style={{ background: '#0070f3', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}
+                        className="btn-primary"
                     >
                         {loading ? 'Creating...' : 'Create'}
                     </button>

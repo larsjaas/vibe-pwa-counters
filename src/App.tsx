@@ -5,6 +5,7 @@ import { CounterCreate } from './CounterCreate';
 import { CounterDetail } from './CounterDetail';
 import { NavBar } from './components/NavBar';
 import { AccountPage } from './AccountPage';
+import { StatisticsPage } from './StatisticsPage';
 
 
 const App: React.FC = () => {
@@ -54,10 +55,10 @@ const App: React.FC = () => {
     };
 
     return (
-        <div style={{ position: 'relative', height: '100vh', width: '100%', fontFamily: 'sans-serif', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div className="app-container">
             
             {/* Main Content Area */}
-            <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '70px' }}>
+            <div className="main-content">
                 <Routes>
                     <Route path="/" element={
                         <CounterList 
@@ -66,19 +67,7 @@ const App: React.FC = () => {
                             refreshTrigger={refreshCount}
                         />
                     } />
-                    <Route path="/stats" element={
-                        <div style={{ 
-                            display: 'flex', 
-                            justifyContent: 'center', 
-                            alignItems: 'center', 
-                            textAlign: 'center', 
-                            height: '100%', 
-                            fontSize: '2em', 
-                            padding: '20px' 
-                        }}>
-                            Statistics are not implemented yet, but they will arrive in a future update.
-                        </div>
-                    } />
+                    <Route path="/stats" element={<StatisticsPage />} />
                     <Route path="/profile" element={<AccountPage />} />
                 </Routes>
             </div>
@@ -87,12 +76,8 @@ const App: React.FC = () => {
 
             {/* Modals Overlay */}
             {showCreateModal && (
-                <div style={{ 
-                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
-                    background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', 
-                    alignItems: 'center', zIndex: 1000 
-                }} onClick={(e) => e.target === e.currentTarget && setShowCreateModal(false)}>
-                    <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowCreateModal(false)}>
+                    <div className="modal-content">
                         <CounterCreate 
                             onCreated={() => {
                                setShowCreateModal(false);
@@ -105,12 +90,8 @@ const App: React.FC = () => {
             )}
 
             {editingCounter && (
-                <div style={{ 
-                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
-                    background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', 
-                    alignItems: 'center', zIndex: 1000 
-                }} onClick={(e) => e.target === e.currentTarget && setEditingCounter(null)}>
-                    <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setEditingCounter(null)}>
+                    <div className="modal-content">
                         <CounterDetail 
                             counter={editingCounter} 
                             onBack={() => setEditingCounter(null)} 

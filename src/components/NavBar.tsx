@@ -14,19 +14,7 @@ export const NavBar: React.FC = () => {
   ] as const;
 
   return (
-    <nav style={{
-      position: 'fixed',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: '65px',
-      backgroundColor: 'white',
-      borderTop: '1px solid #ddd',
-      display: 'flex',
-      justifyContent: 'space-around',
-      alignItems: 'center',
-      zIndex: 1000
-    }}>
+    <nav className="nav-bar">
       {views.map((view) => (
         <IconButton
           key={view.path}

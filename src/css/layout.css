@@ -14,6 +14,22 @@ html, body {
     align-items: center;
 }
 
+.app-container {
+    position: relative;
+    height: 100vh;
+    width: 100%;
+    font-family: sans-serif;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 70px;
+}
+
 #app {
     flex: 1 0 auto;
     text-align: center;

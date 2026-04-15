@@ -27,42 +27,42 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
     };
 
     return (
-        <div style={{ padding: '20px', maxWidth: '400px', margin: '0 auto', backgroundColor: '#fff', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
-            <h2 style={{ marginTop: 0 }}>{isEditing ? 'Edit Counter' : 'Counter Settings'}</h2>
+        <div className="form-container">
+            <h2 className="form-title">{isEditing ? 'Edit Counter' : 'Counter Settings'}</h2>
             
             {isEditing ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '5px' }}>Name:</label>
+                <div className="form-group">
+                    <div className="form-field">
+                        <label className="form-label">Name:</label>
                         <input 
                             value={name} 
                             onChange={(e) => setName(e.target.value)} 
-                            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                            className="form-input"
                         />
                     </div>
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '5px' }}>Step:</label>
+                    <div className="form-field">
+                        <label className="form-label">Step:</label>
                         <input 
                             type="number"
                             value={step} 
                             onChange={(e) => setStep(parseInt(e.target.value) || 1)} 
-                            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                            className="form-input"
                         />
                     </div>
-                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                        <button onClick={() => { setIsEditing(false); setName(counter.name); setStep(counter.step); }}>Cancel</button>
-                        <button onClick={handleSave} style={{ background: '#0070f3', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Save</button>
+                    <div className="form-actions">
+                        <button onClick={() => { setIsEditing(false); setName(counter.name); setStep(counter.step); }} className="btn-secondary">Cancel</button>
+                        <button onClick={handleSave} className="btn-primary">Save</button>
                     </div>
                 </div>
             ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div className="form-group">
                     <p><strong>Name:</strong> {name}</p>
                     <p><strong>Step:</strong> {step}</p>
-                    <button onClick={() => setIsEditing(true)} style={{ width: 'fit-content', padding: '6px 12px', cursor: 'pointer' }}>Edit</button>
+                    <button onClick={() => setIsEditing(true)} className="btn-secondary" style={{ width: 'fit-content' }}>Edit</button>
                 </div>
             )}
             
-            <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="form-actions" style={{ justifyContent: 'space-between', marginTop: '30px' }}>
                 <div style={{ display: 'flex', gap: '10px' }}>
                     <IconButton 
                         icon={Archive} 
@@ -76,7 +76,7 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                         backgroundColor='#ffcccb' 
                     />
                 </div>
-                <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#0070f3', cursor: 'pointer', fontSize: '1rem' }}>← Back</button>
+                <button onClick={onBack} className="btn-secondary">← Back</button>
             </div>
         </div>
     );

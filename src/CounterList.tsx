@@ -64,11 +64,11 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
         loadCounters();
     }, [refreshTrigger]);
 
-    if (loading) return <div style={{ padding: '20px' }}>Loading counters...</div>;
+    if (loading) return <div className="loading-text">Loading counters...</div>;
 
     return (
-        <div style={{ padding: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div className="counter-list-container">
+            <div className="counter-list-header">
                 <h2>Counters</h2>
                 <IconButton 
                     icon={Plus} 
@@ -79,20 +79,20 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                 />
             </div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '1.2em' }}>
+            <table className="counter-table">
                 <thead>
-                    <tr style={{ borderBottom: '2px solid #eee', textAlign: 'left' }}>
-                        <th style={{ padding: '10px' }}>Name</th>
-                        <th style={{ padding: '10px', textAlign: 'right' }}>Count</th>
-                        <th style={{ padding: '10px', textAlign: 'right' }}>Actions</th>
+                    <tr className="table-header-row">
+                        <th className="table-cell">Name</th>
+                        <th className="table-cell text-right">Count</th>
+                        <th className="table-cell text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {counters.map(c => (
-                        <tr key={c.id} style={{ borderBottom: '1px solid #eee' }}>
-                            <td style={{ padding: '10px' }}>{c.name}</td>
-                            <td style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold' }}>{c.count}</td>
-                            <td style={{ padding: '10px', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                        <tr key={c.id} className="table-row">
+                            <td className="table-cell">{c.name}</td>
+                            <td className="table-cell text-right font-bold">{c.count}</td>
+                            <td className="table-cell action-cell">
                                 <IconButton 
                                     icon={TrendingUp} 
                                     onClick={async () => {
@@ -115,7 +115,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                     ))}
                 </tbody>
             </table>
-            {counters.length === 0 && <p style={{ textAlign: 'center', marginTop: '20px', color: '#666' }}>No counters found. Create one!</p>}
+            {counters.length === 0 && <p className="empty-text">No counters found. Create one!</p>}
         </div>
     );
 };
