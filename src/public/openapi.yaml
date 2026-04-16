@@ -45,6 +45,13 @@ components:
           format: date-time
           example: "2023-10-27T10:00:00Z"
 
+    SystemInfo:
+      type: object
+      properties:
+        version:
+          type: string
+          example: "0.1.0"
+
     Count:
       type: object
       properties:
@@ -66,6 +73,20 @@ security:
   - cookieAuth: []
 
 paths:
+  /info:
+    get:
+      summary: Get system information
+      description: Returns information about the backend service, such as the version.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemInfo'
+        '401':
+          description: Unauthorized
+
   /account:
     get:
       summary: Get account information
