@@ -124,6 +124,11 @@ Use letsencrypt/certbot and copy the certificates under certs/, or integrate the
 Find the node fully qualified Tailscale-net hostname, and request SSL certificates for the server on the Tailscale website. Put the certificates under certs/.
 
 
+# Swagger UI
+
+To use the backend API with swagger-ui, I have placed openapi.yaml under src/public which is accessible at http://hostnameport/openapi.yaml. The servers url in openapi.yaml must be updated to reflect the real port for the backend api server.
+
+
 # License
 
 This is on purpose 95% vibe-coded. No license will probably hold up in court.

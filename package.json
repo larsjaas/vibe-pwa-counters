@@ -4,10 +4,11 @@
   "description": "Node setup to package PWA for nginx",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
+    "build": "npm run copy-swagger && vite build",
     "preview": "vite preview",
     "build-old": "npm run build-sw-old && mkdir -p html/landing_page && rsync -av --include='*/' --include='*.html' --include='*.png' --include='manifest.json' --include='favicon.ico' --include='*.css' --include='*.svg' --exclude='*' app/ html/",
-    "build-sw-old": "rm -rf html/*.js && npx tsc"
+    "build-sw-old": "rm -rf html/*.js && npx tsc",
+    "copy-swagger": "./scripts/copy-swagger-ui.sh"
   },
   "private": true,
   "dependencies": {
@@ -22,6 +23,7 @@
     "@types/react-dom": "^18.2.0",
     "@types/serviceworker": "^0.0.194",
     "@vitejs/plugin-react": "^4.2.0",
+    "swagger-ui-dist": "^5.32.4",
     "typescript": "^5.9.3",
     "vite": "^5.0.0"
   }
