@@ -3,6 +3,9 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"crypto/sha256"
+	"encoding/hex"
+	"time"
 )
 
 // UserExists checks whether a user with the supplied email address is
@@ -60,4 +63,30 @@ func GetUserIDByEmail(email string) (int, error) {
         return 0, err
     }
     return id, nil
+}
+
+// AnonymizeUser marks a user as deleted by updating their name,
+// setting the deletetime, and replacing their email with a hashed version
+// to prevent the original email from being recovered while maintaining 
+// record uniqueness.
+func AnonymizeUser(email string) error {
+    if db == nil {
+        return fmt.Errorf("database not initialized")
+    }
+
+    // Calculate secure one-way hash of the email
+    hash := sha256.Sum256([]byte(email))
+    emailHash := hex.EncodeToString(hash[:])
+    
+    // Format: DELETED_<emailhash>_<isodatetime>
+    timestamp := time.Now().UTC().Format(time.RFC3339)
+    newEmail := fmt.Sprintf("DELETED_%s_%s", emailHash, timestamp)
+
+    const query = `
+        UPDATE users 
+        SET email = $1, name = 'DELETED', deletetime = NOW() 
+        WHERE email = $2`
+    
+    _, err := db.Exec(query, newEmail, email)
+    return err
 }

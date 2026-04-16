@@ -4,6 +4,9 @@ import (
     "encoding/json"
     "log"
     "net/http"
+    "time"
+
+    db "github.com/larsa/pwa-counter/backend/internal/db"
 )
 
 // AccountHandler returns JSON information of the authenticated user.
@@ -12,7 +15,7 @@ import (
 // If the session is missing or invalid, it responds with 401 Unauthorized.
 func AccountHandler(w http.ResponseWriter, r *http.Request) {
     log.Printf("/api/account called: method=%s", r.Method)
-    if r.Method != http.MethodGet {
+    if r.Method != http.MethodGet && r.Method != http.MethodDelete {
         MethodNotAllowed(w, r)
         return
     }
@@ -45,6 +48,35 @@ func AccountHandler(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "unauthorized", http.StatusUnauthorized)
         return
     }
+
+    if r.Method == http.MethodDelete {
+        // Anonymize the user in the database
+        if err := db.AnonymizeUser(email); err != nil {
+            log.Printf("AccountHandler: AnonymizeUser failed: %v", err)
+            http.Error(w, "internal server error", http.StatusInternalServerError)
+            return
+        }
+
+        // Delete the session cookie
+        http.SetCookie(w, &http.Cookie{
+            Name:     "session_id",
+            Value:    "",
+            Path:     "/",
+            MaxAge:   -1,
+            Expires:  time.Unix(0, 0),
+            HttpOnly: true,
+        })
+
+        // Invalidate session data in Redis
+        if redisClient != nil {
+            _ = redisClient.Del(r.Context(), sessionCookie.Value)
+        }
+
+        // Redirect to landing page
+        http.Redirect(w, r, "/landing_page/index.html", http.StatusFound)
+        return
+    }
+
     w.Header().Set("Content-Type", "application/json")
     data := map[string]string{"name": name, "email": email}
     if err := json.NewEncoder(w).Encode(data); err != nil {
