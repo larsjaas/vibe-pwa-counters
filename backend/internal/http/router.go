@@ -3,6 +3,8 @@ package http
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // NewRouter instantiates a new ServeMux and registers all
@@ -13,6 +15,7 @@ func NewRouter() http.Handler {
     // Health and simple endpoint helpers
     mux.HandleFunc("/health", HealthHandler)
     mux.HandleFunc("/api/ping", PingHandler)
+    mux.Handle("/api/metrics", promhttp.Handler())
 
     // Authentication – login, logout and callbacks
     mux.HandleFunc("/api/logout", LogoutHandler)
