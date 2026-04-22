@@ -9,12 +9,13 @@ import (
 // Counter represents a row in the `counters` table. Fields are exported
 // so that callers can inspect data after fetching.
 type Counter struct {
-    ID        int            `json:"id"`
-    UserID    int            `json:"user_id"`
-    Name      string         `json:"name"`
-    CreateTime time.Time     `json:"createtime"`
-    DeleteTime sql.NullTime  `json:"deletetime"`
-    Step      int            `json:"step"`
+    ID         int        `json:"id"`
+    UserID     int        `json:"user_id"`
+    Name       string     `json:"name"`
+    CreateTime time.Time  `json:"createtime"`
+    ArchiveTime *time.Time `json:"archivetime"`
+    DeleteTime  *time.Time `json:"deletetime"`
+    Step       int        `json:"step"`
 }
 
 // GetUserIdForCounter returns the owning user ID for a given counter
@@ -62,7 +63,7 @@ func GetCountersForUser(userID int) ([]*Counter, error) {
     if db == nil {
         return nil, fmt.Errorf("database not initialized")
     }
-    const query = `SELECT id, "user", name, createtime, step, deletetime FROM counters WHERE "user"=$1 ORDER BY id`
+    const query = `SELECT id, "user", name, createtime, archivetime, step, deletetime FROM counters WHERE "user"=$1 ORDER BY id`
     rows, err := db.Query(query, userID)
     if err != nil {
         return nil, err
@@ -72,12 +73,18 @@ func GetCountersForUser(userID int) ([]*Counter, error) {
     var counters []*Counter
     for rows.Next() {
         var c Counter
+        var archiveTime sql.NullTime
         var deleteTime sql.NullTime
         var step int
-        if err := rows.Scan(&c.ID, &c.UserID, &c.Name, &c.CreateTime, &step, &deleteTime); err != nil {
+        if err := rows.Scan(&c.ID, &c.UserID, &c.Name, &c.CreateTime, &archiveTime, &step, &deleteTime); err != nil {
             return nil, err
         }
-        c.DeleteTime = deleteTime
+        if archiveTime.Valid {
+            c.ArchiveTime = &archiveTime.Time
+        }
+        if deleteTime.Valid {
+            c.DeleteTime = &deleteTime.Time
+        }
         c.Step = step
         counters = append(counters, &c)
     }
@@ -126,5 +133,32 @@ func SoftDeleteCounter(userID int, counterID int) (bool, error) {
         return false, err
     }
     return rows > 0, nil
+}
+
+// SetCounterArchiveTime sets or clears the archivetime of a counter.
+// If archiveTime is nil, it clears the archive time.
+func SetCounterArchiveTime(userID int, counterID int, archiveTime *time.Time) (bool, error) {
+	if db == nil {
+		return false, fmt.Errorf("database not initialized")
+	}
+	var query string
+	var args []interface{}
+	if archiveTime == nil {
+		query = `UPDATE counters SET archivetime = NULL WHERE "user" = $1 AND id = $2 AND deletetime IS NULL`
+		args = []interface{}{userID, counterID}
+	} else {
+		query = `UPDATE counters SET archivetime = $1 WHERE "user" = $2 AND id = $3 AND deletetime IS NULL`
+		args = []interface{}{*archiveTime, userID, counterID}
+	}
+
+	res, err := db.Exec(query, args...)
+	if err != nil {
+		return false, err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return rows > 0, nil
 }
 

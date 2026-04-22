@@ -7,6 +7,7 @@ export interface Counter {
     name: string;
     step: number;
     count: number;
+    archivetime: string | null;
 }
 
 interface CounterListProps {
@@ -18,6 +19,7 @@ interface CounterListProps {
 export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refreshTrigger }) => {
     const [counters, setCounters] = useState<Counter[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showArchived, setShowArchived] = useState(false);
 
     const loadCounters = async () => {
         try {
@@ -28,7 +30,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
 
             if (!resCounters.ok || !resUpdates.ok) throw new Error('Failed to fetch data');
 
-            const countersData: Array<{ id: number; name: string; step: number }> = await resCounters.json();
+            const countersData: Array<{ id: number; name: string; step: number; archivetime: string | null }> = await resCounters.json();
             const updates: Array<{ counter: number; delta: number }> = await resUpdates.json();
 
             // Calculate current counts
@@ -88,7 +90,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                     </tr>
                 </thead>
                 <tbody>
-                    {counters.map(c => (
+                    {counters.filter(c => showArchived ? c.archivetime !== null : c.archivetime === null).map(c => (
                         <tr key={c.id} className="table-row">
                             <td className="table-cell">{c.name}</td>
                             <td className="table-cell text-right font-bold">{c.count}</td>
@@ -115,7 +117,18 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                     ))}
                 </tbody>
             </table>
-            {counters.length === 0 && <p className="empty-text">No counters found. Create one!</p>}
+            {counters.filter(c => showArchived ? c.archivetime !== null : c.archivetime === null).length === 0 && (
+                <p className="empty-text">No counters found. Create one!</p>
+            )}
+            <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                <button 
+                    onClick={() => setShowArchived(!showArchived)} 
+                    className="btn-link"
+                    style={{ fontSize: '0.9rem', color: '#666', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                >
+                    {showArchived ? 'Hide archived counters' : 'Show archived counters'}
+                </button>
+            </div>
         </div>
     );
 };

@@ -40,11 +40,13 @@ const App: React.FC = () => {
     };
 
     const handleArchiveCounter = async (id: number) => {
+        const isArchived = editingCounter?.archivetime;
+        const archiveValue = isArchived ? "" : new Date().toISOString();
         try {
-            const res = await fetch('/api/counters', {
+            const res = await fetch(`/api/counters/${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, archived: true }),
+                body: JSON.stringify({ archivetime: archiveValue }),
             });
             if (!res.ok) throw new Error('Archive failed');
             setEditingCounter(null);
