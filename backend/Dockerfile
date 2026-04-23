@@ -1,5 +1,5 @@
 # --- Stage 1: Build ---
-FROM golang:1.21-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # Install git for fetching dependencies if necessary
 RUN apk add --no-cache git
@@ -17,7 +17,7 @@ COPY . .
 # Build terms:
 # CGO_ENABLED=0 ensures a static binary (no dependency on C libraries)
 # GOOS=linux targets the Linux OS
-RUN CGO_ENABLED=0 GOOS=linux go build -o server .
+RUN CGO_ENABLED=0 GOOS=linux go build -o server ./cmd/server
 
 # --- Stage 2: Final ---
 FROM alpine:latest
