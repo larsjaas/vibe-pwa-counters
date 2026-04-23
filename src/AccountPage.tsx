@@ -7,7 +7,7 @@ interface UserInfo {
     name?: string;
 }
 
-const FRONTEND_VERSION = "0.6";
+const FRONTEND_VERSION = "0.8.0";
 
 export const AccountPage: React.FC = () => {
     const [user, setUser] = useState<UserInfo | null>(null);
