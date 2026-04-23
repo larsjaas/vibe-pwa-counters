@@ -31,5 +31,8 @@ WORKDIR /home/appuser/
 # Copy the binary from the builder stage
 COPY --from=builder /app/server .
 
+# Copy the migrations folder from the builder stage
+COPY --from=builder /app/migrations ./migrations
+
 # Run the binary
 CMD ["./server"]
