@@ -56,7 +56,7 @@ func GetCountsForUser(userID int) ([]*Count, error) {
 	}
 	defer rows.Close()
 
-	var counts []*Count
+	counts := make([]*Count, 0)
 	for rows.Next() {
 		var c Count
 		if err := rows.Scan(&c.ID, &c.CounterID, &c.Delta, &c.When, &c.DeleteTime); err != nil {

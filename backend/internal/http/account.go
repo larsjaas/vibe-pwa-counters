@@ -83,3 +83,66 @@ func AccountHandler(w http.ResponseWriter, r *http.Request) {
         log.Printf("AccountHandler: json encode failed: %v", err)
     }
 }
+
+// ConfirmSignupHandler handles the final step of account creation.
+func ConfirmSignupHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body struct {
+		Token string `json:"token"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	if redisClient == nil {
+		http.Error(w, "Redis unavailable", http.StatusInternalServerError)
+		return
+	}
+
+	val, err := redisClient.Get(r.Context(), "pending_signup:"+body.Token).Result()
+	if err != nil {
+		http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
+		return
+	}
+
+	var pending map[string]interface{}
+	if err := json.Unmarshal([]byte(val), &pending); err != nil {
+		http.Error(w, "Internal Error", http.StatusInternalServerError)
+		return
+	}
+
+	email, okE := pending["email"].(string)
+	name, okN := pending["name"].(string)
+	accessToken, okA := pending["access_token"].(string)
+	if !okE || !okN || !okA {
+		http.Error(w, "Invalid pending user data", http.StatusInternalServerError)
+		return
+	}
+
+	// Persist user in DB
+	if _, err := db.AddUser(email, name); err != nil {
+		log.Printf("ConfirmSignupHandler: AddUser failed: %v", err)
+		http.Error(w, "Internal error creating account", http.StatusInternalServerError)
+		return
+	}
+
+	uid, err := db.GetUserIDByEmail(email)
+	if err != nil {
+		log.Printf("ConfirmSignupHandler: GetUserIDByEmail failed: %v", err)
+		http.Error(w, "Internal error creating account", http.StatusInternalServerError)
+		return
+	}
+
+	// Create session
+	createSession(w, r, uid, email, name, accessToken)
+
+	// Cleanup pending data
+	_ = redisClient.Del(r.Context(), "pending_signup:"+body.Token)
+
+	w.WriteHeader(http.StatusOK)
+}

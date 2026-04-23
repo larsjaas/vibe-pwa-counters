@@ -22,6 +22,8 @@ func NewRouter() http.Handler {
     mux.HandleFunc("/api/login", LoginHandler)
     mux.HandleFunc("/api/auth/google/callback", AuthCallbackHandler)
     mux.HandleFunc("/api/validate-session", ValidateSessionHandler)
+    mux.HandleFunc("/api/account/create", ConfirmSignupHandler)
+
 
     // Register counters CRUD handler. The trailing slash variant ensures
     // DELETE /api/counters/:id works.

@@ -16,8 +16,8 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"net/http"
+	"net"
 	"os"
 	"strings"
 	"time"
@@ -123,9 +123,22 @@ func AuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
             log.Printf("DB check failed: %v", err)
         }
         if !exists {
-            if _, err = db.AddUser(email, name); err != nil {
-                log.Printf("Failed to add user: %v", err)
+            // NEW: Store pending user and redirect to confirmation page.
+            signupToken := generateSessionID()
+            pendingUser := map[string]interface{}{
+                "email":        email,
+                "name":         name,
+                "access_token": accessToken,
             }
+            payload, _ := json.Marshal(pendingUser)
+            if redisClient != nil {
+                err := redisClient.Set(context.Background(), "pending_signup:"+signupToken, string(payload), 15*time.Minute).Err()
+                if err != nil {
+                    log.Printf("Redis pending store error: %v", err)
+                }
+            }
+            http.Redirect(w, r, "/landing_page/confirm-signup.html?token="+signupToken, http.StatusFound)
+            return
         }
         uid, err := db.GetUserIDByEmail(email)
         if err == nil {
@@ -133,45 +146,8 @@ func AuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
         }
     }
 
-    // 5. Build session payload.
-    sessionID := generateSessionID()
-    session := map[string]interface{}{
-        "session_id": sessionID,
-        "user_id":    userID,
-        "user_email": email,
-        "user_name":  name,
-        "access_token": accessToken,
-        "created_at": time.Now().Format(time.RFC3339),
-        "expires_at": time.Now().Add(6 * time.Hour).Format(time.RFC3339),
-    }
-
-    // Add client metadata.
-    ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-    if ip == "" {
-        ip = r.RemoteAddr
-    }
-    session["user_ip"] = ip
-    session["user_agent"] = r.Header.Get("User-Agent")
-
-    // Store session in Redis.
-    if redisClient != nil {
-        ctx := context.Background()
-        payload, _ := json.Marshal(session)
-        err := redisClient.Set(ctx, sessionID, string(payload), 6*time.Hour).Err()
-        if err != nil {
-            log.Printf("Redis session store error: %v", err)
-        }
-    }
-
-    // Set the session_id cookie.
-    http.SetCookie(w, &http.Cookie{
-        Name:     "session_id",
-        Value:    sessionID,
-        Path:     "/",
-        HttpOnly: true,
-        Secure:   true,
-        SameSite: http.SameSiteLaxMode,
-    })
+    // 5. Create session and set cookie.
+    createSession(w, r, userID, email, name, accessToken)
 
     // Redirect the user to the home page.
     http.Redirect(w, r, "/", http.StatusFound)
@@ -259,4 +235,43 @@ func generateSessionID() string {
         return base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf("%d", now)))
     }
     return base64.RawURLEncoding.EncodeToString(b)
+}
+
+// createSession helper encapsulates the session creation logic.
+func createSession(w http.ResponseWriter, r *http.Request, userID int, email, name, accessToken string) {
+    sessionID := generateSessionID()
+    session := map[string]interface{}{
+        "session_id":   sessionID,
+        "user_id":      userID,
+        "user_email":   email,
+        "user_name":    name,
+        "access_token": accessToken,
+        "created_at":   time.Now().Format(time.RFC3339),
+        "expires_at":   time.Now().Add(6 * time.Hour).Format(time.RFC3339),
+    }
+
+    ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+    if ip == "" {
+        ip = r.RemoteAddr
+    }
+    session["user_ip"] = ip
+    session["user_agent"] = r.Header.Get("User-Agent")
+
+    if redisClient != nil {
+        ctx := context.Background()
+        payload, _ := json.Marshal(session)
+        err := redisClient.Set(ctx, sessionID, string(payload), 6*time.Hour).Err()
+        if err != nil {
+            log.Printf("Redis session store error: %v", err)
+        }
+    }
+
+    http.SetCookie(w, &http.Cookie{
+        Name:     "session_id",
+        Value:    sessionID,
+        Path:     "/",
+        HttpOnly: true,
+        Secure:   true,
+        SameSite: http.SameSiteLaxMode,
+    })
 }

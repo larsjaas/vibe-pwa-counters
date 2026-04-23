@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account - PWA Counter</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .modal {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        h2 { margin-top: 0; }
+        p { margin-bottom: 2rem; line-height: 1.5; }
+        .actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: filter 0.2s;
+        }
+        .btn-create {
+            background-color: #0070f3;
+            color: white;
+        }
+        .btn-cancel {
+            background-color: #eee;
+            color: #666;
+        }
+        button:hover {
+            filter: brightness(0.9);
+        }
+    </style>
+</head>
+<body>
+    <div class="modal">
+        <h2>Welcome!</h2>
+        <p>It looks like you don't have an account yet. Do you want to create one to start using the counters?</p>
+        <div class="actions">
+            <button id="cancelBtn" class="btn-cancel">Cancel</button>
+            <button id="createBtn" class="btn-create">Create Account</button>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+
+        if (!token) {
+            window.location.href = '/landing_page/index.html';
+        }
+
+        document.getElementById('cancelBtn').onclick = () => {
+            window.location.href = '/landing_page/index.html';
+        };
+
+        document.getElementById('createBtn').onclick = async () => {
+            try {
+                const res = await fetch('/api/account/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                if (!res.ok) throw new Error('Creation failed');
+                window.location.href = '/';
+            } catch (e) {
+                alert('Error creating account: ' + e.message);
+            }
+        };
+    </script>
+</body>
+</html>

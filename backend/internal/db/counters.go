@@ -70,7 +70,7 @@ func GetCountersForUser(userID int) ([]*Counter, error) {
     }
     defer rows.Close()
 
-    var counters []*Counter
+    counters := make([]*Counter, 0)
     for rows.Next() {
         var c Counter
         var archiveTime sql.NullTime
