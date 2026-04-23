@@ -72,8 +72,9 @@ func AccountHandler(w http.ResponseWriter, r *http.Request) {
             _ = redisClient.Del(r.Context(), sessionCookie.Value)
         }
 
-        // Redirect to landing page
-        http.Redirect(w, r, "/landing_page/index.html", http.StatusFound)
+        // Return success instead of redirecting. 
+        // The frontend handles the redirection to the landing page.
+        w.WriteHeader(http.StatusNoContent)
         return
     }
 
