@@ -1,11 +1,11 @@
 # Description
 
-This is a vibe-coded project for launching an Progressive Web App reimagination of the [vibe-cmdline-counters](https://github.com/larsjaas/vibe-cmdline-counters) project. It has a REST backend in Go, and a javascript web app that is served by nginx.
+This is a vibe-coded project for launching an Progressive Web App reimagination of the [vibe-cmdline-counters](https://github.com/larsjaas/vibe-cmdline-counters) project. It has a REST backend in Go, and a typescript+react web app that is served by nginx.
 
-I am using this project to explore what is possible with what is available for free and reasonable to run on my M4 Mac Book Pro. I am intentionally not interfering with the code the LLM creates more than strictly necessary. For instance, my bundled LLM tool set is not 100% and will oftentimes cause incorrect edits that I might go in and correct by hand. Because of this *least-amount-of-manual-coding* policy, the aesthetics of the app will likely be very cumbersome to get pleasing, and is therefore not a priority before the app is fully functional.
+I am using this project to explore LLM vibe coding, what is possible with what is available for free, and reasonable to run on my M4 Mac Book Pro (48GB). I am intentionally not interfering with the code the LLM creates more than strictly necessary. For instance, my bundled LLM tool set is not 100% and will oftentimes cause incorrect edits (model-dependent) that I might go in and correct by hand. Because of this *least-amount-of-manual-coding* policy, the aesthetics of the app is assumed to be quite cumbersome to get pleasing, and is therefore not a priority before the app is fully functional. There will be a sudden facelift.
 
 Using:
-- Raspberry Pi Sandbox
+- Raspberry Pi Sandbox (RPi 5, but >= 3 should do fine)
   - node, go, docker
   - pi / @mariozechner/pi-coding-agent
 - 48GB M4 Mac Book Pro
@@ -13,7 +13,21 @@ Using:
   - ssh/mosh, VSCode w/SSH
 - Tailscale private network
 
-I started having problems getting gpt-oss:20b to behave as wanted approximately at commit 2829137c72427081dc860a82b08b86dcfd108d24, so I am currently exploring new models. Could also be token config parameters that are too restricted or something similar, but I think I regardless should see if there are other well-performing LLMs out there. qwen3-coder-30b-a3b-instruct is a candidate, but gemma4:31b seems to be able to use the tools out-of-the-box (great!) and follow my instructions (even better!) I am seeing how far I can continue with gemma4:31b.
+# LLM Models
+
+The list of LLM models used during vibe-coding.
+
+## gpt-oss:20b
+
+This was the first model I started the whole project with, and which implemented the full vibe-cmdline-counters repo. I started having problems getting gpt-oss:20b to behave as wanted approximately at commit 2829137c72427081dc860a82b08b86dcfd108d24 - could no longer get it to follow my instructions - and no amount of session-clearing seemed to help. gpt-oss was also quite bad at using apply_patch tool, and produced a lot of bad edits (chunks ending up on top or at the bottom of files). This was very frustrating, and I eventually decided to give up on the model. I could probably have gotten further with tuning max-tokens and temperature and such parameters.
+
+## qwen3-coder:30b
+
+This model seemed promising, but it only produced tool calls using XML, which pi-coding-agents didn't pick up on. Being too new at pi-coding-agents I did not know how to extend it to parse those tool calls.
+
+## gemma4:31b (current)
+
+The gemma4:31b model produced tool calls that pi-coding-agents picks up right out of the box, and the edits seems to be on point. It also and follow my instructions on what to implement (even better!), so I am seeing how far I can continue with gemma4:31b.
 
 
 # Purpose
