@@ -102,12 +102,35 @@ paths:
           description: Unauthorized
     delete:
       summary: Delete account
-      description: Anonymizes the user record, clears the session, and redirects to the landing page.
+      description: Anonymizes the user record and clears the session.
       responses:
-        '302':
-          description: Redirect to landing page
+        '200':
+          description: Successfully deleted
         '401':
           description: Unauthorized
+        '500':
+          description: Internal server error
+    
+  /account/create:
+    post:
+      summary: Confirm account creation
+      description: Finalizes the account creation process using a temporary token from Google OAuth.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+              required:
+                - token
+      responses:
+        '200':
+          description: Account successfully created
+        '401':
+          description: Invalid or expired token
         '500':
           description: Internal server error
     
