@@ -20,7 +20,12 @@ func main() {
     // The REST API now leverages a Redis instance for session storage.
     // A global client is shared across request handlers to avoid
     // re‑creating connections for each request.
-    rdb := redis.NewClient(&redis.Options{Addr: "localhost:6379"}) // 'redis' if in docker container
+    redisAddr := os.Getenv("REDIS_ADDR")
+    if redisAddr == "" {
+        redisAddr = "localhost:6379"
+    }
+    rdb := redis.NewClient(&redis.Options{Addr: redisAddr})
+
 
     var err error
     var status = rdb.Ping(context.Background())
