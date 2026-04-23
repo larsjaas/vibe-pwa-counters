@@ -31,7 +31,8 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
             if (!resCounters.ok || !resUpdates.ok) throw new Error('Failed to fetch data');
 
             const countersData: Array<{ id: number; name: string; step: number; archivetime: string | null }> = await resCounters.json();
-            const updates: Array<{ counter: number; delta: number }> = await resUpdates.json();
+            const updatesData = await resUpdates.json();
+            const updates: Array<{ counter: number; delta: number }> = updatesData || [];
 
             // Calculate current counts
             const countersWithCount = countersData.map(c => {
