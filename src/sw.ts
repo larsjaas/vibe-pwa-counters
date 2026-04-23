@@ -26,8 +26,9 @@ registerRoute(
     new StaleWhileRevalidate({ cacheName: "pages" })
 );
 
-// Cache all other same‑origin requests (e.g., images, scripts, styles).
+// Cache all other same‑origin requests (e.g., images, scripts, styles),
+// but EXCLUDE API requests to avoid stale data.
 registerRoute(
-    ({ url }) => url.origin === self.location.origin,
+    ({ url }) => url.origin === self.location.origin && !url.pathname.startsWith('/api/'),
     new StaleWhileRevalidate({ cacheName: "assets" })
 );
