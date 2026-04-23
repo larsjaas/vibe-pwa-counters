@@ -150,9 +150,17 @@ export const AccountPage: React.FC = () => {
                 marginTop: '40px', 
                 fontSize: '0.5em', 
                 color: '#999', 
-                fontStyle: 'italic' 
+                fontStyle: 'italic',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '8px'
             }}>
-                Frontend version {FRONTEND_VERSION}, backend version {beVersion}
+                <div style={{ textAlign: 'center' }}>Frontend version {FRONTEND_VERSION}, backend version {beVersion}</div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <a href="/privacy_policy.html" target="_blank" rel="noopener noreferrer" style={{ color: '#999', textDecoration: 'underline' }}>Privacy Policy</a>
+                    <a href="/terms_of_service.html" target="_blank" rel="noopener noreferrer" style={{ color: '#999', textDecoration: 'underline' }}>Terms of Service</a>
+                </div>
             </div>
         </div>
     );
