@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Counter } from './CounterList';
 
 export const StatisticsPage: React.FC = () => {
-    const [mruCounter, setMruCounter] = useState<{ name: string, id: number } | null>(null);
+    const [counters, setCounters] = useState<Counter[]>([]);
+    const [selectedCounterId, setSelectedCounterId] = useState<number | null>(null);
     const [stats, setStats] = useState<number[]>(new Array(24).fill(0));
     const [loading, setLoading] = useState(true);
+    const [allCounts, setAllCounts] = useState<Array<{ counter: number; delta: number; when: string }>>([]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -19,37 +21,26 @@ export const StatisticsPage: React.FC = () => {
                 const countersData: Counter[] = await resCounters.json();
                 const countsData: Array<{ counter: number; delta: number; when: string }> = await resCounts.json();
 
-                // Find MRU counter (non-archived)
-                let mruId: number | null = null;
-                let mruName: string | null = null;
-                for (let i = countsData.length - 1; i >= 0; i--) {
-                    const count = countsData[i];
-                    const counter = countersData.find(c => c.id === count.counter);
-                    if (counter && counter.archivetime === null) {
-                        mruId = counter.id;
-                        mruName = counter.name;
-                        break;
-                    }
-                }
+                // MRU Ordering: Most recently updated counters first.
+                const lastUsedMap = new Map<number, number>();
+                countsData.forEach((count, index) => {
+                    lastUsedMap.set(count.counter, index);
+                });
 
-                if (mruId === null) {
-                    setMruCounter(null);
-                    setLoading(false);
-                    return;
-                }
-
-                // Calculate stats for the MRU counter: activity per hour of day
-                const hourBuckets = new Array(24).fill(0);
-                countsData
-                    .filter(c => c.counter === mruId)
-                    .forEach(c => {
-                        const date = new Date(c.when);
-                        const hour = date.getHours();
-                        hourBuckets[hour] += Math.abs(c.delta);
+                const sortedCounters = countersData
+                    .filter(c => c.archivetime === null)
+                    .sort((a, b) => {
+                        const aLastUsed = lastUsedMap.get(a.id) ?? -1;
+                        const bLastUsed = lastUsedMap.get(b.id) ?? -1;
+                        return bLastUsed - aLastUsed;
                     });
 
-                setMruCounter({ name: mruName!, id: mruId });
-                setStats(hourBuckets);
+                setCounters(sortedCounters);
+                setAllCounts(countsData);
+                
+                if (sortedCounters.length > 0) {
+                    setSelectedCounterId(sortedCounters[0].id);
+                }
             } catch (e) {
                 console.error('Error loading stats', e);
             } finally {
@@ -60,14 +51,50 @@ export const StatisticsPage: React.FC = () => {
         fetchData();
     }, []);
 
+    useEffect(() => {
+        if (selectedCounterId === null) return;
+
+        const hourBuckets = new Array(24).fill(0);
+        allCounts
+            .filter(c => c.counter === selectedCounterId)
+            .forEach(c => {
+                const date = new Date(c.when);
+                const hour = date.getHours();
+                hourBuckets[hour] += Math.abs(c.delta);
+            });
+        setStats(hourBuckets);
+    }, [selectedCounterId, allCounts]);
+
     if (loading) return <div className="stats-page">Loading...</div>;
 
     return (
         <div className="stats-page">
             <div className="stats-container">
-                {mruCounter ? (
+                {selectedCounterId ? (
                     <>
-                        <h1 style={{ marginBottom: '2rem', textAlign: 'center' }}>{mruCounter.name}</h1>
+                        <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
+                            <select 
+                                value={selectedCounterId} 
+                                onChange={(e) => setSelectedCounterId(parseInt(e.target.value))}
+                                style={{ 
+                                    fontSize: '1.5rem', 
+                                    fontWeight: 'bold', 
+                                    padding: '5px', 
+                                    cursor: 'pointer',
+                                    textAlign: 'center',
+                                    width: 'auto',
+                                    margin: '0 auto',
+                                    display: 'block',
+                                    backgroundColor: 'transparent',
+                                    border: 'none',
+                                    color: 'inherit'
+                                }}
+                            > 
+                                {counters.map(c => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                            </select>
+                        </div>
                         <div style={{ 
                             display: 'flex', 
                             alignItems: 'flex-end', 
