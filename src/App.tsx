@@ -6,19 +6,32 @@ import { CounterDetail } from './CounterDetail';
 import { NavBar } from './components/NavBar';
 import { AccountPage } from './AccountPage';
 import { StatisticsPage } from './StatisticsPage';
+import { AlertModal } from './components/AlertModal';
 
 
 const App: React.FC = () => {
     const [editingCounter, setEditingCounter] = useState<Counter | null>(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [refreshCount, setRefreshCount] = useState(0);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
     useEffect(() => {
         const eventSource = new EventSource('/api/events');
         
         eventSource.onmessage = (event) => {
             console.log('SSE event received:', event.data);
-            setRefreshCount(prev => prev + 1);
+            
+            if (event.data.startsWith('ALERT ')) {
+                try {
+                    const jsonStr = event.data.substring(6);
+                    const data = JSON.parse(jsonStr);
+                    setAlertMessage(data.text);
+                } catch (e) {
+                    console.error('Failed to parse SSE alert JSON:', e);
+                }
+            } else {
+                setRefreshCount(prev => prev + 1);
+            }
         };
 
         eventSource.onerror = (err) => {
@@ -121,6 +134,13 @@ const App: React.FC = () => {
                         />
                     </div>
                 </div>
+            )}
+
+            {alertMessage && (
+                <AlertModal 
+                    message={alertMessage} 
+                    onClose={() => setAlertMessage(null)} 
+                />
             )}
         </div>
     );
