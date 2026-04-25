@@ -137,6 +137,55 @@ export const StatisticsPage: React.FC = () => {
                             <span>12:00</span>
                             <span>23:00</span>
                         </div>
+
+                        <div style={{ 
+                            marginTop: '3rem', 
+                            width: '100%', 
+                            maxWidth: '600px', 
+                            margin: '3rem auto 0',
+                            fontSize: '0.9rem'
+                        }}>
+                            <h3 style={{ textAlign: 'center', marginBottom: '1rem', color: '#444' }}>Recent Activity</h3>
+                            <table style={{ 
+                                width: '100%', 
+                                borderCollapse: 'collapse', 
+                                textAlign: 'left',
+                                fontSize: '0.85rem'
+                            }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '2px solid #eee', color: '#888' }}>
+                                        <th style={{ padding: '8px 0' }}>Time</th>
+                                        <th style={{ padding: '8px 0', textAlign: 'right' }}>Delta</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {allCounts
+                                        .filter(c => c.counter === selectedCounterId)
+                                        .sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime())
+                                        .slice(0, 5)
+                                        .map((entry, idx) => (
+                                            <tr key={idx} style={{ borderBottom: '1px solid #f9f9f9' }}>
+                                                <td style={{ padding: '8px 0', color: '#666' }}>
+                                                    {new Date(entry.when).toLocaleString()}
+                                                </td>
+                                                <td style={{ 
+                                                    padding: '8px 0', 
+                                                    textAlign: 'right', 
+                                                    fontWeight: 'bold',
+                                                    color: entry.delta >= 0 ? '#2ecc71' : '#e74c3c'
+                                                }}>
+                                                    {entry.delta > 0 ? `+${entry.delta}` : entry.delta}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                </tbody>
+                            </table>
+                            {allCounts.filter(c => c.counter === selectedCounterId).length === 0 && (
+                                <div style={{ textAlign: 'center', color: '#999', padding: '1rem 0' }}>
+                                    No activity recorded for this counter.
+                                </div>
+                            )}
+                        </div>
                     </>
                 ) : (
                     <h1 style={{ textAlign: 'center' }}>Statistics</h1>
