@@ -110,7 +110,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal server error
-    
+
   /account/create:
     post:
       summary: Confirm account creation
@@ -133,7 +133,7 @@ paths:
           description: Invalid or expired token
         '500':
           description: Internal server error
-    
+
   /count:
     get:
       summary: Get user counts
@@ -167,7 +167,7 @@ paths:
                   description: The integer change to record.
       responses:
         '200':
-        - description: Successfully recorded the count change
+          description: Successfully recorded the count change
           content:
             application/json:
               schema:
@@ -178,7 +178,24 @@ paths:
           description: Forbidden - counter not owned by user
         '404':
           description: Not found - counter does not exist
-    
+
+  /events:
+    get:
+      summary: Server-Sent Events stream
+      description: >
+        Establishes a long-lived SSE connection.
+        The server pushes events to the client when updates occur.
+      responses:
+        '200':
+          description: Event stream established
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: A string event message.
+        '401':
+          description: Unauthorized
+
   /counters:
     get:
       summary: List user counters
@@ -244,7 +261,7 @@ paths:
           description: Unauthorized
         '404':
           description: Not found
-    
+
   /counters/{id}:
     parameters:
       - name: id
