@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { CounterList, Counter } from './CounterList';
 import { CounterCreate } from './CounterCreate';
@@ -12,6 +12,24 @@ const App: React.FC = () => {
     const [editingCounter, setEditingCounter] = useState<Counter | null>(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [refreshCount, setRefreshCount] = useState(0);
+
+    useEffect(() => {
+        const eventSource = new EventSource('/api/events');
+        
+        eventSource.onmessage = (event) => {
+            console.log('SSE event received:', event.data);
+            setRefreshCount(prev => prev + 1);
+        };
+
+        eventSource.onerror = (err) => {
+            console.error('SSE connection error:', err);
+            // EventSource automatically attempts to reconnect
+        };
+
+        return () => {
+            eventSource.close();
+        };
+    }, []);
 
     const handleUpdateCounter = async (id: number, name: string, step: number) => {
         try {
