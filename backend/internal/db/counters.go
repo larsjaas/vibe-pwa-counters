@@ -18,6 +18,25 @@ type Counter struct {
     Step       int        `json:"step"`
 }
 
+// GetCountersCount returns the number of counters based on deletion status.
+func GetCountersCount(ctx context.Context, deleted bool) (int, error) {
+	if db == nil {
+		return 0, fmt.Errorf("database not initialized")
+	}
+	var query string
+	if deleted {
+		query = "SELECT count(*) FROM counters WHERE deletetime IS NOT NULL"
+	} else {
+		query = "SELECT count(*) FROM counters WHERE deletetime IS NULL"
+	}
+	var count int
+	err := db.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 // GetUserIdForCounter returns the owning user ID for a given counter
 // ID, provided the counter is not deleted. It returns sql.ErrNoRows
 // if the counter does not exist or is deleted.

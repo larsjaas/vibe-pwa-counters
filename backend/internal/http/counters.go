@@ -68,6 +68,7 @@ func CountersHandler(w http.ResponseWriter, r *http.Request) {
             http.Error(w, "internal server error", http.StatusInternalServerError)
             return
         }
+        CountersTotal.Inc()
         w.Header().Set("Content-Type", "application/json")
         if err := json.NewEncoder(w).Encode(counter); err != nil {
             log.Printf("JSON encode failed: %v", err)
@@ -176,6 +177,7 @@ func CountersHandler(w http.ResponseWriter, r *http.Request) {
             return
         }
         if updated {
+            CountersDeletedTotal.Inc()
             w.WriteHeader(http.StatusOK)
         } else {
             http.Error(w, "not found", http.StatusNotFound)

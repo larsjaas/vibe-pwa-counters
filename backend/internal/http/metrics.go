@@ -25,4 +25,14 @@ var (
 		Name: "counters_users_deleted_total",
 		Help: "The total number of users deleted (anonymized).",
 	})
+
+	CountersTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "counters_counters_total",
+		Help: "The total number of counters created.",
+	})
+
+	CountersDeletedTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "counters_counters_deleted_total",
+		Help: "The total number of counters deleted.",
+	})
 )

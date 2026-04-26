@@ -75,6 +75,24 @@ func main() {
         }
     }
 
+    // Initialize prometheus counters count
+    activeCount, err := db.GetCountersCount(ctx, false)
+    if err != nil {
+        log.Printf("Failed to initialize active counters metric: %v", err)
+    } else {
+        for i := 0; i < activeCount; i++ {
+            httpHandlers.CountersTotal.Inc()
+        }
+    }
+    deletedCount, err := db.GetCountersCount(ctx, true)
+    if err != nil {
+        log.Printf("Failed to initialize deleted counters metric: %v", err)
+    } else {
+        for i := 0; i < deletedCount; i++ {
+            httpHandlers.CountersDeletedTotal.Inc()
+        }
+    }
+
     // Initialize prometheus deleted user count
     delCount, err := db.GetDeletedUsersCount(ctx)
     if err != nil {
