@@ -2,6 +2,8 @@
 
 This is a vibe-coded project for launching an Progressive Web App reimagination of the [vibe-cmdline-counters](https://github.com/larsjaas/vibe-cmdline-counters) project. It has a REST backend in Go, and a typescript+react web app that is served by nginx.
 
+A demo instance can be tested/used at [https://counters.crudbytes.com](https://counters.crudbytes.com).
+
 I am using this project to explore LLM vibe coding, what is possible with what is available for free, and reasonable to run on my M4 Mac Book Pro (48GB). I am intentionally not interfering with the code the LLM creates more than strictly necessary. For instance, my bundled LLM tool set is not 100% and will oftentimes cause incorrect edits (model-dependent) that I might go in and correct by hand. Because of this *least-amount-of-manual-coding* policy, the aesthetics of the app is assumed to be quite cumbersome to get pleasing, and is therefore not a priority before the app is fully functional. There will be a sudden facelift.
 
 Using:
@@ -12,6 +14,9 @@ Using:
   - ollama + gemma4:31b (was: ollama + gpt-oss:20b)
   - ssh/mosh, VSCode w/SSH
 - Tailscale private network
+
+The frontend design is Mobile First, aesthetics last, and I have not gotten around to even look at making a desktop design for now. Better squeeze the browser into mobile screen aspect ratio for now.
+
 
 # LLM Models
 
@@ -27,7 +32,7 @@ This model seemed promising, but it only produced tool calls using XML, which pi
 
 ## gemma4:31b (current)
 
-The gemma4:31b model produced tool calls that pi-coding-agents picks up right out of the box, and the edits seems to be on point. It also and follow my instructions on what to implement (even better!), so I am seeing how far I can continue with gemma4:31b.
+The gemma4:31b model produced tool calls that pi-coding-agents picks up right out of the box, and the edits seems to be on point. It also and follow my instructions on what to implement (even better!), and I've learnt to manage my pi session(s) better, so I am seeing how far I can continue with gemma4:31b. Apparently quite far.
 
 
 # Purpose
@@ -41,7 +46,11 @@ The gemma4:31b model produced tool calls that pi-coding-agents picks up right ou
 
 # Development
 
-Launch pi-coding-agents with the following command, and let it rip!
+Install pi-docing-agents in the sandbox of your choice.
+
+    $ npm install -g @mariozechner/pi-coding-agent
+
+Some tools are bundled with the project. Launch pi-coding-agents with the following command, and let it rip!
 
     $ pi -e tools/tools.ts
 
@@ -141,6 +150,11 @@ Find the node fully qualified Tailscale-net hostname, and request SSL certificat
 # Swagger UI
 
 To use the backend API with swagger-ui, I have placed openapi.yaml under src/public which is accessible at http://hostnameport/openapi.yaml. The servers url in openapi.yaml must be updated to reflect the real port for the backend api server.
+
+
+# API keys
+
+You can manage API keys for the accounts you create. These are currently not used for anything, but are intended for a replacement implementation of @larsjaas/vibe-cmdline-counters that works towards the same backend server as the web app.
 
 
 # License
