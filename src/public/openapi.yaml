@@ -69,6 +69,33 @@ components:
           format: date-time
           example: "2023-10-27T10:00:00Z"
 
+    APIKey:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        apikey:
+          type: string
+          example: "key_123456789_rand"
+        createtime:
+          type: string
+          format: date-time
+          example: "2023-10-27T10:00:00Z"
+        deletetime:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        lastused:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+
 security:
   - cookieAuth: []
 
@@ -86,6 +113,57 @@ paths:
                 $ref: '#/components/schemas/SystemInfo'
         '401':
           description: Unauthorized
+
+  /apikeys:
+    get:
+      summary: List API keys
+      description: Returns all active API keys for the authenticated user.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/APIKey'
+        '401':
+          description: Unauthorized
+
+  /apikeys/create:
+    post:
+      summary: Create API key
+      description: Generates a new API key for the authenticated user.
+      responses:
+        '200':
+          description: Successfully created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apikey:
+                    type: string
+        '401':
+          description: Unauthorized
+
+  /apikeys/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    delete:
+      summary: Delete API key
+      description: Soft deletes an API key if the authenticated user owns it.
+      responses:
+        '200':
+          description: Successfully deleted
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
 
   /account:
     get:

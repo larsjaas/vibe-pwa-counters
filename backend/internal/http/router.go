@@ -42,6 +42,11 @@ func NewRouter() http.Handler {
     mux.HandleFunc("/api/counts", CountHandler)
     mux.HandleFunc("/api/counts/", CountHandler)
 
+    // API Keys
+    mux.HandleFunc("/api/apikeys", APIKeyHandler)
+    mux.HandleFunc("/api/apikeys/create", APIKeyHandler)
+    mux.HandleFunc("/api/apikeys/", APIKeyHandler)
+
     fmt.Println("HTTP routes registered – listening on :8081")
     return mux
 }

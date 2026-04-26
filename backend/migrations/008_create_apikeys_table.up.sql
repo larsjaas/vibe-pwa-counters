@@ -1,0 +1,8 @@
+CREATE TABLE apikeys (
+    id SERIAL PRIMARY KEY,
+    userid INT NOT NULL REFERENCES users(id),
+    apikey VARCHAR(256) NOT NULL UNIQUE,
+    createtime TIMESTAMP DEFAULT NOW(),
+    deletetime TIMESTAMP DEFAULT NULL,
+    lastused TIMESTAMP DEFAULT NULL
+);
