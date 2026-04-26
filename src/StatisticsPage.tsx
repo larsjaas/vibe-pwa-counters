@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Counter } from './CounterList';
+import { Trash2 } from 'lucide-react';
+import { ConfirmationModal } from './components/ConfirmationModal';
 
 export const StatisticsPage: React.FC = () => {
     const [counters, setCounters] = useState<Counter[]>([]);
     const [selectedCounterId, setSelectedCounterId] = useState<number | null>(null);
     const [stats, setStats] = useState<number[]>(new Array(24).fill(0));
     const [loading, setLoading] = useState(true);
-    const [allCounts, setAllCounts] = useState<Array<{ counter: number; delta: number; when: string }>>([]);
+    const [allCounts, setAllCounts] = useState<Array<{ id: number; counter: number; delta: number; when: string }>>([]);
+    const [countToDelete, setCountToDelete] = useState<number | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -19,7 +22,7 @@ export const StatisticsPage: React.FC = () => {
                 if (!resCounters.ok || !resCounts.ok) throw new Error('Failed to fetch data');
 
                 const countersData: Counter[] = await resCounters.json();
-                const countsData: Array<{ counter: number; delta: number; when: string }> = await resCounts.json();
+                const countsData: Array<{ id: number; counter: number; delta: number; when: string }> = await resCounts.json();
 
                 // MRU Ordering: Most recently updated counters first.
                 const lastUsedMap = new Map<number, number>();
@@ -137,7 +140,30 @@ export const StatisticsPage: React.FC = () => {
                             <span>12:00</span>
                             <span>23:00</span>
                         </div>
-
+                        {countToDelete !== null && (
+                            <ConfirmationModal 
+                                message="Do you want to delete the selected count?" 
+                                onConfirm={async () => {
+                                    try {
+                                        await fetch(`/api/counts/${countToDelete}`, { method: 'DELETE' });
+                                        // Refresh data
+                                        const [resCounters, resCounts] = await Promise.all([
+                                            fetch('/api/counters'),
+                                            fetch('/api/counts')
+                                        ]);
+                                        const countersData = await resCounters.json();
+                                        const countsData = await resCounts.json();
+                                        setCounters(countersData);
+                                        setAllCounts(countsData);
+                                    } catch (e) {
+                                        console.error('Error deleting count', e);
+                                    } finally {
+                                        setCountToDelete(null);
+                                    }
+                                }}
+                                onCancel={() => setCountToDelete(null)}
+                            />
+                        )}
                         <div style={{ 
                             marginTop: '3rem', 
                             width: '100%', 
@@ -156,6 +182,7 @@ export const StatisticsPage: React.FC = () => {
                                     <tr style={{ borderBottom: '2px solid #eee', color: '#888' }}>
                                         <th style={{ padding: '8px 0' }}>Time</th>
                                         <th style={{ padding: '8px 0', textAlign: 'right' }}>Delta</th>
+                                        <th style={{ padding: '8px 0', textAlign: 'right' }}></th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -164,7 +191,7 @@ export const StatisticsPage: React.FC = () => {
                                         .sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime())
                                         .slice(0, 5)
                                         .map((entry, idx) => (
-                                            <tr key={idx} style={{ borderBottom: '1px solid #f9f9f9' }}>
+                                            <tr key={entry.id} style={{ borderBottom: '1px solid #f9f9f9' }}>
                                                 <td style={{ padding: '8px 0', color: '#666' }}>
                                                     {new Date(entry.when).toLocaleString()}
                                                 </td>
@@ -175,6 +202,14 @@ export const StatisticsPage: React.FC = () => {
                                                     color: entry.delta >= 0 ? '#2ecc71' : '#e74c3c'
                                                 }}>
                                                     {entry.delta > 0 ? `+${entry.delta}` : entry.delta}
+                                                </td>
+                                                <td style={{ padding: '8px 0', textAlign: 'right' }}>
+                                                    <Trash2 
+                                                        size={16} 
+                                                        color="#d32f2f" 
+                                                        style={{ cursor: 'pointer' }} 
+                                                        onClick={() => setCountToDelete(entry.id)}
+                                                    />
                                                 </td>
                                             </tr>
                                         ))}
