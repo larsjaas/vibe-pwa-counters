@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"time"
+	"context"
 )
 
 // UserExists checks whether a user with the supplied email address is
@@ -65,7 +66,33 @@ func GetUserIDByEmail(email string) (int, error) {
     return id, nil
 }
 
-// UpdateLastLogin updates the lastlogin timestamp for the user with the given id.
+// GetActiveUsersCount returns the number of users who are not marked as deleted.
+func GetActiveUsersCount(ctx context.Context) (int, error) {
+	if db == nil {
+		return 0, fmt.Errorf("database not initialized")
+	}
+	const query = "SELECT count(*) FROM users WHERE deletetime IS NULL"
+	var count int
+	err := db.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+// GetDeletedUsersCount returns the number of users who are marked as deleted.
+func GetDeletedUsersCount(ctx context.Context) (int, error) {
+	if db == nil {
+		return 0, fmt.Errorf("database not initialized")
+	}
+	const query = "SELECT count(*) FROM users WHERE deletetime IS NOT NULL"
+	var count int
+	err := db.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
 func UpdateLastLogin(userID int) error {
     if db == nil {
         return fmt.Errorf("database not initialized")

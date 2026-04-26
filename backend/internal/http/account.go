@@ -56,6 +56,7 @@ func AccountHandler(w http.ResponseWriter, r *http.Request) {
             http.Error(w, "internal server error", http.StatusInternalServerError)
             return
         }
+        UsersDeletedCount.Inc()
 
         // Delete the session cookie
         http.SetCookie(w, &http.Cookie{
@@ -131,6 +132,7 @@ func ConfirmSignupHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal error creating account", http.StatusInternalServerError)
 		return
 	}
+	UserCount.Inc()
 
 	uid, err := db.GetUserIDByEmail(email)
 	if err != nil {

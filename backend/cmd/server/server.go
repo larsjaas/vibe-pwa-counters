@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -61,6 +62,28 @@ func main() {
     // Run database migrations on startup. Delegated to the internal
     // database package for better separation of concerns.
     db.RunMigrations(dbConn)
+
+    // Initialize prometheus user count
+    ctx := context.Background()
+    count, err := db.GetActiveUsersCount(ctx)
+    if err != nil {
+        log.Printf("Failed to initialize user count metric: %v", err)
+    } else {
+        // Use a loop to initialize the counter since prometheus.Counter only supports Inc()
+        for i := 0; i < count; i++ {
+            httpHandlers.UserCount.Inc()
+        }
+    }
+
+    // Initialize prometheus deleted user count
+    delCount, err := db.GetDeletedUsersCount(ctx)
+    if err != nil {
+        log.Printf("Failed to initialize deleted user count metric: %v", err)
+    } else {
+        for i := 0; i < delCount; i++ {
+            httpHandlers.UsersDeletedCount.Inc()
+        }
+    }
 
     // HTTP/REST server setup – routes registered in router.go
     mux := httpHandlers.NewRouter()
