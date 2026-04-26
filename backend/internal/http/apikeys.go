@@ -79,6 +79,7 @@ func APIKeyHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
 		}
+		APIKeysTotal.Inc()
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(map[string]string{"apikey": key}); err != nil {
 			// Log if needed.
@@ -106,6 +107,7 @@ func APIKeyHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if updated {
+			APIKeysDeletedTotal.Inc()
 			w.WriteHeader(http.StatusOK)
 		} else {
 			http.Error(w, "not found", http.StatusNotFound)

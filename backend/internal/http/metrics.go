@@ -45,4 +45,14 @@ var (
 		Name: "counters_counts_deleted_total",
 		Help: "The total number of count records soft-deleted.",
 	})
-)
+
+	APIKeysTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "counters_apikeys_total",
+		Help: "The total number of API keys created.",
+	})
+
+	APIKeysDeletedTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "counters_apikeys_deleted_total",
+		Help: "The total number of API keys soft-deleted.",
+	})
+}
