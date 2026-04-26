@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IconButton } from './components/IconButton';
-import { Plus, Edit2, TrendingUp } from 'lucide-react';
+import { Plus, Edit2, SquareCheckBig } from 'lucide-react';
 
 export interface Counter {
     id: number;
@@ -97,7 +97,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                             <td className="table-cell text-right font-bold">{c.count}</td>
                             <td className="table-cell action-cell">
                                 <IconButton 
-                                    icon={TrendingUp} 
+                                    icon={SquareCheckBig} 
                                     onClick={async () => {
                                         await fetch('/api/count', {
                                             method: 'POST',
