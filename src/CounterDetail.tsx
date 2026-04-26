@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { IconButton } from './components/IconButton';
-import { Archive, Trash2 } from 'lucide-react';
+import { Archive, ArchiveRestore, Trash2 } from 'lucide-react';
 
 interface Counter {
     id: number;
     name: string;
     step: number;
+    archivetime: string | null;
 }
 
 interface CounterDetailProps {
@@ -65,9 +66,9 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
             <div className="form-actions" style={{ justifyContent: 'space-between', marginTop: '30px' }}>
                 <div style={{ display: 'flex', gap: '10px' }}>
                     <IconButton 
-                        icon={Archive} 
+                        icon={counter.archivetime ? ArchiveRestore : Archive} 
                         onClick={() => onArchive(counter.id)} 
-                        title="Archive" 
+                        title={counter.archivetime ? "Unarchive" : "Archive"} 
                     />
                     <IconButton 
                         icon={Trash2} 

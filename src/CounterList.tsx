@@ -69,6 +69,10 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
 
     if (loading) return <div className="loading-text">Loading counters...</div>;
 
+    const nonArchived = counters.filter(c => c.archivetime === null);
+    const archived = counters.filter(c => c.archivetime !== null);
+    const displayCounters = showArchived ? [...nonArchived, ...archived] : nonArchived;
+
     return (
         <div className="counter-list-container">
             <div className="counter-list-header">
@@ -91,7 +95,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                     </tr>
                 </thead>
                 <tbody>
-                    {counters.filter(c => showArchived ? c.archivetime !== null : c.archivetime === null).map(c => (
+                    {displayCounters.map(c => (
                         <tr key={c.id} className="table-row">
                             <td className="table-cell">{c.name}</td>
                             <td className="table-cell text-right font-bold">{c.count}</td>
@@ -118,7 +122,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                     ))}
                 </tbody>
             </table>
-            {counters.filter(c => showArchived ? c.archivetime !== null : c.archivetime === null).length === 0 && (
+            {displayCounters.length === 0 && (
                 <p className="empty-text">No counters found. Create one!</p>
             )}
             <div style={{ marginTop: '20px', textAlign: 'center' }}>
