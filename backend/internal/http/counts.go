@@ -83,6 +83,7 @@ func CountHandler(w http.ResponseWriter, r *http.Request) {
             return
         }
         if updated {
+            CountsDeletedTotal.Inc()
             w.WriteHeader(http.StatusOK)
         } else {
             http.Error(w, "not found", http.StatusNotFound)
@@ -123,6 +124,7 @@ func CountHandler(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "internal server error", http.StatusInternalServerError)
         return
     }
+    CountsTotal.Inc()
     w.Header().Set("Content-Type", "application/json")
     if err := json.NewEncoder(w).Encode(c); err != nil {
         // Log encoding errors if needed.

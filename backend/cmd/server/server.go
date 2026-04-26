@@ -63,17 +63,9 @@ func main() {
     // database package for better separation of concerns.
     db.RunMigrations(dbConn)
 
-    // Initialize prometheus user count
     ctx := context.Background()
-    count, err := db.GetActiveUsersCount(ctx)
-    if err != nil {
-        log.Printf("Failed to initialize user count metric: %v", err)
-    } else {
-        // Use a loop to initialize the counter since prometheus.Counter only supports Inc()
-        for i := 0; i < count; i++ {
-            httpHandlers.UserCount.Inc()
-        }
-    }
+
+    // HTTP/REST server setup – routes registered in router.go
 
     // Initialize prometheus counters count
     activeCount, err := db.GetCountersCount(ctx, false)

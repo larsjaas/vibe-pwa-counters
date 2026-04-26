@@ -6,6 +6,34 @@ import (
 	"time"
 )
 
+// GetCountsTotal returns the total number of count records in the table.
+func GetCountsTotal() (int, error) {
+	if db == nil {
+		return 0, fmt.Errorf("database not initialized")
+	}
+	const query = "SELECT count(*) FROM counts"
+	var count int
+	err := db.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+// GetCountsDeletedTotal returns the number of soft-deleted count records.
+func GetCountsDeletedTotal() (int, error) {
+	if db == nil {
+		return 0, fmt.Errorf("database not initialized")
+	}
+	const query = "SELECT count(*) FROM counts WHERE deletetime IS NOT NULL"
+	var count int
+	err := db.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 // Count represents a row in the `counts` table.
 type Count struct {
     ID         int            `json:"id"`
