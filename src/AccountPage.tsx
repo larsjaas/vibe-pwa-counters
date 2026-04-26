@@ -122,7 +122,7 @@ export const AccountPage: React.FC = () => {
 
     return (
         <div className="account-page-container">
-            <div className="account-section">Account Information</div>
+            <h2 className="account-section">Account Information</h2>
             
             {user && (
                 <div className="account-info">

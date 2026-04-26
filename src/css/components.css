@@ -16,7 +16,7 @@
 .stats-page {
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     text-align: center;
     height: 100%;
     padding: 20px;
@@ -158,10 +158,12 @@
 .account-page-container {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     height: 100vh;
     text-align: center;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 .account-error {
@@ -170,8 +172,8 @@
 }
 
 .account-section {
-    margin-bottom: 30px;
-    font-weight: bold;
+    margin-top: 0;
+    margin-bottom: 20px;
 }
 
 .account-info {
