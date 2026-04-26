@@ -55,4 +55,4 @@ var (
 		Name: "counters_apikeys_deleted_total",
 		Help: "The total number of API keys soft-deleted.",
 	})
-}
+)
