@@ -66,7 +66,8 @@ func EventsHandler(w http.ResponseWriter, r *http.Request) {
 	userConnections[userID] = append(userConnections[userID], eventChan)
 	connMutex.Unlock()
 
-	log.Printf("SSE connection established for user %d", userID)
+	activeSSEClients.Inc()
+	// log.Printf("SSE connection established for user %d", userID)
 
 	// Ensure deregistration on exit
 	defer func() {
@@ -83,7 +84,8 @@ func EventsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		connMutex.Unlock()
 		close(eventChan)
-		log.Printf("SSE connection closed for user %d", userID)
+		// log.Printf("SSE connection closed for user %d", userID)
+		activeSSEClients.Dec()
 	}()
 
 	// Flush the initial response to establish the connection
