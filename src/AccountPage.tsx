@@ -1,37 +1,51 @@
 import React, { useEffect, useState } from 'react';
 import { IconButton } from './components/IconButton';
-import { LogOut, Trash2 } from 'lucide-react';
+import { LogOut, Trash2, Plus, Key } from 'lucide-react';
+import { ConfirmationModal } from './components/ConfirmationModal';
 
 interface UserInfo {
     email: string;
     name?: string;
 }
 
+interface APIKey {
+    id: number;
+    apikey: string;
+    createtime: string;
+    lastused: string | null;
+}
+
 const FRONTEND_VERSION = "0.8.0";
 
 export const AccountPage: React.FC = () => {
     const [user, setUser] = useState<UserInfo | null>(null);
+    const [apikeys, setApikeys] = useState<APIKey[]>([]);
     const [beVersion, setBeVersion] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [apiKeyToDelete, setApiKeyToDelete] = useState<number | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [userRes, infoRes] = await Promise.all([
+                const [userRes, infoRes, keysRes] = await Promise.all([
                     fetch('/api/account'),
                     fetch('/api/info'),
+                    fetch('/api/apikeys'),
                 ]);
                 
                 if (!userRes.ok) throw new Error('Failed to fetch account information');
                 if (!infoRes.ok) throw new Error('Failed to fetch system information');
+                if (!keysRes.ok) throw new Error('Failed to fetch API keys');
 
                 const userData = await userRes.json();
                 const infoData = await infoRes.json();
+                const keysData = await keysRes.json();
 
                 setUser(userData);
                 setBeVersion(infoData.version);
+                setApikeys(keysData);
             } catch (e: any) {
                 setError(e.message);
             } finally {
@@ -41,6 +55,32 @@ export const AccountPage: React.FC = () => {
 
         fetchData();
     }, []);
+
+    const handleCreateAPIKey = async () => {
+        try {
+            const res = await fetch('/api/apikeys/create', { method: 'POST' });
+            if (!res.ok) throw new Error('Failed to create API key');
+            
+            // Refresh the list
+            const keysRes = await fetch('/api/apikeys');
+            if (!keysRes.ok) throw new Error('Failed to refresh API keys');
+            const keysData = await keysRes.json();
+            setApikeys(keysData);
+        } catch (e: any) {
+            alert(`Error creating API key: ${e.message}`);
+        }
+    };
+
+    const handleDeleteAPIKey = async (id: number) => {
+        try {
+            const res = await fetch(`/api/apikeys/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed to delete API key');
+            
+            setApikeys(prev => prev.filter(key => key.id !== id));
+        } catch (e: any) {
+            alert(`Error deleting API key: ${e.message}`);
+        }
+    };
 
     const handleLogout = () => {
         window.location.href = '/api/logout';
@@ -91,6 +131,65 @@ export const AccountPage: React.FC = () => {
                 </div>
             )}
 
+            <div style={{ marginTop: '2rem', marginBottom: '3rem' }}>
+                <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    marginBottom: '1rem' 
+                }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>API Keys</h3>
+                    <IconButton 
+                        icon={Plus} 
+                        onClick={handleCreateAPIKey} 
+                        title="Create New API Key" 
+                        backgroundColor="#0070f3" 
+                        color="#fff" 
+                    />
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                    <table style={{ 
+                        width: '100%', 
+                        borderCollapse: 'collapse', 
+                        fontSize: '0.85rem',
+                        textAlign: 'left'
+                    }}>
+                        <thead>
+                            <tr style={{ borderBottom: '2px solid #eee', color: '#888' }}>
+                                <th style={{ padding: '8px 0' }}>Key</th>
+                                <th style={{ padding: '8px 0', textAlign: 'right' }}>Created</th>
+                                <th style={{ padding: '8px 0', textAlign: 'right' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody style={{ textAlign: 'left' }}>
+                            {apikeys.map(key => (
+                                <tr key={key.id} style={{ borderBottom: '1px solid #f9f9f9' }}>
+                                    <td style={{ padding: '8px 0', fontFamily: 'monospace' }}>{key.apikey}</td>
+                                    <td style={{ padding: '8px 0', textAlign: 'right', color: '#666' }}>
+                                        {new Date(key.createtime).toLocaleDateString()}
+                                    </td>
+                                    <td style={{ padding: '8px 0', textAlign: 'right' }}>
+                                        <Trash2 
+                                            size={16} 
+                                            color="#d32f2f" 
+                                            style={{ cursor: 'pointer' }} 
+                                            onClick={() => setApiKeyToDelete(key.id)} 
+                                        />
+                                    </td>
+                                </tr>
+                            ))}
+                            {apikeys.length === 0 && (
+                                <tr>
+                                    <td colSpan={3} style={{ padding: '1rem', textAlign: 'center', color: '#999' }}>
+                                        No API keys found.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div className="account-actions">
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                     <IconButton 
@@ -111,6 +210,19 @@ export const AccountPage: React.FC = () => {
                     <span className="account-subtitle" style={{ textAlign: 'center', whiteSpace: 'pre-line' }}>Delete{"\n"}Account</span>
                 </div>
             </div>
+
+            {apiKeyToDelete !== null && (
+                <ConfirmationModal 
+                    message="Do you want to delete the selected API key?" 
+                    onConfirm={async () => {
+                        await handleDeleteAPIKey(apiKeyToDelete);
+                        setApiKeyToDelete(null);
+                    }} 
+                    onCancel={() => setApiKeyToDelete(null)} 
+                    confirmText="Delete"
+                    cancelText="Cancel"
+                />
+            )}
 
             {showDeleteModal && (
                 <div className="modal-overlay" style={{
