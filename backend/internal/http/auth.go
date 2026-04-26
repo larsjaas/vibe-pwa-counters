@@ -51,6 +51,7 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
     if err == nil && redisClient != nil {
         // Ensure we delete the key to avoid stale entries.
         _ = redisClient.Del(context.Background(), cookie.Value)
+        sessionCount.Dec()
     }
     http.Redirect(w, r, "/landing_page/index.html", http.StatusFound)
 }
@@ -247,7 +248,7 @@ func createSession(w http.ResponseWriter, r *http.Request, userID int, email, na
         "user_name":    name,
         "access_token": accessToken,
         "created_at":   time.Now().Format(time.RFC3339),
-        "expires_at":   time.Now().Add(6 * time.Hour).Format(time.RFC3339),
+        "expires_at":   time.Now().Add(72 * time.Hour).Format(time.RFC3339),
     }
 
     ip, _, _ := net.SplitHostPort(r.RemoteAddr)
@@ -260,10 +261,11 @@ func createSession(w http.ResponseWriter, r *http.Request, userID int, email, na
     if redisClient != nil {
         ctx := context.Background()
         payload, _ := json.Marshal(session)
-        err := redisClient.Set(ctx, sessionID, string(payload), 6*time.Hour).Err()
+        err := redisClient.Set(ctx, sessionID, string(payload), 72*time.Hour).Err()
         if err != nil {
             log.Printf("Redis session store error: %v", err)
         }
+        sessionCount.Inc()
 
         // Update last login time in database
         if userID != 0 {

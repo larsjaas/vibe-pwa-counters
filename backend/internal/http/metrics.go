@@ -10,4 +10,9 @@ var (
 		Name: "counters_active_sse_clients",
 		Help: "The total number of active SSE connections.",
 	})
+
+	sessionCount = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "counters_sessions",
+		Help: "The total number of active sessions in Redis.",
+	})
 )
