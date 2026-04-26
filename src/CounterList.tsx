@@ -25,7 +25,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
         try {
             const [resCounters, resUpdates] = await Promise.all([
                 fetch('/api/counters'),
-                fetch('/api/count')
+                fetch('/api/counts')
             ]);
 
             if (!resCounters.ok || !resUpdates.ok) throw new Error('Failed to fetch data');
@@ -43,7 +43,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
             });
 
             // MRU Ordering: Most recently updated counters first.
-            // Since /api/count returns in insert order, the last occurrence of a counter ID is the most recent.
+            // Since /api/counts returns in insert order, the last occurrence of a counter ID is the most recent.
             const lastUsedMap = new Map<number, number>();
             updates.forEach((u, index) => {
                 lastUsedMap.set(u.counter, index);
@@ -99,7 +99,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                                 <IconButton 
                                     icon={SquareCheckBig} 
                                     onClick={async () => {
-                                        await fetch('/api/count', {
+                                        await fetch('/api/counts', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({ counter: c.id, delta: c.step }),

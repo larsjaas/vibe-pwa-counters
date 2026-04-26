@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Count represents a row in the `count` table.
+// Count represents a row in the `counts` table.
 type Count struct {
     ID         int            `json:"id"`
     CounterID  int            `json:"counter"`
@@ -22,7 +22,7 @@ func InsertCount(counterID int, delta int) (*Count, error) {
     if db == nil {
         return nil, fmt.Errorf("database not initialized")
     }
-    const query = `INSERT INTO count ("counter", delta) VALUES ($1, $2)
+    const query = `INSERT INTO counts ("counter", delta) VALUES ($1, $2)
         RETURNING id, "counter", delta, "when", deletetime`
     var c Count
     var del int
@@ -46,7 +46,7 @@ func GetCountsForUser(userID int) ([]*Count, error) {
 	}
 	const query = `
 		SELECT c.id, c.counter, c.delta, c.when, c.deletetime
-		FROM count c
+		FROM counts c
 		JOIN counters ct ON c.counter = ct.id
 		WHERE ct."user" = $1 AND ct.deletetime IS NULL AND c.deletetime IS NULL
 		ORDER BY c.when ASC`
@@ -77,7 +77,7 @@ func SoftDeleteCount(countID int) (bool, error) {
     if db == nil {
         return false, fmt.Errorf("database not initialized")
     }
-    const query = `UPDATE count SET deletetime = now()
+    const query = `UPDATE counts SET deletetime = now()
         WHERE id = $1 AND deletetime IS NULL`
     res, err := db.Exec(query, countID)
     if err != nil {

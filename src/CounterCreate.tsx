@@ -30,7 +30,7 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
 
             // If initial value is non-zero, set it by posting a delta
             if (initial !== 0) {
-                await fetch('/api/count', {
+                await fetch('/api/counts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ counter: newCounter.id, delta: initial }),

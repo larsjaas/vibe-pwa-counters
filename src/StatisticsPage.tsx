@@ -13,7 +13,7 @@ export const StatisticsPage: React.FC = () => {
             try {
                 const [resCounters, resCounts] = await Promise.all([
                     fetch('/api/counters'),
-                    fetch('/api/count')
+                    fetch('/api/counts')
                 ]);
 
                 if (!resCounters.ok || !resCounts.ok) throw new Error('Failed to fetch data');

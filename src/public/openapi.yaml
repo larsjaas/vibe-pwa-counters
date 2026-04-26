@@ -134,7 +134,7 @@ paths:
         '500':
           description: Internal server error
 
-  /count:
+  /counts:
     get:
       summary: Get user counts
       description: Returns all count records for counters owned by the authenticated user.
@@ -178,6 +178,24 @@ paths:
           description: Forbidden - counter not owned by user
         '404':
           description: Not found - counter does not exist
+
+  /counts/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    delete:
+      summary: Delete a count record
+      description: Soft deletes a count record if the authenticated user owns the associated counter.
+      responses:
+        '200':
+          description: Successfully deleted
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
 
   /events:
     get:
