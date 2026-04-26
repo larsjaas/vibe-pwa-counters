@@ -70,6 +70,29 @@ func GetCountsForUser(userID int) ([]*Count, error) {
 	return counts, nil
 }
 
+// SoftDeleteCountForUser marks a count record as deleted if it's owned by the user.
+// It returns true if a row was affected and false otherwise.
+func SoftDeleteCountForUser(userID, countID int) (bool, error) {
+    if db == nil {
+        return false, fmt.Errorf("database not initialized")
+    }
+    const query = `
+        UPDATE counts 
+        SET deletetime = NOW() 
+        WHERE id = $1 
+          AND deletetime IS NULL 
+          AND counter IN (SELECT id FROM counters WHERE "user" = $2 AND deletetime IS NULL)`
+    res, err := db.Exec(query, countID, userID)
+    if err != nil {
+        return false, err
+    }
+    rows, err := res.RowsAffected()
+    if err != nil {
+        return false, err
+    }
+    return rows > 0, nil
+}
+
 // SoftDeleteCount marks a count record as deleted by writing the
 // current timestamp into the `deletetime` column. The function
 // returns `true` if a row was affected and `false` otherwise.

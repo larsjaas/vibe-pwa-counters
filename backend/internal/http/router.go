@@ -40,6 +40,7 @@ func NewRouter() http.Handler {
 
     // GET /api/counts to retrieve the number of counters for the authenticated user.
     mux.HandleFunc("/api/counts", CountHandler)
+    mux.HandleFunc("/api/counts/", CountHandler)
 
     fmt.Println("HTTP routes registered – listening on :8081")
     return mux

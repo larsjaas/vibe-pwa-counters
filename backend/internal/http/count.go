@@ -5,21 +5,24 @@ import (
     "encoding/json"
     "log"
     "net/http"
+    "strings"
+    "strconv"
 
     db "github.com/larsa/pwa-counter/backend/internal/db"
 )
 
-// CountHandler handles GET and POST /api/count requests.
+// CountHandler handles GET, POST, and DELETE /api/counts requests.
 // GET returns all count records for counters owned by the authenticated user.
-// POST inserts a new record into the `count` table. The request body must
+// POST inserts a new record into the `counts` table. The request body must
 // contain a JSON object with at least the fields `counter` (the ID of the
 // counter to update) and `delta` (the integer change to record). The
 // handler validates that the counter belongs to the authenticated user via
 // a quick ownership check. If the counter does not belong to the user or
 // does not exist / has been deleted, a 403 Forbidden is returned.
+// DELETE /api/counts/{id} soft deletes a count record if the user owns the counter.
 func CountHandler(w http.ResponseWriter, r *http.Request) {
-    log.Printf("/api/count called: method=%s", r.Method)
-    if r.Method != http.MethodPost && r.Method != http.MethodGet {
+    log.Printf("/api/counts called: method=%s", r.Method)
+    if r.Method != http.MethodPost && r.Method != http.MethodGet && r.Method != http.MethodDelete {
         http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
         return
     }
@@ -63,6 +66,30 @@ func CountHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    if r.Method == http.MethodDelete {
+        if !strings.HasPrefix(r.URL.Path, "/api/counts/") {
+            http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+            return
+        }
+        idStr := strings.TrimPrefix(r.URL.Path, "/api/counts/")
+        countID, err := strconv.Atoi(idStr)
+        if err != nil {
+            http.Error(w, "bad request", http.StatusBadRequest)
+            return
+        }
+        updated, err := db.SoftDeleteCountForUser(userID, countID)
+        if err != nil {
+            http.Error(w, "internal server error", http.StatusInternalServerError)
+            return
+        }
+        if updated {
+            w.WriteHeader(http.StatusOK)
+        } else {
+            http.Error(w, "not found", http.StatusNotFound)
+        }
+        return
+    }
+
     // POST logic follows.
     // Parse request body.
     var payload struct {
@@ -79,10 +106,11 @@ func CountHandler(w http.ResponseWriter, r *http.Request) {
     if err != nil {
         if err == sql.ErrNoRows {
             http.Error(w, "not found", http.StatusNotFound)
+            return
         } else {
             http.Error(w, "internal server error", http.StatusInternalServerError)
+            return
         }
-        return
     }
     if counterOwner != userID {
         http.Error(w, "Forbidden", http.StatusForbidden)
