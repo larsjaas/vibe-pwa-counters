@@ -1,0 +1,160 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Active SSE Clients",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "counters_active_sse_clients",
+          "legendFormat": "SSE Clients",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Active Sessions",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "counters_sessions",
+          "legendFormat": "Sessions",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Users (Created vs Deleted)",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(counters_users_total[5m])",
+          "legendFormat": "Created/sec",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(counters_users_deleted_total[5m])",
+          "legendFormat": "Deleted/sec",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Counters (Created vs Deleted)",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(counters_counters_total[5m])",
+          "legendFormat": "Created/sec",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(counters_counters_deleted_total[5m])",
+          "legendFormat": "Deleted/sec",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Counts (Created vs Deleted)",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(counters_counts_total[5m])",
+          "legendFormat": "Created/sec",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(counters_counts_deleted_total[5m])",
+          "legendFormat": "Deleted/sec",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "API Keys (Created vs Deleted)",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(counters_apikeys_total[5m])",
+          "legendFormat": "Created/sec",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(counters_apikeys_deleted_total[5m])",
+          "legendFormat": "Deleted/sec",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Total Users",
+      "gridPos": { "x": 0, "y": 24, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "counters_users_total",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Total Counters",
+      "gridPos": { "x": 6, "y": 24, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "counters_counters_total",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Total Counts",
+      "gridPos": { "x": 12, "y": 24, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "counters_counts_total",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Total API Keys",
+      "gridPos": { "x": 18, "y": 24, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "counters_apikeys_total",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["counters", "backend"],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "timezone": "",
+  "title": "Counters Service Overview",
+  "version": 1
+}
