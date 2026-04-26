@@ -264,6 +264,13 @@ func createSession(w http.ResponseWriter, r *http.Request, userID int, email, na
         if err != nil {
             log.Printf("Redis session store error: %v", err)
         }
+
+        // Update last login time in database
+        if userID != 0 {
+            if err := db.UpdateLastLogin(userID); err != nil {
+                log.Printf("DB last-login update error: %v", err)
+            }
+        }
     }
 
     http.SetCookie(w, &http.Cookie{

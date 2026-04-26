@@ -65,6 +65,16 @@ func GetUserIDByEmail(email string) (int, error) {
     return id, nil
 }
 
+// UpdateLastLogin updates the lastlogin timestamp for the user with the given id.
+func UpdateLastLogin(userID int) error {
+    if db == nil {
+        return fmt.Errorf("database not initialized")
+    }
+    const query = "UPDATE users SET lastlogin = NOW() WHERE id = $1"
+    _, err := db.Exec(query, userID)
+    return err
+}
+
 // AnonymizeUser marks a user as deleted by updating their name,
 // setting the deletetime, and replacing their email with a hashed version
 // to prevent the original email from being recovered while maintaining 
