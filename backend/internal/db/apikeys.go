@@ -67,3 +67,13 @@ func SoftDeleteAPIKey(userID, keyID int) (bool, error) {
 	}
 	return rows > 0, nil
 }
+
+func SoftDeleteAllAPIKeysForUser(userID int) error {
+	if db == nil {
+		return fmt.Errorf("database not initialized")
+	}
+	const query = `UPDATE apikeys SET deletetime = NOW() 
+                   WHERE userid = $1 AND deletetime IS NULL`
+	_, err := db.Exec(query, userID)
+	return err
+}

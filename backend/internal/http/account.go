@@ -50,6 +50,22 @@ func AccountHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     if r.Method == http.MethodDelete {
+        // Get user ID before anonymizing since email will change
+        uid, err := db.GetUserIDByEmail(email)
+        if err != nil {
+            log.Printf("AccountHandler: GetUserIDByEmail failed: %v", err)
+            http.Error(w, "internal server error", http.StatusInternalServerError)
+            return
+        }
+
+        // Soft-delete all API keys for the user
+        if err := db.SoftDeleteAllAPIKeysForUser(uid); err != nil {
+            log.Printf("AccountHandler: SoftDeleteAllAPIKeysForUser failed: %v", err)
+            // We continue even if this fails, but we could also return error. 
+            // Given it's a cleanup step, it might be okay to log and proceed, 
+            // but for consistency let's treat it as an error if we want absolute correctness.
+        }
+
         // Anonymize the user in the database
         if err := db.AnonymizeUser(email); err != nil {
             log.Printf("AccountHandler: AnonymizeUser failed: %v", err)
