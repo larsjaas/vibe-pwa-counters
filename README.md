@@ -156,10 +156,12 @@ To use the backend API with swagger-ui, I have placed openapi.yaml under src/pub
 
 # API keys
 
-You can manage API keys for the accounts you create. These are currently not used for anything, but are intended for a replacement implementation of @larsjaas/vibe-cmdline-counters that works towards the same backend server as the web app.
+You can manage API keys for the accounts you create. These are currently not used for anything, but are intended for a replacement implementation of @larsjaas/vibe-cmdline-counters that works towards the same backend server as the web app so command line and web app are always in sync. Probably also programmed in Go.
+
+To use an API key, place it as an "Authorization: Bearer <API-key>" HTTP-header in requests. See src/public/openapi.yaml for the REST API used by Counters.
 
 
 # License
 
-This is on purpose 95% vibe-coded. No license will probably hold up in court.
+This is on purpose 95% vibe-coded. No license will probably hold up in court. :)
 
