@@ -27,31 +27,13 @@ func CountHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Validate session cookie and retrieve user ID.
-    sessionCookie, err := r.Cookie("session_id")
+    // Authenticate request (via API key or session cookie)
+    sess, err := AuthenticateRequest(r)
     if err != nil {
         http.Error(w, "unauthorized", http.StatusUnauthorized)
         return
     }
-    var userID int
-    if redisClient != nil {
-        ctx := r.Context()
-        val, err := redisClient.Get(ctx, sessionCookie.Value).Result()
-        if err != nil {
-            http.Error(w, "unauthorized", http.StatusUnauthorized)
-            return
-        }
-        var sess map[string]interface{}
-        if e := json.Unmarshal([]byte(val), &sess); e == nil {
-            if uid, ok := sess["user_id"].(float64); ok {
-                userID = int(uid)
-            }
-        }
-    }
-    if userID == 0 {
-        http.Error(w, "unauthorized", http.StatusUnauthorized)
-        return
-    }
+    userID := sess.UserID
 
     if r.Method == http.MethodGet {
         counts, err := db.GetCountsForUser(userID)

@@ -9,6 +9,12 @@ import (
 	"context"
 )
 
+type User struct {
+	ID    int
+	Email string
+	Name  string
+}
+
 // UserExists checks whether a user with the supplied email address is
 // already present in the `users` table. It returns true if the user
 // exists, false otherwise, and an error if the query fails.
@@ -64,6 +70,20 @@ func GetUserIDByEmail(email string) (int, error) {
         return 0, err
     }
     return id, nil
+}
+
+// GetUserByID retrieves a user by their numeric ID.
+func GetUserByID(userID int) (*User, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+	const query = "SELECT id, email, name FROM users WHERE id = $1"
+	var u User
+	err := db.QueryRow(query, userID).Scan(&u.ID, &u.Email, &u.Name)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
 }
 
 // GetActiveUsersCount returns the number of users who are not marked as deleted.

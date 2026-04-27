@@ -10,44 +10,24 @@ import (
 )
 
 // AccountHandler returns JSON information of the authenticated user.
-// It extracts the session cookie, retrieves the session data from Redis,
+// It extracts the session cookie or API key, retrieves the user's identity,
 // and responds with a JSON object containing the user's name and email.
-// If the session is missing or invalid, it responds with 401 Unauthorized.
+// If authorization fails, it responds with 401 Unauthorized.
 func AccountHandler(w http.ResponseWriter, r *http.Request) {
     log.Printf("/api/account called: method=%s", r.Method)
     if r.Method != http.MethodGet && r.Method != http.MethodDelete {
         MethodNotAllowed(w, r)
         return
     }
-    // Validate session cookie
-    sessionCookie, err := r.Cookie("session_id")
+
+    // Authenticate request
+    sess, err := AuthenticateRequest(r)
     if err != nil {
         http.Error(w, "unauthorized", http.StatusUnauthorized)
         return
     }
-    // Retrieve session from Redis
-    var email, name string
-    if redisClient != nil {
-        ctx := r.Context()
-        val, err := redisClient.Get(ctx, sessionCookie.Value).Result()
-        if err != nil {
-            http.Error(w, "unauthorized", http.StatusUnauthorized)
-            return
-        }
-        var sess map[string]interface{}
-        if e := json.Unmarshal([]byte(val), &sess); e == nil {
-            if v, ok := sess["user_email"].(string); ok {
-                email = v
-            }
-            if v, ok := sess["user_name"].(string); ok {
-                name = v
-            }
-        }
-    }
-    if email == "" {
-        http.Error(w, "unauthorized", http.StatusUnauthorized)
-        return
-    }
+    email := sess.Email
+    name := sess.Name
 
     if r.Method == http.MethodDelete {
         // Get user ID before anonymizing since email will change
@@ -84,8 +64,9 @@ func AccountHandler(w http.ResponseWriter, r *http.Request) {
             HttpOnly: true,
         })
 
-        // Invalidate session data in Redis
-        if redisClient != nil {
+        // Invalidate session data in Redis if it was used
+        sessionCookie, err := r.Cookie("session_id")
+        if err == nil && redisClient != nil {
             _ = redisClient.Del(r.Context(), sessionCookie.Value)
         }
 

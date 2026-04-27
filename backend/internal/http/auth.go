@@ -34,6 +34,70 @@ func SetRedisClient(rdb *redis.Client) {
     redisClient = rdb
 }
 
+// UserSession contains authentication and identity information for a request.
+type UserSession struct {
+	UserID int
+	Email  string
+	Name   string
+}
+
+// AuthenticateRequest attempts to identify the user from either the 
+// Authorization header (Bearer token) or the session cookie.
+// It returns the UserSession if successful, or an error if unauthorized.
+func AuthenticateRequest(r *http.Request) (*UserSession, error) {
+	// 1. Try API Key from Authorization header
+	authHeader := r.Header.Get("Authorization")
+	if strings.HasPrefix(authHeader, "Bearer ") {
+		apiKey := strings.TrimPrefix(authHeader, "Bearer ")
+		uid, err := db.GetUserIDByAPIKey(apiKey)
+		if err == nil {
+			user, err := db.GetUserByID(uid)
+			if err == nil {
+				return &UserSession{
+					UserID: user.ID,
+					Email:  user.Email,
+					Name:   user.Name,
+				}, nil
+			}
+		}
+		// If API key was provided but invalid, we could either fail immediately 
+		// or fall back to the cookie. Standard behavior often fails immediately.
+		// For now, let's fall back to allow users who have both.
+	}
+
+	// 2. Try Session Cookie
+	sessionCookie, err := r.Cookie("session_id")
+	if err != nil {
+		return nil, fmt.Errorf("unauthorized: no session cookie")
+	}
+	if redisClient == nil {
+		return nil, fmt.Errorf("unauthorized: redis unavailable")
+	}
+
+	val, err := redisClient.Get(r.Context(), sessionCookie.Value).Result()
+	if err != nil {
+		return nil, fmt.Errorf("unauthorized: invalid session")
+	}
+	var sess map[string]interface{}
+	if e := json.Unmarshal([]byte(val), &sess); e != nil {
+		return nil, fmt.Errorf("unauthorized: session decode failed")
+	}
+
+	uid, okU := sess["user_id"].(float64)
+	email, okE := sess["user_email"].(string)
+	name, okN := sess["user_name"].(string)
+
+	if !okU || !okE || !okN {
+		return nil, fmt.Errorf("unauthorized: session data incomplete")
+	}
+
+	return &UserSession{
+		UserID: int(uid),
+		Email:  email,
+		Name:   name,
+	}, nil
+}
+
 // LogoutHandler clears the session cookie and redirects the user to the
 // landing page.
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {

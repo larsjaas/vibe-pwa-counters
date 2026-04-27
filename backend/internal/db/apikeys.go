@@ -77,3 +77,21 @@ func SoftDeleteAllAPIKeysForUser(userID int) error {
 	_, err := db.Exec(query, userID)
 	return err
 }
+
+// GetUserIDByAPIKey looks up the userID associated with the given API key,
+// ensuring the key has not been soft-deleted.
+func GetUserIDByAPIKey(key string) (int, error) {
+	if db == nil {
+		return 0, fmt.Errorf("database not initialized")
+	}
+	const query = `SELECT userid FROM apikeys WHERE apikey = $1 AND deletetime IS NULL`
+	var userID int
+	err := db.QueryRow(query, key).Scan(&userID)
+	if err == sql.ErrNoRows {
+		return 0, fmt.Errorf("invalid or deleted API key")
+	}
+	if err != nil {
+		return 0, err
+	}
+	return userID, nil
+}
