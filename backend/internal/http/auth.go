@@ -60,12 +60,14 @@ func AuthenticateRequest(r *http.Request) (*UserSession, error) {
 				}, nil
 			}
 		}
-		// If API key was provided but invalid, we could either fail immediately 
-		// or fall back to the cookie. Standard behavior often fails immediately.
-		// For now, let's fall back to allow users who have both.
 	}
 
 	// 2. Try Session Cookie
+	return AuthenticateSessionRequest(r)
+}
+
+// AuthenticateSessionRequest identifies the user using ONLY the session cookie.
+func AuthenticateSessionRequest(r *http.Request) (*UserSession, error) {
 	sessionCookie, err := r.Cookie("session_id")
 	if err != nil {
 		return nil, fmt.Errorf("unauthorized: no session cookie")

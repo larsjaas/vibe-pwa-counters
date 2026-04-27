@@ -20,8 +20,8 @@ func AccountHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Authenticate request
-    sess, err := AuthenticateRequest(r)
+    // Authenticate request (Session ONLY)
+    sess, err := AuthenticateSessionRequest(r)
     if err != nil {
         http.Error(w, "unauthorized", http.StatusUnauthorized)
         return
