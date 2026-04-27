@@ -1,34 +1,37 @@
 # AGENTS.md
 
 ## Project Overview
-This project is two components.
+This project is two components. Together they go under the name "Counters". There is a Counters backend,
+and a Counters frontend.
 
 ### Component 1
 
-The first component is a REST backend written in Go, using a PostgreSQL database for persistent storage.
-The REST API pattern is CRUD for the most part. It is located in the subdirectory backend/.
+The first component is a REST backend written in Go, using a PostgreSQL database for persistent storage,
+and redis for some client session caching.  The REST API pattern is CRUD for the most part. It is located
+in the subdirectory backend/.
 
 Goals:
 - Portable across Linux systems (including Raspberry Pi)
-- No external dependencies
-- Authorize clients by using Google's OAuth so people can use existing gmail accounts to get a user
+- Few external dependencies
+- Authorize clients by using Google's OAuth (and Authorization-header API keys) so people can use existing
+  gmail accounts to get a user.
 
 ### Component 2
 
 The other component is a progressive web app for use on mobile phones. It is a PWA / SPA that fetches
-all HTML and javascript from the server the backend runs on on launch, and use AJAX REST calls for online
+all HTML and javascript from the server the backend on launching, and use AJAX REST calls for online
 CRUD operations.
-When the app does not have access to the backend it should operate against local storage,
-and sync changes with the backend when it is accessible again.
 
-The PWA component is written in TypeScript, React, HTML, using Node for .
+The PWA component is written in TypeScript, React, HTML, using Node and Vite.
 
 Goals:
-- The app should be able to launch successfully when saved locally, even if the backend is inaccessible
+- Future: The app should be able to launch successfully when saved locally, even if the backend is inaccessible,
+  using local-storage when
 - During launch, the app should check for new versions to download and update itself
 - The app should use event-sourcing pattern to store updates in local storage when the backend or app is offline, which
   will be replayed when the app connects to the backend successfully again
-- If the user is not logged in on the backend, a standard Google OAuth account selector should be used to identify the client
+- If the user is not logged in on the backend, a standard Google OAuth account selector should be used
+  to identify the client
 
 ---
 
