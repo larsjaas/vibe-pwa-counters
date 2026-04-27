@@ -32,7 +32,9 @@ This model seemed promising, but it only produced tool calls using XML, which pi
 
 ## gemma4:31b (current)
 
-The gemma4:31b model produced tool calls that pi-coding-agents picks up right out of the box, and the edits seems to be on point. It also and follow my instructions on what to implement (even better!), and I've learnt to manage my pi session(s) better, so I am seeing how far I can continue with gemma4:31b. Apparently quite far.
+The gemma4:31b model produced tool calls that pi-coding-agents picks up right out of the box, and the edits seems to be on point. It also follows my instructions on what to implement (even better!) and doesn't detour too much. On top of that, I've learnt to better manage my pi session(s) with compaction and rewinds, which helps a great deal, so I am seeing how far I can continue with gemma4:31b. Apparently quite far...
+
+The only thing to note about using this model is that it is a bit slow on my setup. One turn (a commit) can easily take 15-20 minutes, but it is impressively often on the money when it comes to the result. Better to be slow and right than fast and wrong... The 26b a4b variant is probably a great deal faster without compromising too much on the model capabilities, so I will probably explore that one pretty soon.
 
 
 # Purpose
