@@ -131,7 +131,7 @@ export const AccountPage: React.FC = () => {
                 </div>
             )}
 
-            <div style={{ marginTop: '2rem', marginBottom: '3rem' }}>
+            <div style={{ marginTop: '2rem', marginBottom: '3rem', width: '95%' }}>
                 <div style={{ 
                     display: 'flex', 
                     justifyContent: 'space-between', 

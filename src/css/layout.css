@@ -25,7 +25,7 @@ html, body {
 }
 
 .main-content {
-    width: 95%;
+    width: 100%;
     flex: 1;
     overflow-y: auto;
     padding-bottom: 70px;
