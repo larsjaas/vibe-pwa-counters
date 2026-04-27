@@ -25,12 +25,14 @@ html, body {
 }
 
 .main-content {
+    width: 95%;
     flex: 1;
     overflow-y: auto;
     padding-bottom: 70px;
 }
 
 #app {
+    width: 100%;
     flex: 1 0 auto;
     text-align: center;
 }
