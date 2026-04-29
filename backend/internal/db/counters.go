@@ -83,7 +83,7 @@ func GetCountersForUser(userID int) ([]*Counter, error) {
     if db == nil {
         return nil, fmt.Errorf("database not initialized")
     }
-    const query = `SELECT id, "user", name, createtime, archivetime, step, deletetime FROM counters WHERE "user"=$1 ORDER BY id`
+    const query = `SELECT id, "user", name, createtime, archivetime, step, deletetime FROM counters WHERE "user"=$1 AND deletetime IS NULL ORDER BY id`
     rows, err := db.Query(query, userID)
     if err != nil {
         return nil, err
