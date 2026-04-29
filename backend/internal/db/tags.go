@@ -99,20 +99,26 @@ func SoftDeleteTag(userID int, tagID int) (bool, error) {
 }
 
 // AddTagToCounter associates a tag with a counter. 
-// Requires that the user owns the tag and has access to the counter.
+// Requires that the user owns BOTH the tag and the counter.
 func AddTagToCounter(userID int, tagID int, counterID int) error {
 	if db == nil {
 		return fmt.Errorf("database not initialized")
 	}
 
-	// Verify tag ownership and counter access in one transaction/block
-	// For simplicity we check if user owns the tag. 
-	// Access to counter is assumed handled by API layer or checked here.
+	// Verify tag ownership
 	const checkTagQuery = `SELECT 1 FROM tags WHERE id = $1 AND user_id = $2 AND deletetime IS NULL`
-	var exists int
-	err := db.QueryRow(checkTagQuery, tagID, userID).Scan(&exists)
+	var tagExists int
+	err := db.QueryRow(checkTagQuery, tagID, userID).Scan(&tagExists)
 	if err != nil {
 		return fmt.Errorf("tag not found or not owned by user: %w", err)
+	}
+
+	// Verify counter ownership
+	const checkCounterQuery = `SELECT 1 FROM counters WHERE id = $1 AND "user" = $2 AND deletetime IS NULL`
+	var counterExists int
+	err = db.QueryRow(checkCounterQuery, counterID, userID).Scan(&counterExists)
+	if err != nil {
+		return fmt.Errorf("counter not found or not owned by user: %w", err)
 	}
 
 	const insertQuery = `INSERT INTO counter_tags (counter_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`
