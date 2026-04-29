@@ -67,16 +67,21 @@ func InsertCount(counterID int, delta int) (*Count, error) {
     return &c, nil
 }
 
-// GetCountsForUser retrieves all count records for counters owned by the given user.
+// GetCountsForUser retrieves all count records for counters the user owns or has access to via shared tags.
 func GetCountsForUser(userID int) ([]*Count, error) {
 	if db == nil {
 		return nil, fmt.Errorf("database not initialized")
 	}
 	const query = `
-		SELECT c.id, c.counter, c.delta, c.when, c.deletetime
+		SELECT DISTINCT c.id, c.counter, c.delta, c.when, c.deletetime
 		FROM counts c
 		JOIN counters ct ON c.counter = ct.id
-		WHERE ct."user" = $1 AND ct.deletetime IS NULL AND c.deletetime IS NULL
+		LEFT JOIN counter_tags ctag ON ct.id = ctag.counter_id
+		LEFT JOIN tags t ON ctag.tag_id = t.id
+		LEFT JOIN tag_shares ts ON t.id = ts.tag_id
+		WHERE c.deletetime IS NULL 
+		  AND ct.deletetime IS NULL 
+		  AND (ct."user" = $1 OR t.user_id = $1 OR ts.user_id = $1)
 		ORDER BY c.when ASC`
 	rows, err := db.Query(query, userID)
 	if err != nil {

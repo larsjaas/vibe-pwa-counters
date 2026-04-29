@@ -77,13 +77,21 @@ func InsertCounter(userID int, name string, step int) (*Counter, error) {
     return &c, nil
 }
 
-// GetCountersForUser retrieves all counters belonging to the given user ID.
+// GetCountersForUser retrieves all counters that the user owns or has access to via shared tags.
 // The returned slice may be empty if the user has no counters.
 func GetCountersForUser(userID int) ([]*Counter, error) {
     if db == nil {
         return nil, fmt.Errorf("database not initialized")
     }
-    const query = `SELECT id, "user", name, createtime, archivetime, step, deletetime FROM counters WHERE "user"=$1 AND deletetime IS NULL ORDER BY id`
+    const query = `
+        SELECT DISTINCT c.id, c."user", c.name, c.createtime, c.archivetime, c.step, c.deletetime 
+        FROM counters c
+        LEFT JOIN counter_tags ct ON c.id = ct.counter_id
+        LEFT JOIN tags t ON ct.tag_id = t.id
+        LEFT JOIN tag_shares ts ON t.id = ts.tag_id
+        WHERE c.deletetime IS NULL 
+          AND (c."user" = $1 OR t.user_id = $1 OR ts.user_id = $1)
+        ORDER BY c.id`
     rows, err := db.Query(query, userID)
     if err != nil {
         return nil, err
