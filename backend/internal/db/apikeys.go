@@ -79,12 +79,15 @@ func SoftDeleteAllAPIKeysForUser(userID int) error {
 }
 
 // GetUserIDByAPIKey looks up the userID associated with the given API key,
-// ensuring the key has not been soft-deleted.
+// ensuring the key has not been soft-deleted. It also updates the lastused 
+// timestamp to the current time.
 func GetUserIDByAPIKey(key string) (int, error) {
 	if db == nil {
 		return 0, fmt.Errorf("database not initialized")
 	}
-	const query = `SELECT userid FROM apikeys WHERE apikey = $1 AND deletetime IS NULL`
+	const query = `UPDATE apikeys SET lastused = NOW() 
+                   WHERE apikey = $1 AND deletetime IS NULL 
+                   RETURNING userid`
 	var userID int
 	err := db.QueryRow(query, key).Scan(&userID)
 	if err == sql.ErrNoRows {
