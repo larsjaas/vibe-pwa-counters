@@ -1,10 +1,10 @@
 package db
 
 import (
-    "context"
-    "database/sql"
-    "fmt"
-    "time"
+	"context"
+	"database/sql"
+	"fmt"
+	"time"
 )
 
 // Counter represents a row in the `counters` table. Fields are exported
@@ -166,27 +166,75 @@ func SoftDeleteCounter(userID int, counterID int) (bool, error) {
 // SetCounterArchiveTime sets or clears the archivetime of a counter.
 // If archiveTime is nil, it clears the archive time.
 func SetCounterArchiveTime(userID int, counterID int, archiveTime *time.Time) (bool, error) {
-	if db == nil {
-		return false, fmt.Errorf("database not initialized")
-	}
-	var query string
-	var args []interface{}
-	if archiveTime == nil {
-		query = `UPDATE counters SET archivetime = NULL WHERE "user" = $1 AND id = $2 AND deletetime IS NULL`
-		args = []interface{}{userID, counterID}
-	} else {
-		query = `UPDATE counters SET archivetime = $1 WHERE "user" = $2 AND id = $3 AND deletetime IS NULL`
-		args = []interface{}{*archiveTime, userID, counterID}
-	}
+    if db == nil {
+            return false, fmt.Errorf("database not initialized")
+    }
+    var query string
+    var args []interface{}
+    if archiveTime == nil {
+            query = `UPDATE counters SET archivetime = NULL WHERE "user" = $1 AND id = $2 AND deletetime IS NULL`
+            args = []interface{}{userID, counterID}
+    } else {
+            query = `UPDATE counters SET archivetime = $1 WHERE "user" = $2 AND id = $3 AND deletetime IS NULL`
+            args = []interface{}{*archiveTime, userID, counterID}
+    }
 
-	res, err := db.Exec(query, args...)
-	if err != nil {
-		return false, err
-	}
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return false, err
-	}
-	return rows > 0, nil
+    res, err := db.Exec(query, args...)
+    if err != nil {
+            return false, err
+    }
+    rows, err := res.RowsAffected()
+    if err != nil {
+            return false, err
+    }
+    return rows > 0, nil
 }
+
+
+
+// GetCountersByTag retrieves all counters associated with a specific tag that the user has access to.
+func GetCountersByTag(userID int, tagID int) ([]*Counter, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+	const query = `
+		SELECT DISTINCT c.id, c."user", c.name, c.createtime, c.archivetime, c.step, c.deletetime
+		FROM counters c
+		JOIN counter_tags ct ON c.id = ct.counter_id
+		JOIN tags t ON ct.tag_id = t.id
+		LEFT JOIN tag_shares ts ON t.id = ts.tag_id
+		WHERE c.deletetime IS NULL 
+		  AND t.id = $1
+		  AND (t.user_id = $2 OR ts.user_id = $2)
+		ORDER BY c.id`
+	rows, err := db.Query(query, tagID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	counters := make([]*Counter, 0)
+	for rows.Next() {
+		var c Counter
+		var archiveTime sql.NullTime
+		var deleteTime sql.NullTime
+		var step int
+		if err := rows.Scan(&c.ID, &c.UserID, &c.Name, &c.CreateTime, &archiveTime, &step, &deleteTime); err != nil {
+			return nil, err
+		}
+		if archiveTime.Valid {
+			c.ArchiveTime = &archiveTime.Time
+		}
+		if deleteTime.Valid {
+			c.DeleteTime = &deleteTime.Time
+		}
+		c.Step = step
+		counters = append(counters, &c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return counters, nil
+}
+
 

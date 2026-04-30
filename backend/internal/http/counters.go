@@ -62,7 +62,19 @@ func CountersHandler(w http.ResponseWriter, r *http.Request) {
             http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
             return
         }
-        counters, err := db.GetCountersForUser(userID)
+        tagIDStr := r.URL.Query().Get("tag_id")
+        var counters []*db.Counter
+        var err error
+        if tagIDStr != "" {
+            tagID, err := strconv.Atoi(tagIDStr)
+            if err != nil {
+                http.Error(w, "invalid tag_id", http.StatusBadRequest)
+                return
+            }
+            counters, err = db.GetCountersByTag(userID, tagID)
+        } else {
+            counters, err = db.GetCountersForUser(userID)
+        }
         if err != nil {
             http.Error(w, "internal server error", http.StatusInternalServerError)
             return

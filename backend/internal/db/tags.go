@@ -182,3 +182,78 @@ func UnshareTagFromUser(ownerID int, tagID int, targetUserID int) (bool, error) 
 	}
 	return rows > 0, nil
 }
+
+// GetTagsForCounter retrieves all tags associated with a counter.
+func GetTagsForCounter(userID int, counterID int) ([]*Tag, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+
+	// The user must have access to the counter (own or shared) to see its tags
+	const checkCounterQuery = `
+		SELECT 1 FROM counters c
+		LEFT JOIN counter_tags ct ON c.id = ct.counter_id
+		LEFT JOIN tags t ON ct.tag_id = t.id
+		LEFT JOIN tag_shares ts ON t.id = ts.tag_id
+		WHERE c.id = $1 AND (c."user" = $2 OR t.user_id = $2 OR ts.user_id = $2) AND c.deletetime IS NULL`
+	var exists int
+	err := db.QueryRow(checkCounterQuery, counterID, userID).Scan(&exists)
+	if err != nil {
+		return nil, fmt.Errorf("counter not found or access denied: %w", err)
+	}
+
+	const query = `
+		SELECT t.id, t.user_id, t.name, t.createtime, t.deletetime
+		FROM tags t
+		JOIN counter_tags ct ON t.id = ct.tag_id
+		WHERE ct.counter_id = $1 AND t.deletetime IS NULL`
+	rows, err := db.Query(query, counterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tags := make([]*Tag, 0)
+	for rows.Next() {
+		var t Tag
+		var deleteTime sql.NullTime
+		if err := rows.Scan(&t.ID, &t.UserID, &t.Name, &t.CreateTime, &deleteTime); err != nil {
+			return nil, err
+		}
+		if deleteTime.Valid {
+			t.DeleteTime = &deleteTime.Time
+		}
+		tags = append(tags, &t)
+	}
+	return tags, nil
+}
+
+// GetTagShares retrieves all users who have access to a tag.
+// Only the tag owner can call this.
+func GetTagShares(ownerID int, tagID int) ([]string, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+
+	const query = `
+		SELECT u.email FROM users u
+		JOIN tag_shares ts ON u.id = ts.user_id
+		WHERE ts.tag_id = $1 
+		  AND EXISTS (SELECT 1 FROM tags WHERE id = $1 AND user_id = $2)
+		ORDER BY u.email`
+	rows, err := db.Query(query, tagID, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	emails := make([]string, 0)
+	for rows.Next() {
+		var email string
+		if err := rows.Scan(&email); err != nil {
+			return nil, err
+		}
+		emails = append(emails, email)
+	}
+	return emails, nil
+}
