@@ -21,10 +21,93 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
     const [isEditing, setIsEditing] = useState(false);
     const [name, setName] = useState(counter.name);
     const [step, setStep] = useState(counter.step);
+    const [tags, setTags] = useState('');
+    const [loadingTags, setLoadingTags] = useState(true);
 
-    const handleSave = () => {
-        onUpdate(counter.id, name, step);
-        setIsEditing(false);
+    useEffect(() => {
+        const loadTags = async () => {
+            try {
+                const res = await fetch('/api/tags');
+                if (!res.ok) throw new Error('Failed to fetch tags');
+                const allTags: any[] = await res.json();
+                
+                const counterTags: string[] = [];
+                for (const tag of allTags) {
+                    const associationRes = await fetch(`/api/tags/${tag.id}/counters`);
+                    if (associationRes.ok) {
+                        const cids: number[] = await associationRes.json();
+                        if (cids.includes(counter.id)) {
+                            counterTags.push(tag.name);
+                        }
+                    }
+                }
+                setTags(counterTags.join(', '));
+            } catch (e) {
+                console.error('Error loading tags', e);
+            } finally {
+                setLoadingTags(false);
+            }
+        };
+
+        loadTags();
+    }, [counter.id]);
+
+    const handleSaveTags = async (currentTags: string) => {
+        try {
+            const tagNames = currentTags.split(',').map(t => t.trim()).filter(t => t !== '');
+            
+            const res = await fetch('/api/tags');
+            if (!res.ok) throw new Error('Failed to fetch tags');
+            const allTags: any[] = await res.json();
+            
+            const associatedTags: any[] = [];
+            for (const tag of allTags) {
+                const associationRes = await fetch(`/api/tags/${tag.id}/counters`);
+                if (associationRes.ok) {
+                    const cids: number[] = await associationRes.json();
+                    if (cids.includes(counter.id)) {
+                        associatedTags.push(tag);
+                    }
+                }
+            }
+
+            const associatedNames = associatedTags.map(t => t.name);
+
+            for (const tag of associatedTags) {
+                if (!tagNames.includes(tag.name)) {
+                    await fetch(`/api/tags/${tag.id}/counters/${counter.id}`, { method: 'DELETE' });
+                }
+            }
+
+            for (const name of tagNames) {
+                if (!associatedNames.includes(name)) {
+                    let tagId = allTags.find(t => t.name === name)?.id;
+                    if (!tagId) {
+                        const createRes = await fetch('/api/tags', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name }),
+                        });
+                        if (!createRes.ok) throw new Error(`Failed to create tag ${name}`);
+                        const newTag = await createRes.json();
+                        tagId = newTag.id;
+                    }
+                    await fetch(`/api/tags/${tagId}/counters/${counter.id}`, { method: 'POST' });
+                }
+            }
+        } catch (e) {
+            alert('Failed to update tags: ' + (e instanceof Error ? e.message : e));
+            throw e;
+        }
+    };
+
+    const handleSave = async () => {
+        try {
+            await handleSaveTags(tags);
+            onUpdate(counter.id, name, step);
+            setIsEditing(false);
+        } catch (e) {
+        }
     };
 
     return (
@@ -50,6 +133,16 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                             className="form-input"
                         />
                     </div>
+                    <div className="form-field">
+                        <label className="form-label">Tags:</label>
+                        <input 
+                            type="text"
+                            value={tags} 
+                            onChange={(e) => setTags(e.target.value)} 
+                            className="form-input"
+                            placeholder="comma separated tags"
+                        />
+                    </div>
                     <div className="form-actions">
                         <button onClick={() => { setIsEditing(false); setName(counter.name); setStep(counter.step); }} className="btn-secondary">Cancel</button>
                         <button onClick={handleSave} className="btn-primary">Save</button>
@@ -59,6 +152,7 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                 <div className="form-group">
                     <p><strong>Name:</strong> {name}</p>
                     <p><strong>Step:</strong> {step}</p>
+                    <p><strong>Tags:</strong> {loadingTags ? 'Loading...' : (tags || 'None')}</p>
                     <button onClick={() => setIsEditing(true)} className="btn-secondary" style={{ width: 'fit-content' }}>Edit</button>
                 </div>
             )}

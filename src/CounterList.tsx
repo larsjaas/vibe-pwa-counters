@@ -18,22 +18,39 @@ interface CounterListProps {
 
 export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refreshTrigger }) => {
     const [counters, setCounters] = useState<Counter[]>([]);
+    const [counterTags, setCounterTags] = useState<Record<number, string[]>>({});
     const [loading, setLoading] = useState(true);
     const [showArchived, setShowArchived] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
     const loadCounters = async () => {
         try {
-            const [resCounters, resUpdates] = await Promise.all([
+            const [resCounters, resUpdates, resTags] = await Promise.all([
                 fetch('/api/counters'),
-                fetch('/api/counts')
+                fetch('/api/counts'),
+                fetch('/api/tags')
             ]);
 
-            if (!resCounters.ok || !resUpdates.ok) throw new Error('Failed to fetch data');
+            if (!resCounters.ok || !resUpdates.ok || !resTags.ok) throw new Error('Failed to fetch data');
 
             const countersData: Array<{ id: number; name: string; step: number; archivetime: string | null }> = await resCounters.json();
             const updatesData = await resUpdates.json();
+            const tagsData: Array<{ id: number; name: string }> = await resTags.json();
             const updates: Array<{ counter: number; delta: number }> = updatesData || [];
+
+            // Load tag associations
+            const tagMap: Record<number, string[]> = {};
+            await Promise.all(tagsData.map(async (tag) => {
+                const res = await fetch(`/api/tags/${tag.id}/counters`);
+                if (res.ok) {
+                    const cids: number[] = await res.json();
+                    cids.forEach(cid => {
+                        if (!tagMap[cid]) tagMap[cid] = [];
+                        tagMap[cid].push(tag.name);
+                    });
+                }
+            }));
+            setCounterTags(tagMap);
 
             // Calculate current counts
             const countersWithCount = countersData.map(c => {
@@ -73,7 +90,13 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
     const nonArchived = counters.filter(c => c.archivetime === null);
     const archived = counters.filter(c => c.archivetime !== null);
     const filteredCounters = (showArchived ? [...nonArchived, ...archived] : nonArchived)
-        .filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
+        .filter(c => {
+            const nameMatch = c.name.toLowerCase().includes(searchQuery.toLowerCase());
+            const tagMatch = (counterTags[c.id] || []).some(tag => 
+                tag.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            return nameMatch || tagMatch;
+        });
     const displayCounters = filteredCounters;
 
     return (

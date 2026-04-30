@@ -213,8 +213,12 @@ func handleGetCountersForTag(w http.ResponseWriter, r *http.Request, userID int,
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
+	ids := make([]int, 0, len(counters))
+	for _, c := range counters {
+		ids = append(ids, c.ID)
+	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(counters)
+	json.NewEncoder(w).Encode(ids)
 }
 
 func handleShareTag(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
