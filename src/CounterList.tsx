@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IconButton } from './components/IconButton';
-import { Plus, Edit2, SquareCheckBig } from 'lucide-react';
+import { Plus, Edit2, SquareCheckBig, Search } from 'lucide-react';
 
 export interface Counter {
     id: number;
@@ -20,6 +20,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
     const [counters, setCounters] = useState<Counter[]>([]);
     const [loading, setLoading] = useState(true);
     const [showArchived, setShowArchived] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const loadCounters = async () => {
         try {
@@ -71,7 +72,9 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
 
     const nonArchived = counters.filter(c => c.archivetime === null);
     const archived = counters.filter(c => c.archivetime !== null);
-    const displayCounters = showArchived ? [...nonArchived, ...archived] : nonArchived;
+    const filteredCounters = (showArchived ? [...nonArchived, ...archived] : nonArchived)
+        .filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    const displayCounters = filteredCounters;
 
     return (
         <div className="counter-list-container">
@@ -83,6 +86,17 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                     title="Create New Counter" 
                     backgroundColor="#0070f3" 
                     color="#fff" 
+                />
+            </div>
+
+            <div className="search-input-container">
+                <Search className="search-icon" size={20} />
+                <input 
+                    type="text" 
+                    className="search-input" 
+                    placeholder="Search counters..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                 />
             </div>
 
