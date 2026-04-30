@@ -408,3 +408,210 @@ paths:
           description: Unauthorized
         '404':
           description: Not found
+
+  /tags:
+    get:
+      summary: List user tags
+      description: Returns all tags for the authenticated user.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+        '401':
+          description: Unauthorized
+    post:
+      summary: Create a tag
+      description: Creates a new tag for the authenticated user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+              required:
+                - name
+      responses:
+        '200':
+          description: Successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        '401':
+          description: Unauthorized
+
+  /tags/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    put:
+      summary: Update a tag
+      description: Updates the name of a tag.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+              required:
+                - name
+      responses:
+        '200':
+          description: Successfully updated
+        '401':
+          description: Unauthorized
+        '404':
+          description: Tag not found
+    delete:
+      summary: Delete a tag
+      description: Soft deletes a tag.
+      responses:
+        '200':
+          description: Successfully deleted
+        '401':
+          description: Unauthorized
+        '404':
+          description: Tag not found
+
+  /tags/{id}/counters:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: List counters for a tag
+      description: Returns a list of counters associated with this tag.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Counter'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /tags/{id}/counters/{cid}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: cid
+        in: path
+        required: true
+        schema:
+          type: integer
+    post:
+      summary: Add tag to counter
+      description: Associates a counter with this tag.
+      responses:
+        '200':
+          description: Successfully added
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+    delete:
+      summary: Remove tag from counter
+      description: Dissociates a counter from this tag.
+      responses:
+        '200':
+          description: Successfully removed
+        '401':
+          description: Unauthorized
+        '404':
+          description: Association not found
+
+  /tags/{id}/shares:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: List tag shares
+      description: Returns a list of emails of users who share this tag.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  example: \"user@example.com\"
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+    post:
+      summary: Share a tag
+      description: Shares this tag with another user by email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+              required:
+                - email
+      responses:
+        '200':
+          description: Successfully shared
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: User not found
+
+  /tags/{id}/shares/{email}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: email
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      summary: Unshare a tag
+      description: Removes tag share for the specified email.
+      responses:
+        '200':
+          description: Successfully unshared
+        '401':
+          description: Unauthorized
+        '404':
+          description: Share not found
+
