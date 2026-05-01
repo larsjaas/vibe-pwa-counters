@@ -146,6 +146,23 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                 )}
             </div>
 
+            {allTagNames.length > 0 && (
+                <div className="tags-filter-container">
+                    {allTagNames
+                        .filter(tag => !searchQuery.toLowerCase().includes(tag.toLowerCase()))
+                        .map(tag => (
+                            <span 
+                                key={tag} 
+                                className="tag-filter-label" 
+                                onClick={() => setSearchQuery(tag)}
+                            >
+                                {tag}
+                            </span>
+                        ))
+                    }
+                </div>
+            )}
+
             <table className="counter-table">
                 <thead>
                     <tr className="table-header-row">
