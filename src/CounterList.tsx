@@ -19,6 +19,7 @@ interface CounterListProps {
 export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refreshTrigger }) => {
     const [counters, setCounters] = useState<Counter[]>([]);
     const [counterTags, setCounterTags] = useState<Record<number, string[]>>({});
+    const [allTagNames, setAllTagNames] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [showArchived, setShowArchived] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -36,6 +37,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
             const countersData: Array<{ id: number; name: string; step: number; archivetime: string | null }> = await resCounters.json();
             const updatesData = await resUpdates.json();
             const tagsData: Array<{ id: number; name: string }> = await resTags.json();
+            setAllTagNames(tagsData.map(t => t.name));
             const updates: Array<{ counter: number; delta: number }> = updatesData || [];
 
             // Load tag associations
@@ -91,10 +93,22 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
     const archived = counters.filter(c => c.archivetime !== null);
     const filteredCounters = (showArchived ? [...nonArchived, ...archived] : nonArchived)
         .filter(c => {
-            const nameMatch = c.name.toLowerCase().includes(searchQuery.toLowerCase());
-            const tagMatch = (counterTags[c.id] || []).some(tag => 
-                tag.toLowerCase().includes(searchQuery.toLowerCase())
-            );
+            const query = searchQuery.toLowerCase();
+            if (!query) return true;
+
+            const tags = counterTags[c.id] || [];
+            
+            // Check if the query matches ANY tag globally
+            const isGlobalExactTagMatch = allTagNames.some(tag => tag.toLowerCase() === query);
+            
+            if (isGlobalExactTagMatch) {
+                // Only show counters that have this exact tag
+                return tags.some(tag => tag.toLowerCase() === query);
+            }
+
+            // Otherwise, use the "contains" logic for both name and tags
+            const nameMatch = c.name.toLowerCase().includes(query);
+            const tagMatch = tags.some(tag => tag.toLowerCase().includes(query));
             return nameMatch || tagMatch;
         });
     const displayCounters = filteredCounters;
@@ -117,7 +131,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                 <input 
                     type="text" 
                     className="search-input" 
-                    placeholder="Search counters..." 
+                    placeholder="Filter counters..." 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
