@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { IconButton } from './components/IconButton';
-import { Plus, Edit2, SquareCheckBig, Search, X } from 'lucide-react';
+import { Plus, Edit2, SquareCheckBig, Search, X, UserRoundPlus } from 'lucide-react';
+import { TagSharingModal } from './components/TagSharingModal';
 
 export interface Counter {
     id: number;
@@ -19,10 +20,11 @@ interface CounterListProps {
 export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refreshTrigger }) => {
     const [counters, setCounters] = useState<Counter[]>([]);
     const [counterTags, setCounterTags] = useState<Record<number, string[]>>({});
-    const [allTagNames, setAllTagNames] = useState<string[]>([]);
+    const [allTags, setAllTags] = useState<{ id: number; name: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [showArchived, setShowArchived] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedTagForSharing, setSelectedTagForSharing] = useState<{ id: number; name: string } | null>(null);
 
     const loadCounters = async () => {
         try {
@@ -37,7 +39,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
             const countersData: Array<{ id: number; name: string; step: number; archivetime: string | null }> = await resCounters.json();
             const updatesData = await resUpdates.json();
             const tagsData: Array<{ id: number; name: string }> = await resTags.json();
-            setAllTagNames(tagsData.map(t => t.name));
+            setAllTags(tagsData);
             const updates: Array<{ counter: number; delta: number }> = updatesData || [];
 
             // Load tag associations
@@ -99,7 +101,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
             const tags = counterTags[c.id] || [];
             
             // Check if the query matches ANY tag globally
-            const isGlobalExactTagMatch = allTagNames.some(tag => tag.toLowerCase() === query);
+            const isGlobalExactTagMatch = allTags.some(tag => tag.name.toLowerCase() === query);
             
             if (isGlobalExactTagMatch) {
                 // Only show counters that have this exact tag
@@ -135,28 +137,42 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
-                {searchQuery && (
-                    <button 
-                        className="search-clear-button" 
-                        onClick={() => setSearchQuery('')}
-                        title="Clear search"
-                    >
-                        <X size={18} />
-                    </button>
-                )}
+                <div className="search-actions">
+                    {allTags.some(t => t.name.toLowerCase() === searchQuery.toLowerCase()) && (
+                        <button 
+                            className="search-action-btn" 
+                            onClick={() => {
+                               const tag = allTags.find(t => t.name.toLowerCase() === searchQuery.toLowerCase());
+                               if (tag) setSelectedTagForSharing(tag);
+                            }}
+                            title="Manage Tag Sharing"
+                        >
+                            <UserRoundPlus size={18} />
+                        </button>
+                    )}
+                    {searchQuery && (
+                        <button 
+                            className="search-action-btn" 
+                            onClick={() => setSearchQuery('')}
+                            title="Clear search"
+                        >
+                            <X size={18} />
+                        </button>
+                    )}
+                </div>
             </div>
 
-            {allTagNames.length > 0 && (
+            {allTags.length > 0 && (
                 <div className="tags-filter-container">
-                    {allTagNames
-                        .filter(tag => !searchQuery.toLowerCase().includes(tag.toLowerCase()))
+                    {allTags
+                        .filter(tag => !searchQuery.toLowerCase().includes(tag.name.toLowerCase()))
                         .map(tag => (
                             <span 
-                                key={tag} 
+                                key={tag.id} 
                                 className="tag-filter-label" 
-                                onClick={() => setSearchQuery(tag)}
+                                onClick={() => setSearchQuery(tag.name)}
                             >
-                                {tag}
+                                {tag.name}
                             </span>
                         ))
                     }
@@ -211,6 +227,14 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                     {showArchived ? 'Hide archived counters' : 'Show archived counters'}
                 </button>
             </div>
+
+            {selectedTagForSharing && (
+                <TagSharingModal 
+                    tagId={selectedTagForSharing.id}
+                    tagName={selectedTagForSharing.name}
+                    onClose={() => setSelectedTagForSharing(null)}
+                />
+            )}
         </div>
     );
 };

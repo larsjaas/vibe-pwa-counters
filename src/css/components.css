@@ -100,6 +100,33 @@
     color: #333;
 }
 
+.search-actions {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 2;
+}
+
+.search-action-btn {
+    color: #888;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+
+.search-action-btn:hover {
+    color: #333;
+}
+
 .tags-filter-container {
     display: flex;
     flex-wrap: wrap;
