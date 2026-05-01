@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IconButton } from './components/IconButton';
-import { Plus, Edit2, SquareCheckBig, Search } from 'lucide-react';
+import { Plus, Edit2, SquareCheckBig, Search, X } from 'lucide-react';
 
 export interface Counter {
     id: number;
@@ -121,6 +121,15 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
+                {searchQuery && (
+                    <button 
+                        className="search-clear-button" 
+                        onClick={() => setSearchQuery('')}
+                        title="Clear search"
+                    >
+                        <X size={18} />
+                    </button>
+                )}
             </div>
 
             <table className="counter-table">

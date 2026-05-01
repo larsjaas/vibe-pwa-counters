@@ -62,7 +62,7 @@
 
 .search-input {
     width: 100%;
-    padding: 12px 12px 12px 40px;
+    padding: 12px 40px 12px 40px;
     font-size: 1.1em;
     border: 1px solid var(--color-border);
     border-radius: 8px;
@@ -80,6 +80,24 @@
     left: 12px;
     color: #888;
     pointer-events: none;
+}
+
+.search-clear-button {
+    position: absolute;
+    right: 12px;
+    color: #888;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.search-clear-button:hover {
+    color: #333;
 }
 
 .counter-table {
