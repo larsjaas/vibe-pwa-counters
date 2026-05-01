@@ -2,12 +2,17 @@
 /* Variable definitions used across the application */
 :root {
     /* Colors */
-    --color-primary: #6200ee;
-    --color-primary-light: #bb86fc;
-    --color-primary-dark: #3700b3;
+    --color-primary: #0070f3;
+    --color-primary-light: #00a3ff;
+    --color-primary-dark: #0056b3;
     --color-secondary: #03dac5;
     --color-background: #f0f0f0;
     --color-text: #000000;
+    --color-text-secondary: #666;
+    --color-border: #ddd;
+    --color-border-light: #eee;
+    --color-error: #d32f2f;
+    --color-white: #ffffff;
 
     /* Spacing */
     --spacing-small: 8px;

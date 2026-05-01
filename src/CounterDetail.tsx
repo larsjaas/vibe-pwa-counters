@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IconButton } from './components/IconButton';
+import { ConfirmationModal } from './components/ConfirmationModal';
 import { Archive, ArchiveRestore, Trash2 } from 'lucide-react';
 
 interface Counter {
@@ -23,6 +24,8 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
     const [step, setStep] = useState(counter.step);
     const [tags, setTags] = useState('');
     const [loadingTags, setLoadingTags] = useState(true);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [tagsToCreate, setTagsToCreate] = useState<string[]>([]);
 
     useEffect(() => {
         const loadTags = async () => {
@@ -52,7 +55,7 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
         loadTags();
     }, [counter.id]);
 
-    const handleSaveTags = async (currentTags: string) => {
+    const executeSaveTags = async (currentTags: string) => {
         try {
             const tagNames = currentTags.split(',').map(t => t.trim()).filter(t => t !== '');
             
@@ -103,10 +106,35 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
 
     const handleSave = async () => {
         try {
-            await handleSaveTags(tags);
+            const tagNames = tags.split(',').map(t => t.trim()).filter(t => t !== '');
+            const res = await fetch('/api/tags');
+            if (!res.ok) throw new Error('Failed to fetch tags');
+            const allTags: any[] = await res.json();
+            
+            const newTags = tagNames.filter(name => !allTags.find(t => t.name === name));
+            
+            if (newTags.length > 0) {
+                setTagsToCreate(newTags);
+                setShowConfirmModal(true);
+            } else {
+                await executeSaveTags(tags);
+                onUpdate(counter.id, name, step);
+                setIsEditing(false);
+            }
+        } catch (e) {
+            alert('Error: ' + (e instanceof Error ? e.message : e));
+        }
+    };
+
+    const confirmCreateTags = async () => {
+        try {
+            await executeSaveTags(tags);
             onUpdate(counter.id, name, step);
             setIsEditing(false);
+            setShowConfirmModal(false);
         } catch (e) {
+            alert('Error: ' + (e instanceof Error ? e.message : e));
+            setShowConfirmModal(false);
         }
     };
 
@@ -173,6 +201,16 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                 </div>
                 <button onClick={onBack} className="btn-secondary">← Back</button>
             </div>
+
+            {showConfirmModal && (
+                <ConfirmationModal 
+                    message={`The following new tags will be created: ${tagsToCreate.join(', ')}. Do you want to proceed?`}
+                    confirmText="Create"
+                    cancelText="Cancel"
+                    onConfirm={confirmCreateTags}
+                    onCancel={() => setShowConfirmModal(false)}
+                />
+            )}
         </div>
     );
 };

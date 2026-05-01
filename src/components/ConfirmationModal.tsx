@@ -12,13 +12,13 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     message, 
     onConfirm, 
     onCancel, 
-    confirmText = 'Delete', 
+    confirmText = 'Confirm', 
     cancelText = 'Cancel' 
 }) => {
     return (
         <div className="modal-overlay" style={{ zIndex: 1000 }}>
             <div className="modal-content" style={{ textAlign: 'center', padding: '2rem' }}>
-                <h2 style={{ marginBottom: '1rem', color: '#d32f2f' }}>Confirm Action</h2>
+                <h2 style={{ marginBottom: '1rem', color: 'var(--color-text)' }}>Confirmation</h2>
                 <p style={{ marginBottom: '2rem', fontSize: '1.1rem', color: '#333' }}>{message}</p>
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
                     <button 
@@ -39,7 +39,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                         onClick={onConfirm} 
                         style={{ 
                             padding: '10px 20px', 
-                            backgroundColor: '#d32f2f', 
+                            backgroundColor: 'var(--color-primary)', 
                             color: 'white', 
                             border: 'none', 
                             borderRadius: '5px', 

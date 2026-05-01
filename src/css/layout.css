@@ -43,7 +43,7 @@ html, body {
     justify-content: space-around;
     width: 100%;
     padding: var(--spacing-medium, 16px) 0;
-    background: #ffffff;
+    background: var(--color-white);
     box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
     flex-shrink: 0;
 }
