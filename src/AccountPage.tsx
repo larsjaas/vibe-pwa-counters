@@ -15,7 +15,7 @@ interface APIKey {
     lastused: string | null;
 }
 
-const FRONTEND_VERSION = "0.9.3";
+const FRONTEND_VERSION = "0.9.4";
 
 export const AccountPage: React.FC = () => {
     const [user, setUser] = useState<UserInfo | null>(null);
