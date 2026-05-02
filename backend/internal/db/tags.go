@@ -15,6 +15,12 @@ type Tag struct {
 	DeleteTime *time.Time `json:"deletetime"`
 }
 
+// TagShare represents a sharing record for a tag.
+type TagShare struct {
+	Email       string `json:"email"`
+	AccessLevel int    `json:"access_level"`
+}
+
 // InsertTag creates a new tag for the given user.
 func InsertTag(userID int, name string) (*Tag, error) {
 	if db == nil {
@@ -147,12 +153,12 @@ func RemoveTagFromCounter(userID int, tagID int, counterID int) (bool, error) {
 }
 
 // ShareTagWithUser shares a tag with another user. Only the owner can share.
-func ShareTagWithUser(ownerID int, tagID int, targetUserID int) error {
+func ShareTagWithUser(ownerID int, tagID int, targetUserID int, accessLevel int) error {
 	if db == nil {
 		return fmt.Errorf("database not initialized")
 	}
-	const query = `INSERT INTO tag_shares (tag_id, user_id) VALUES ($1, $2) 
-	               ON CONFLICT DO NOTHING`
+	const query = `INSERT INTO tag_shares (tag_id, user_id, access_level) VALUES ($1, $2, $3) 
+	               ON CONFLICT (tag_id, user_id) DO UPDATE SET access_level = EXCLUDED.access_level`
 	// We should verify ownership first
 	const checkQuery = `SELECT 1 FROM tags WHERE id = $1 AND user_id = $2 AND deletetime IS NULL`
 	var exists int
@@ -161,7 +167,7 @@ func ShareTagWithUser(ownerID int, tagID int, targetUserID int) error {
 		return fmt.Errorf("tag not found or not owned by user: %w", err)
 	}
 
-	_, err = db.Exec(query, tagID, targetUserID)
+	_, err = db.Exec(query, tagID, targetUserID, accessLevel)
 	return err
 }
 
@@ -230,13 +236,13 @@ func GetTagsForCounter(userID int, counterID int) ([]*Tag, error) {
 
 // GetTagShares retrieves all users who have access to a tag.
 // Only the tag owner can call this.
-func GetTagShares(ownerID int, tagID int) ([]string, error) {
+func GetTagShares(ownerID int, tagID int) ([]*TagShare, error) {
 	if db == nil {
 		return nil, fmt.Errorf("database not initialized")
 	}
 
 	const query = `
-		SELECT u.email FROM users u
+		SELECT u.email, ts.access_level FROM users u
 		JOIN tag_shares ts ON u.id = ts.user_id
 		WHERE ts.tag_id = $1 
 		  AND EXISTS (SELECT 1 FROM tags WHERE id = $1 AND user_id = $2)
@@ -247,13 +253,13 @@ func GetTagShares(ownerID int, tagID int) ([]string, error) {
 	}
 	defer rows.Close()
 
-	emails := make([]string, 0)
+	shares := make([]*TagShare, 0)
 	for rows.Next() {
-		var email string
-		if err := rows.Scan(&email); err != nil {
+		var s TagShare
+		if err := rows.Scan(&s.Email, &s.AccessLevel); err != nil {
 			return nil, err
 		}
-		emails = append(emails, email)
+		shares = append(shares, &s)
 	}
-	return emails, nil
+	return shares, nil
 }

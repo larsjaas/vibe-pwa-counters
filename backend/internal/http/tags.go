@@ -223,11 +223,16 @@ func handleGetCountersForTag(w http.ResponseWriter, r *http.Request, userID int,
 
 func handleShareTag(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
 	var body struct {
-		Email string `json:"email"`
+		Email       string `json:"email"`
+		AccessLevel int    `json:"access_level"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
+	}
+
+	if body.AccessLevel == 0 {
+		body.AccessLevel = 2 // Default to Edit access
 	}
 
 	targetUserID, err := db.GetUserIDByEmail(body.Email)
@@ -236,7 +241,7 @@ func handleShareTag(w http.ResponseWriter, r *http.Request, userID int, tagID in
 		return
 	}
 
-	err = db.ShareTagWithUser(userID, tagID, targetUserID)
+	err = db.ShareTagWithUser(userID, tagID, targetUserID, body.AccessLevel)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
@@ -264,11 +269,11 @@ func handleUnshareTag(w http.ResponseWriter, r *http.Request, userID int, tagID 
 }
 
 func handleGetTagShares(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
-	emails, err := db.GetTagShares(userID, tagID)
+	shares, err := db.GetTagShares(userID, tagID)
 	if err != nil {
 		http.Error(w, "unauthorized or tag not found", http.StatusForbidden)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(emails)
+	json.NewEncoder(w).Encode(shares)
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, UserPlus, Trash2 } from 'lucide-react';
+import { X, UserPlus, Trash2, Check } from 'lucide-react';
 
 interface TagSharingModalProps {
     tagId: number;
@@ -8,8 +8,9 @@ interface TagSharingModalProps {
 }
 
 export const TagSharingModal: React.FC<TagSharingModalProps> = ({ tagId, tagName, onClose }) => {
-    const [shares, setShares] = useState<string[]>([]);
+    const [shares, setShares] = useState<{ email: string; access_level: number }[]>([]);
     const [newEmail, setNewEmail] = useState('');
+    const [accessLevel, setAccessLevel] = useState<'RO' | 'RW'>('RO');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -37,10 +38,14 @@ export const TagSharingModal: React.FC<TagSharingModalProps> = ({ tagId, tagName
             const res = await fetch(`/api/tags/${tagId}/shares`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: newEmail }),
+                body: JSON.stringify({ 
+                    email: newEmail, 
+                    access_level: accessLevel === 'RW' ? 2 : 1 
+                }),
             });
             if (!res.ok) throw new Error('Failed to share tag');
             setNewEmail('');
+            setAccessLevel('RO');
             await fetchShares();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Error adding user');
@@ -83,8 +88,17 @@ export const TagSharingModal: React.FC<TagSharingModalProps> = ({ tagId, tagName
                         value={newEmail} 
                         onChange={(e) => setNewEmail(e.target.value)} 
                         required
-                        style={{ flex: 1 }}
+                        style={{ flex: 2 }}
                     />
+                    <select 
+                        className="form-input" 
+                        value={accessLevel} 
+                        onChange={(e) => setAccessLevel(e.target.value as 'RO' | 'RW')}
+                        style={{ width: '70px' }}
+                    >
+                        <option value="RO">RO</option>
+                        <option value="RW">RW</option>
+                    </select>
                     <button type="submit" disabled={loading} className="btn-primary">
                         <UserPlus size={18} />
                     </button>
@@ -96,28 +110,32 @@ export const TagSharingModal: React.FC<TagSharingModalProps> = ({ tagId, tagName
                     <thead className="table-header-row">
                         <tr>
                             <th className="table-cell">Email Address</th>
+                            <th className="table-cell text-center">RW</th>
                             <th className="table-cell text-right">Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {shares.map(email => (
-                            <tr key={email} className="table-row">
-                                <td className="table-cell">{email}</td>
-                                <td className="table-cell text-right">
-                                    <button 
-                                        onClick={() => handleRemoveUser(email)} 
-                                        className="btn-secondary" 
-                                        style={{ color: 'var(--color-error)' }}
-                                        title="Remove Access"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
-                                </td>
+                        {shares.map(share => (
+                            <tr key={share.email} className="table-row">
+                               <td className="table-cell">{share.email}</td>
+                               <td className="table-cell text-center">
+                                   {share.access_level === 2 && <Check size={16} style={{ color: 'green' }} />}
+                               </td>
+                               <td className="table-cell text-right">
+                                   <button 
+                                       onClick={() => handleRemoveUser(share.email)} 
+                                       className="btn-secondary" 
+                                       style={{ color: 'var(--color-error)' }}
+                                       title="Remove Access"
+                                   >
+                                       <Trash2 size={18} />
+                                   </button>
+                               </td>
                             </tr>
                         ))}
                         {shares.length === 0 && (
                             <tr>
-                                <td colSpan={2} className="empty-text">No shared users.</td>
+                               <td colSpan={3} className="empty-text">No shared users.</td>
                             </tr>
                         )}
                     </tbody>

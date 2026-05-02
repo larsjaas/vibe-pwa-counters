@@ -192,7 +192,29 @@ func SetCounterArchiveTime(userID int, counterID int, archiveTime *time.Time) (b
 
 
 
-// GetCountersByTag retrieves all counters associated with a specific tag that the user has access to.
+// CanUserEditCounter checks if a user has permission to edit (increment) a counter.
+// A user can edit a counter if they own it, or if it is tagged with a tag they have edit access to.
+func CanUserEditCounter(userID int, counterID int) (bool, error) {
+	if db == nil {
+		return false, fmt.Errorf("database not initialized")
+	}
+	const query = `
+		SELECT 1 FROM counters c
+		LEFT JOIN counter_tags ct ON c.id = ct.counter_id
+		LEFT JOIN tag_shares ts ON ct.tag_id = ts.tag_id
+		WHERE c.id = $1 AND c.deletetime IS NULL
+		  AND (c."user" = $2 OR (ts.user_id = $2 AND ts.access_level = 2))
+		LIMIT 1`
+	var exists int
+	err := db.QueryRow(query, counterID, userID).Scan(&exists)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
 func GetCountersByTag(userID int, tagID int) ([]*Counter, error) {
 	if db == nil {
 		return nil, fmt.Errorf("database not initialized")

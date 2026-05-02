@@ -1,7 +1,6 @@
 package http
 
 import (
-    "database/sql"
     "encoding/json"
     "log"
     "net/http"
@@ -84,18 +83,13 @@ func CountHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Validate counter ownership.
-    counterOwner, err := db.GetUserIdForCounter(payload.Counter)
+    // Validate counter edit permission.
+    canEdit, err := db.CanUserEditCounter(userID, payload.Counter)
     if err != nil {
-        if err == sql.ErrNoRows {
-            http.Error(w, "not found", http.StatusNotFound)
-            return
-        } else {
-            http.Error(w, "internal server error", http.StatusInternalServerError)
-            return
-        }
+        http.Error(w, "internal server error", http.StatusInternalServerError)
+        return
     }
-    if counterOwner != userID {
+    if !canEdit {
         http.Error(w, "Forbidden", http.StatusForbidden)
         return
     }
