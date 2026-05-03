@@ -191,6 +191,12 @@ func handleAddTagToCounter(w http.ResponseWriter, r *http.Request, userID int, t
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
+	users, err := db.GetUsersWithAccessToTag(tagID)
+	if err == nil {
+		for _, uid := range users {
+			PublishEvent(uid, "UPDATED COUNTERS")
+		}
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -203,6 +209,12 @@ func handleRemoveTagFromCounter(w http.ResponseWriter, r *http.Request, userID i
 	if !updated {
 		http.Error(w, "association not found or unauthorized", http.StatusNotFound)
 		return
+	}
+	users, err := db.GetUsersWithAccessToTag(tagID)
+	if err == nil {
+		for _, uid := range users {
+			PublishEvent(uid, "UPDATED COUNTERS")
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }

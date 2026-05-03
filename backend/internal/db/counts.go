@@ -44,6 +44,20 @@ type Count struct {
     DeleteTime sql.NullTime   `json:"deletetime"`
 }
 
+// GetCounterIDForCount retrieves the counter ID for a given count record.
+func GetCounterIDForCount(countID int) (int, error) {
+	if db == nil {
+		return 0, fmt.Errorf("database not initialized")
+	}
+	const query = `SELECT "counter" FROM counts WHERE id = $1`
+	var counterID int
+	err := db.QueryRow(query, countID).Scan(&counterID)
+	if err != nil {
+		return 0, err
+	}
+	return counterID, nil
+}
+
 // InsertCount creates a new row in the count table for the supplied
 // counter, user and delta. It returns the full Count struct with the newly
 // generated ID and timestamp.

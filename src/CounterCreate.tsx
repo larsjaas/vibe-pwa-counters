@@ -4,13 +4,14 @@ import { ConfirmationModal } from './components/ConfirmationModal';
 interface CounterCreateProps {
     onCreated: () => void;
     onCancel: () => void;
+    initialTags?: string;
 }
 
-export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCancel }) => {
+export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCancel, initialTags }) => {
     const [name, setName] = useState('');
     const [initial, setInitial] = useState(0);
     const [step, setStep] = useState(1);
-    const [tags, setTags] = useState('');
+    const [tags, setTags] = useState(initialTags || '');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showConfirmModal, setShowConfirmModal] = useState(false);

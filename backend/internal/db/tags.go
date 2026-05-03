@@ -189,6 +189,32 @@ func UnshareTagFromUser(ownerID int, tagID int, targetUserID int) (bool, error) 
 	return rows > 0, nil
 }
 
+// GetUsersWithAccessToTag retrieves all user IDs who have access to a tag.
+func GetUsersWithAccessToTag(tagID int) ([]int, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+	const query = `
+		SELECT user_id FROM tag_shares WHERE tag_id = $1
+		UNION
+		SELECT user_id FROM tags WHERE id = $1`
+	rows, err := db.Query(query, tagID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []int
+	for rows.Next() {
+		var uid int
+		if err := rows.Scan(&uid); err != nil {
+			return nil, err
+		}
+		users = append(users, uid)
+	}
+	return users, nil
+}
+
 // GetTagsForCounter retrieves all tags associated with a counter.
 func GetTagsForCounter(userID int, counterID int) ([]*Tag, error) {
 	if db == nil {

@@ -12,6 +12,7 @@ import { AlertModal } from './components/AlertModal';
 const App: React.FC = () => {
     const [editingCounter, setEditingCounter] = useState<Counter | null>(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [createInitialTags, setCreateInitialTags] = useState<string | undefined>(undefined);
     const [refreshCount, setRefreshCount] = useState(0);
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -53,6 +54,11 @@ const App: React.FC = () => {
 
         eventSource.addEventListener('UPDATED COUNTERS', () => {
             console.log('SSE event UPDATED COUNTERS received');
+            setRefreshCount(prev => prev + 1);
+        });
+
+        eventSource.addEventListener('UPDATED COUNTS', () => {
+            console.log('SSE event UPDATED COUNTS received');
             setRefreshCount(prev => prev + 1);
         });
 
@@ -118,7 +124,10 @@ const App: React.FC = () => {
                     <Route path="/" element={
                         <CounterList 
                             onEdit={(c) => setEditingCounter(c)} 
-                            onCreate={() => setShowCreateModal(true)} 
+                            onCreate={(tags) => {
+                                setCreateInitialTags(tags);
+                                setShowCreateModal(true);
+                            }} 
                             refreshTrigger={refreshCount}
                             userEmail={userEmail}
                         />
@@ -135,11 +144,16 @@ const App: React.FC = () => {
                 <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowCreateModal(false)}>
                     <div className="modal-content">
                         <CounterCreate 
+                            initialTags={createInitialTags}
                             onCreated={() => {
                                setShowCreateModal(false);
+                               setCreateInitialTags(undefined);
                                setRefreshCount(prev => prev + 1);
                             }} 
-                            onCancel={() => setShowCreateModal(false)} 
+                            onCancel={() => {
+                                setShowCreateModal(false);
+                                setCreateInitialTags(undefined);
+                            }} 
                         />
                     </div>
                 </div>

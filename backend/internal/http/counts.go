@@ -93,6 +93,14 @@ func CountHandler(w http.ResponseWriter, r *http.Request) {
         }
         if updated {
             CountsDeletedTotal.Inc()
+            if cid, err := db.GetCounterIDForCount(countID); err == nil {
+                users, err := db.GetUsersWithAccessToCounter(cid)
+                if err == nil {
+                    for _, uid := range users {
+                        PublishEvent(uid, "UPDATED COUNTS")
+                    }
+                }
+            }
             w.WriteHeader(http.StatusOK)
         } else {
             http.Error(w, "not found", http.StatusNotFound)
@@ -129,6 +137,12 @@ func CountHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
     CountsTotal.Inc()
+    users, err := db.GetUsersWithAccessToCounter(payload.Counter)
+    if err == nil {
+        for _, uid := range users {
+            PublishEvent(uid, "UPDATED COUNTS")
+        }
+    }
     w.Header().Set("Content-Type", "application/json")
     if err := json.NewEncoder(w).Encode(c); err != nil {
         // Log encoding errors if needed.
