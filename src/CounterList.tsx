@@ -21,12 +21,14 @@ interface CounterListProps {
 
 export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refreshTrigger, userEmail }) => {
     const [counters, setCounters] = useState<Counter[]>([]);
+    const [updates, setUpdates] = useState<Array<{ counter: number; delta: number }>>([]);
     const [counterTags, setCounterTags] = useState<Record<number, string[]>>({});
     const [allTags, setAllTags] = useState<{ id: number; name: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [showArchived, setShowArchived] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedTagForSharing, setSelectedTagForSharing] = useState<{ id: number; name: string } | null>(null);
+    const [expandedCounterId, setExpandedCounterId] = useState<number | null>(null);
 
     const loadCounters = async () => {
         try {
@@ -43,6 +45,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
             const tagsData: Array<{ id: number; name: string }> = await resTags.json();
             setAllTags(tagsData);
             const updates: Array<{ counter: number; delta: number }> = updatesData || [];
+            setUpdates(updates);
 
             // Load tag associations
             const tagMap: Record<number, string[]> = {};
@@ -90,6 +93,21 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
     useEffect(() => {
         loadCounters();
     }, [refreshTrigger]);
+
+    const handleDeltaUpdate = async (id: number, delta: number) => {
+        try {
+            const res = await fetch('/api/counts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ counter: id, delta }),
+            });
+            if (!res.ok) throw new Error('Update failed');
+            loadCounters();
+        } catch (e) {
+            console.error('Error updating counter', e);
+            alert('Failed to update counter');
+        }
+    };
 
     if (loading) return <div className="loading-text">Loading counters...</div>;
 
@@ -189,34 +207,79 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                         <th className="table-cell text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody style={{ display: 'table-row-group' }}>
                     {displayCounters.map(c => (
-                        <tr key={c.id} className="table-row">
-                            <td className="table-cell" style={{ 
-                                fontWeight: c.user_email === userEmail ? 'bold' : 'normal', 
-                                color: c.user_email === userEmail ? 'black' : '#666' 
-                            }}>{c.name}</td>
-                            <td className="table-cell text-right font-bold">{c.count}</td>
-                            <td className="table-cell action-cell">
-                                <IconButton 
-                                    icon={SquareCheckBig} 
-                                    onClick={async () => {
-                                        await fetch('/api/counts', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ counter: c.id, delta: c.step }),
-                                        });
-                                        loadCounters();
-                                    }} 
-                                    title="Increment" 
-                                />
-                                <IconButton 
-                                    icon={Edit2} 
-                                    onClick={() => onEdit(c)} 
-                                    title="Edit" 
-                                />
-                            </td>
-                        </tr>
+                        <React.Fragment key={c.id}>
+                            <tr className="table-row">
+                                <td className="table-cell" 
+                                    style={{ 
+                                        fontWeight: c.user_email === userEmail ? 'bold' : 'normal', 
+                                        color: c.user_email === userEmail ? 'black' : '#666',
+                                        cursor: 'pointer',
+                                        textDecoration: 'underline',
+                                        textUnderlineOffset: '3px'
+                                    }}
+                                    onClick={() => setExpandedCounterId(expandedCounterId === c.id ? null : c.id)}
+                                >
+                                    {c.name}
+                                </td>
+                                <td className="table-cell text-right font-bold">{c.count}</td>
+                                <td className="table-cell action-cell">
+                                    <IconButton 
+                                        icon={SquareCheckBig} 
+                                        onClick={async () => {
+                                            await handleDeltaUpdate(c.id, c.step);
+                                        }} 
+                                        title="Increment" 
+                                    />
+                                    <IconButton 
+                                        icon={Edit2} 
+                                        onClick={() => onEdit(c)} 
+                                        title="Edit" 
+                                    />
+                                </td>
+                            </tr>
+                            {expandedCounterId === c.id && (
+                                <tr className="table-row expanded-row">
+                                    <td colSpan={3} className="table-cell">
+                                        <div className="expansion-container">
+                                            <div className="expansion-buttons-row">
+                                                <span className="expansion-label">Quick Update:</span>
+                                                <button 
+                                                    className="btn-delta"
+                                                    onClick={() => handleDeltaUpdate(c.id, -1)}
+                                                >
+                                                    -1
+                                                </button>
+                                                <button 
+                                                    className="btn-delta"
+                                                    onClick={() => handleDeltaUpdate(c.id, 1)}
+                                                >
+                                                    +1
+                                                </button>
+                                            </div>
+                                            <div className="expansion-history-row">
+                                                <span className="expansion-label">Recent activity:</span>
+                                                <div className="history-list">
+                                                    {(() => {
+                                                        const recent = updates
+                                                            .filter(u => u.counter === c.id)
+                                                            .slice(-3)
+                                                            .reverse();
+                                                        if (recent.length === 0) return <div className="history-item">No recent updates</div>;
+                                                        return recent.map((u, idx) => (
+                                                            <div key={idx} className="history-item">
+                                                                Delta: {u.delta > 0 ? `+${u.delta}` : u.delta}
+                                                            </div>
+                                                        ));
+                                                    })()}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </React.Fragment>
                     ))}
                 </tbody>
             </table>

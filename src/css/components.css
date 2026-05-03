@@ -186,6 +186,48 @@
     gap: 10px;
 }
 
+.expanded-row {
+    background-color: #f9f9f9;
+}
+
+.expansion-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 15px;
+}
+
+.expansion-buttons-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.expansion-label {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.btn-delta {
+    padding: 4px 12px;
+    font-size: 0.9rem;
+}
+
+.expansion-history-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.history-list {
+    font-size: 0.85rem;
+    color: #888;
+}
+
+.history-item {
+    line-height: 1.4;
+}
+
 .loading-text, .empty-text {
     padding: 20px;
     text-align: center;
