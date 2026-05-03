@@ -31,22 +31,29 @@ components:
         id:
           type: integer
           example: 1
+        user_email:
+          type: string
+          example: "john.doe@example.com"
         name:
           type: string
           example: "My Counter"
-        step:
-          type: integer
-          example: 1
-        archived:
-          type: boolean
-          default: false
-        archivetime:
+        createtime:
           type: string
           format: date-time
           example: "2023-10-27T10:00:00Z"
-        user_id:
+        step:
           type: integer
           example: 1
+        archivetime:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2023-10-27T10:00:00Z"
+        deletetime:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
 
     Tag:
       type: object
@@ -84,16 +91,24 @@ components:
         id:
           type: integer
           example: 1
-        counter_id:
+        counter:
           type: integer
           example: 1
+        user_email:
+          type: string
+          example: "john.doe@example.com"
         delta:
           type: integer
           example: 1
-        created_at:
+        when:
           type: string
           format: date-time
           example: "2023-10-27T10:00:00Z"
+        deletetime:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
 
     APIKey:
       type: object

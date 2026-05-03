@@ -9,15 +9,17 @@ export interface Counter {
     step: number;
     count: number;
     archivetime: string | null;
+    user_email: string;
 }
 
 interface CounterListProps {
     onEdit: (counter: Counter) => void;
     onCreate: () => void;
     refreshTrigger?: number;
+    userEmail?: string | null;
 }
 
-export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refreshTrigger }) => {
+export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refreshTrigger, userEmail }) => {
     const [counters, setCounters] = useState<Counter[]>([]);
     const [counterTags, setCounterTags] = useState<Record<number, string[]>>({});
     const [allTags, setAllTags] = useState<{ id: number; name: string }[]>([]);
@@ -36,7 +38,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
 
             if (!resCounters.ok || !resUpdates.ok || !resTags.ok) throw new Error('Failed to fetch data');
 
-            const countersData: Array<{ id: number; name: string; step: number; archivetime: string | null }> = await resCounters.json();
+            const countersData: Array<{ id: number; name: string; step: number; archivetime: string | null; user_email: string }> = await resCounters.json();
             const updatesData = await resUpdates.json();
             const tagsData: Array<{ id: number; name: string }> = await resTags.json();
             setAllTags(tagsData);
@@ -190,7 +192,10 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                 <tbody>
                     {displayCounters.map(c => (
                         <tr key={c.id} className="table-row">
-                            <td className="table-cell">{c.name}</td>
+                            <td className="table-cell" style={{ 
+                                fontWeight: c.user_email === userEmail ? 'bold' : 'normal', 
+                                color: c.user_email === userEmail ? 'black' : '#666' 
+                            }}>{c.name}</td>
                             <td className="table-cell text-right font-bold">{c.count}</td>
                             <td className="table-cell action-cell">
                                 <IconButton 

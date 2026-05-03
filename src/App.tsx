@@ -14,8 +14,25 @@ const App: React.FC = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [refreshCount, setRefreshCount] = useState(0);
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
+    const [userEmail, setUserEmail] = useState<string | null>(null);
 
     useEffect(() => {
+        const fetchAccount = async () => {
+            try {
+                const res = await fetch('/api/account');
+                if (res.ok) {
+                    const data = await res.json();
+                    setUserEmail(data.email);
+                }
+            } catch (e) {
+                console.error('Failed to fetch account info', e);
+            }
+        };
+        fetchAccount();
+    }, []);
+
+    useEffect(() => {
+
         const eventSource = new EventSource('/api/events');
         
         eventSource.onmessage = (event) => {
@@ -98,6 +115,7 @@ const App: React.FC = () => {
                             onEdit={(c) => setEditingCounter(c)} 
                             onCreate={() => setShowCreateModal(true)} 
                             refreshTrigger={refreshCount}
+                            userEmail={userEmail}
                         />
                     } />
                     <Route path="/stats" element={<StatisticsPage />} />

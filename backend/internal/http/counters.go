@@ -79,8 +79,37 @@ func CountersHandler(w http.ResponseWriter, r *http.Request) {
             http.Error(w, "internal server error", http.StatusInternalServerError)
             return
         }
+
+        type counterResponse struct {
+            ID         int       `json:"id"`
+            UserEmail  string    `json:"user_email"`
+            Name       string    `json:"name"`
+            CreateTime time.Time `json:"createtime"`
+            ArchiveTime interface{} `json:"archivetime"`
+            DeleteTime  interface{} `json:"deletetime"`
+            Step       int       `json:"step"`
+        }
+
+        resp := make([]counterResponse, 0, len(counters))
+        for _, c := range counters {
+            user, err := db.GetUserByID(c.UserID)
+            email := "unknown"
+            if err == nil {
+                email = user.Email
+            }
+            resp = append(resp, counterResponse{
+                ID:         c.ID,
+                UserEmail:  email,
+                Name:       c.Name,
+                CreateTime: c.CreateTime,
+                ArchiveTime: c.ArchiveTime,
+                DeleteTime:  c.DeleteTime,
+                Step:       c.Step,
+            })
+        }
+
         w.Header().Set("Content-Type", "application/json")
-        if err := json.NewEncoder(w).Encode(counters); err != nil {
+        if err := json.NewEncoder(w).Encode(resp); err != nil {
             log.Printf("JSON encode failed: %v", err)
         }
         return

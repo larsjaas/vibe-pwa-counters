@@ -4,8 +4,9 @@ import (
     "encoding/json"
     "log"
     "net/http"
-    "strings"
     "strconv"
+    "strings"
+    "time"
 
     db "github.com/larsa/pwa-counter/backend/internal/db"
 )
@@ -40,8 +41,35 @@ func CountHandler(w http.ResponseWriter, r *http.Request) {
             http.Error(w, "internal server error", http.StatusInternalServerError)
             return
         }
+
+        type countResponse struct {
+            ID         int       `json:"id"`
+            CounterID  int       `json:"counter"`
+            UserEmail  string    `json:"user_email"`
+            Delta      int       `json:"delta"`
+            When       time.Time `json:"when"`
+            DeleteTime interface{} `json:"deletetime"`
+        }
+
+        resp := make([]countResponse, 0, len(counts))
+        for _, c := range counts {
+            user, err := db.GetUserByID(c.UserID)
+            email := "unknown"
+            if err == nil {
+                email = user.Email
+            }
+            resp = append(resp, countResponse{
+                ID:        c.ID,
+                CounterID: c.CounterID,
+                UserEmail: email,
+                Delta:     c.Delta,
+                When:      c.When,
+                DeleteTime: c.DeleteTime,
+            })
+        }
+
         w.Header().Set("Content-Type", "application/json")
-        if err := json.NewEncoder(w).Encode(counts); err != nil {
+        if err := json.NewEncoder(w).Encode(resp); err != nil {
             log.Printf("JSON encode failed: %v", err)
         }
         return
@@ -95,7 +123,7 @@ func CountHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     // Insert count.
-    c, err := db.InsertCount(payload.Counter, payload.Delta)
+    c, err := db.InsertCount(payload.Counter, userID, payload.Delta)
     if err != nil {
         http.Error(w, "internal server error", http.StatusInternalServerError)
         return

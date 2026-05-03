@@ -8,6 +8,7 @@ interface Counter {
     name: string;
     step: number;
     archivetime: string | null;
+    user_email: string;
 }
 
 interface CounterDetailProps {
