@@ -61,9 +61,9 @@ components:
         id:
           type: integer
           example: 1
-        user_id:
-          type: integer
-          example: 1
+        user_email:
+          type: string
+          example: "john.doe@example.com"
         name:
           type: string
           example: "Travel"

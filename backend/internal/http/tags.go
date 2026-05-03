@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	db "github.com/larsa/pwa-counter/backend/internal/db"
 )
@@ -131,8 +132,33 @@ func handleGetTags(w http.ResponseWriter, r *http.Request, userID int) {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
+
+	type tagResponse struct {
+		ID         int       `json:"id"`
+		UserEmail  string    `json:"user_email"`
+		Name       string    `json:"name"`
+		CreateTime time.Time `json:"createtime"`
+		DeleteTime interface{} `json:"deletetime"`
+	}
+
+	resp := make([]tagResponse, 0, len(tags))
+	for _, t := range tags {
+		user, err := db.GetUserByID(t.UserID)
+		email := "unknown"
+		if err == nil {
+			email = user.Email
+		}
+		resp = append(resp, tagResponse{
+			ID:         t.ID,
+			UserEmail:  email,
+			Name:       t.Name,
+			CreateTime: t.CreateTime,
+			DeleteTime: t.DeleteTime,
+		})
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(tags)
+	json.NewEncoder(w).Encode(resp)
 }
 
 func handleCreateTag(w http.ResponseWriter, r *http.Request, userID int) {

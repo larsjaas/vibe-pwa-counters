@@ -23,7 +23,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
     const [counters, setCounters] = useState<Counter[]>([]);
     const [updates, setUpdates] = useState<Array<{ id: number; counter: number; delta: number; user_email?: string; when?: string }>>([]);
     const [counterTags, setCounterTags] = useState<Record<number, string[]>>({});
-    const [allTags, setAllTags] = useState<{ id: number; name: string }[]>([]);
+    const [allTags, setAllTags] = useState<{ id: number; name: string, user_email: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [showArchived, setShowArchived] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -42,7 +42,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
 
             const countersData: Array<{ id: number; name: string; step: number; archivetime: string | null; user_email: string }> = await resCounters.json();
             const updatesData = await resUpdates.json();
-            const tagsData: Array<{ id: number; name: string }> = await resTags.json();
+            const tagsData: Array<{ id: number; name: string, user_email: string }> = await resTags.json();
             setAllTags(tagsData);
             const updates: Array<{ id: number; counter: number; delta: number; user_email?: string; when?: string }> = updatesData || [];
             setUpdates(updates);
@@ -175,7 +175,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <div className="search-actions">
-                    {allTags.some(t => t.name.toLowerCase() === searchQuery.toLowerCase()) && (
+                    {allTags.some(t => t.name.toLowerCase() === searchQuery.toLowerCase() && t.user_email === userEmail) && (
                         <button 
                             className="search-action-btn" 
                             onClick={() => {
@@ -208,6 +208,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                                 key={tag.id} 
                                 className="tag-filter-label" 
                                 onClick={() => setSearchQuery(tag.name)}
+                                style={{ fontWeight: tag.user_email === userEmail ? 'bold' : 'normal' }}
                             >
                                 {tag.name}
                             </span>
