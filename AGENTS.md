@@ -166,9 +166,12 @@ Example:
 
 ## Project Structure
 
-/backend    -> backend golang component
-/app        -> typescript progressive web app
-/package.json -> node setup
+/backend                  -> backend go/golang component
+/src                      -> typescript progressive web app
+/package.json             -> node setup
+/src/public               -> static HTML files
+/src/components           -> reusable react components
+/src/public/openapi.yaml  -> api description
 
 ---
 
