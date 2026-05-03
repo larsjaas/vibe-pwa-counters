@@ -3,7 +3,11 @@ import { Counter } from './CounterList';
 import { Trash2 } from 'lucide-react';
 import { ConfirmationModal } from './components/ConfirmationModal';
 
-export const StatisticsPage: React.FC = () => {
+interface StatisticsPageProps {
+    refreshTrigger?: number;
+}
+
+export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }) => {
     const [counters, setCounters] = useState<Counter[]>([]);
     const [selectedCounterId, setSelectedCounterId] = useState<number | null>(null);
     const [stats, setStats] = useState<number[]>(new Array(24).fill(0));
@@ -52,7 +56,7 @@ export const StatisticsPage: React.FC = () => {
         };
 
         fetchData();
-    }, []);
+    }, [refreshTrigger]);
 
     useEffect(() => {
         if (selectedCounterId === null) return;

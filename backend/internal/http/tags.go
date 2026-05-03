@@ -246,6 +246,7 @@ func handleShareTag(w http.ResponseWriter, r *http.Request, userID int, tagID in
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
+	PublishEvent(targetUserID, "UPDATED COUNTERS")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -265,6 +266,7 @@ func handleUnshareTag(w http.ResponseWriter, r *http.Request, userID int, tagID 
 		http.Error(w, "share not found or unauthorized", http.StatusNotFound)
 		return
 	}
+	PublishEvent(targetUserID, "UPDATED COUNTERS")
 	w.WriteHeader(http.StatusOK)
 }
 

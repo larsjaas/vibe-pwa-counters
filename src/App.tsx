@@ -51,6 +51,11 @@ const App: React.FC = () => {
             }
         };
 
+        eventSource.addEventListener('UPDATED COUNTERS', () => {
+            console.log('SSE event UPDATED COUNTERS received');
+            setRefreshCount(prev => prev + 1);
+        });
+
         eventSource.onerror = (err) => {
             console.error('SSE connection error:', err);
             // EventSource automatically attempts to reconnect
@@ -118,7 +123,7 @@ const App: React.FC = () => {
                             userEmail={userEmail}
                         />
                     } />
-                    <Route path="/stats" element={<StatisticsPage />} />
+                    <Route path="/stats" element={<StatisticsPage refreshTrigger={refreshCount} />} />
                     <Route path="/profile" element={<AccountPage />} />
                 </Routes>
             </div>
