@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IconButton } from './components/IconButton';
-import { Plus, Edit2, SquareCheckBig, Search, X, UserRoundPlus } from 'lucide-react';
+import { Plus, Edit2, SquareCheckBig, Search, X, UserRoundPlus, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { TagSharingModal } from './components/TagSharingModal';
 
 export interface Counter {
@@ -21,7 +21,7 @@ interface CounterListProps {
 
 export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refreshTrigger, userEmail }) => {
     const [counters, setCounters] = useState<Counter[]>([]);
-    const [updates, setUpdates] = useState<Array<{ counter: number; delta: number }>>([]);
+    const [updates, setUpdates] = useState<Array<{ id: number; counter: number; delta: number; user_email?: string; when?: string }>>([]);
     const [counterTags, setCounterTags] = useState<Record<number, string[]>>({});
     const [allTags, setAllTags] = useState<{ id: number; name: string }[]>([]);
     const [loading, setLoading] = useState(true);
@@ -44,7 +44,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
             const updatesData = await resUpdates.json();
             const tagsData: Array<{ id: number; name: string }> = await resTags.json();
             setAllTags(tagsData);
-            const updates: Array<{ counter: number; delta: number }> = updatesData || [];
+            const updates: Array<{ id: number; counter: number; delta: number; user_email?: string; when?: string }> = updatesData || [];
             setUpdates(updates);
 
             // Load tag associations
@@ -106,6 +106,20 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
         } catch (e) {
             console.error('Error updating counter', e);
             alert('Failed to update counter');
+        }
+    };
+
+    const handleDeleteUpdate = async (updateId: number) => {
+        if (!confirm('Delete this update?')) return;
+        try {
+            const res = await fetch(`/api/counts/${updateId}`, {
+                method: 'DELETE',
+            });
+            if (!res.ok) throw new Error('Delete failed');
+            loadCounters();
+        } catch (e) {
+            console.error('Error deleting update', e);
+            alert('Failed to delete update');
         }
     };
 
@@ -217,11 +231,16 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                                         color: c.user_email === userEmail ? 'black' : '#666',
                                         cursor: 'pointer',
                                         textDecoration: 'underline',
-                                        textUnderlineOffset: '3px'
+                                        textUnderlineOffset: '3px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        textAlign: 'left'
                                     }}
                                     onClick={() => setExpandedCounterId(expandedCounterId === c.id ? null : c.id)}
                                 >
                                     {c.name}
+                                    {expandedCounterId === c.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                 </td>
                                 <td className="table-cell text-right font-bold">{c.count}</td>
                                 <td className="table-cell action-cell">
@@ -245,18 +264,18 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                                         <div className="expansion-container">
                                             <div className="expansion-buttons-row">
                                                 <span className="expansion-label">Quick Update:</span>
-                                                <button 
-                                                    className="btn-delta"
-                                                    onClick={() => handleDeltaUpdate(c.id, -1)}
-                                                >
-                                                    -1
-                                                </button>
-                                                <button 
-                                                    className="btn-delta"
-                                                    onClick={() => handleDeltaUpdate(c.id, 1)}
-                                                >
-                                                    +1
-                                                </button>
+                                                {c.step !== 1 && (
+                                                    <button className="btn-delta" onClick={() => handleDeltaUpdate(c.id, -c.step)}>
+                                                        {c.step > 0 ? `-${c.step}` : `+${Math.abs(c.step)}`}
+                                                    </button>
+                                                )}
+                                                <button className="btn-delta" onClick={() => handleDeltaUpdate(c.id, -1)}>-1</button>
+                                                <button className="btn-delta" onClick={() => handleDeltaUpdate(c.id, 1)}>+1</button>
+                                                {c.step !== 1 && (
+                                                    <button className="btn-delta" onClick={() => handleDeltaUpdate(c.id, c.step)}>
+                                                        {c.step > 0 ? `+${c.step}` : `-${Math.abs(c.step)}`}
+                                                    </button>
+                                                )}
                                             </div>
                                             <div className="expansion-history-row">
                                                 <span className="expansion-label">Recent activity:</span>
@@ -268,10 +287,30 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                                                             .reverse();
                                                         if (recent.length === 0) return <div className="history-item">No recent updates</div>;
                                                         return recent.map((u, idx) => (
-                                                            <div key={idx} className="history-item">
-                                                                Delta: {u.delta > 0 ? `+${u.delta}` : u.delta}
-                                                            </div>
+                                                                  <div key={idx} className="history-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                                                                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                                          <span style={{ fontWeight: 'bold' }}>{u.user_email || 'Unknown'}</span>
+                                                                          {u.when && ` at ${new Date(u.when).toLocaleString()}`}: 
+                                                                          Delta {u.delta > 0 ? `+${u.delta}` : u.delta}
+                                                                      </div>
+                                                                      {c.user_email === userEmail && (
+                                                                          <button 
+                                                                              onClick={() => handleDeleteUpdate(u.id)}
+                                                                              title="Delete update"
+                                                                              style={{ 
+                                                                                  background: 'none', 
+                                                                                  border: 'none', 
+                                                                                  cursor: 'pointer', 
+                                                                                  color: '#ff4d4f',
+                                                                                  padding: '2px' 
+                                                                              }}
+                                                                          >
+                                                                              <Trash2 size={14} />
+                                                                          </button>
+                                                                      )}
+                                                                  </div>
                                                         ));
+
                                                     })()}
                                                 </div>
                                             </div>
