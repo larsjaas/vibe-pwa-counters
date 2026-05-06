@@ -33,16 +33,22 @@ func CountersHandler(w http.ResponseWriter, r *http.Request) {
             return
         }
         var body struct {
-            Name    string `json:"name"`
-            Initial int    `json:"initial"`
-            Step    int    `json:"step"`
+            Name        string  `json:"name"`
+            Initial     int     `json:"initial"`
+            Step        int     `json:"step"`
+            Type        string  `json:"type"`
+            Frequency   *int64  `json:"frequency"`
+            AlertWindow *int64  `json:"alert_window"`
         }
         if e := json.NewDecoder(r.Body).Decode(&body); e != nil {
             http.Error(w, "bad request", http.StatusBadRequest)
             return
         }
+        if body.Type == "" {
+            body.Type = "standard"
+        }
         // Use the step provided in the request body.
-        counter, err := db.InsertCounter(userID, body.Name, body.Step)
+        counter, err := db.InsertCounter(userID, body.Name, body.Step, body.Type, body.Frequency, body.AlertWindow)
         if err != nil {
             log.Printf("Insert counter failed: %v", err)
             http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -117,15 +123,21 @@ func CountersHandler(w http.ResponseWriter, r *http.Request) {
         // PATCH/PUT /api/counters or /api/counters/:id
         if r.URL.Path == "/api/counters" || r.URL.Path == "/api/counters/" {
             var body struct {
-                ID   int    `json:"id"`
-                Name string `json:"name"`
-                Step int    `json:"step"`
+                ID          int     `json:"id"`
+                Name        string  `json:"name"`
+                Step        int     `json:"step"`
+                Type        string  `json:"type"`
+                Frequency   *int64  `json:"frequency"`
+                AlertWindow *int64  `json:"alert_window"`
             }
             if e := json.NewDecoder(r.Body).Decode(&body); e != nil {
                 http.Error(w, "bad request", http.StatusBadRequest)
                 return
             }
-            updated, err := db.UpdateCounter(userID, body.ID, body.Name, body.Step)
+            if body.Type == "" {
+                body.Type = "standard"
+            }
+            updated, err := db.UpdateCounter(userID, body.ID, body.Name, body.Step, body.Type, body.Frequency, body.AlertWindow)
             if err != nil {
                 log.Printf("Update counter failed: %v", err)
                 http.Error(w, "internal server error", http.StatusInternalServerError)
