@@ -95,6 +95,17 @@ func TagsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Case: /api/tags/:id/invites
+		if len(parts) == 2 && parts[1] == "invites" {
+			switch method {
+			case http.MethodPost:
+				handleCreateInvite(w, r, userID, tagID)
+			default:
+				http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+			}
+			return
+		}
+
 		// Case: /api/tags/:id/shares
 		if len(parts) == 2 && parts[1] == "shares" {
 			switch method {
@@ -260,32 +271,9 @@ func handleGetCountersForTag(w http.ResponseWriter, r *http.Request, userID int,
 }
 
 func handleShareTag(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
-	var body struct {
-		Email       string `json:"email"`
-		AccessLevel int    `json:"access_level"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
-		return
-	}
-
-	if body.AccessLevel == 0 {
-		body.AccessLevel = 2 // Default to Edit access
-	}
-
-	targetUserID, err := db.GetUserIDByEmail(body.Email)
-	if err != nil {
-		http.Error(w, "user not found", http.StatusNotFound)
-		return
-	}
-
-	err = db.ShareTagWithUser(userID, tagID, targetUserID, body.AccessLevel)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-	PublishEvent(targetUserID, "UPDATED COUNTERS")
-	w.WriteHeader(http.StatusOK)
+	// Now tag sharing is based on an invite system.
+	// We redirect this to handleCreateInvite logic.
+	handleCreateInvite(w, r, userID, tagID)
 }
 
 func handleUnshareTag(w http.ResponseWriter, r *http.Request, userID int, tagID int, email string) {
@@ -308,12 +296,30 @@ func handleUnshareTag(w http.ResponseWriter, r *http.Request, userID int, tagID 
 	w.WriteHeader(http.StatusOK)
 }
 
-func handleGetTagShares(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
-	shares, err := db.GetTagShares(userID, tagID)
-	if err != nil {
-		http.Error(w, "unauthorized or tag not found", http.StatusForbidden)
+func handleCreateInvite(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
+	var body struct {
+		Email       string `json:"email"`
+		AccessLevel int    `json:"access_level"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
+
+	if body.AccessLevel == 0 {
+		body.AccessLevel = 2 // Default to Edit access
+	}
+
+	invite, err := db.CreateInvite(userID, tagID, body.Email, body.AccessLevel)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+
+	// In a real system, we would send an email here.
+	// For now, we just mark it as notified to simulate the system.
+	db.MarkInviteNotified(invite.ID, false)
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(shares)
+	json.NewEncoder(w).Encode(invite)
 }

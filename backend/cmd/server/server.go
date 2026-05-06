@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/larsa/pwa-counter/backend/internal/db"
 	httpHandlers "github.com/larsa/pwa-counter/backend/internal/http"
@@ -62,6 +63,20 @@ func main() {
     // Run database migrations on startup. Delegated to the internal
     // database package for better separation of concerns.
     db.RunMigrations(dbConn)
+
+    // Start the background worker for invite reminders
+    go func() {
+        ticker := time.NewTicker(1 * time.Hour)
+        defer ticker.Stop()
+        for range ticker.C {
+            count, err := db.ProcessPendingInvites()
+            if err != nil {
+                log.Printf("Error processing pending invites: %v", err)
+            } else if count > 0 {
+                log.Printf("Sent %d invite reminders", count)
+            }
+        }
+    }()
 
     ctx := context.Background()
 

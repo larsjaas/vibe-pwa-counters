@@ -51,6 +51,10 @@ func NewRouter() http.Handler {
     mux.HandleFunc("/api/tags", TagsHandler)
     mux.HandleFunc("/api/tags/", TagsHandler)
 
+    // Tag Invites
+    mux.HandleFunc("/api/invites", InvitesHandler)
+    mux.HandleFunc("/api/invites/", InvitesHandler)
+
     fmt.Println("HTTP routes registered – listening on :8081")
     return mux
 }
