@@ -54,6 +54,34 @@ components:
           format: date-time
           nullable: true
           example: null
+        type:
+          type: string
+          enum: [standard, repeating]
+          example: "standard"
+        frequency:
+          type: integer
+          description: "Ideal interval between tasks in seconds."
+          nullable: true
+          example: 1209600
+        alert_window:
+          type: integer
+          description: "Window in seconds before the due date that the task becomes visible."
+          nullable: true
+          example: 172800
+        last_performed_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2023-10-27T10:00:00Z"
+        priority_score:
+          type: number
+          description: "Calculated value used to sort repeating tasks by urgency."
+          example: 0.0
+        repeat_status:
+          type: string
+          enum: [active, sleeping, n/a]
+          description: "Current state of the repeating task."
+          example: "n/a"
 
     Tag:
       type: object
@@ -399,6 +427,15 @@ paths:
                   type: integer
                 step:
                   type: integer
+                type:
+                  type: string
+                  enum: [standard, repeating]
+                frequency:
+                  type: integer
+                  description: "Interval in seconds."
+                alert_window:
+                  type: integer
+                  description: "Window in seconds before due date."
               required:
                 - name
       responses:
@@ -425,6 +462,13 @@ paths:
                 name:
                   type: string
                 step:
+                  type: integer
+                type:
+                  type: string
+                  enum: [standard, repeating]
+                frequency:
+                  type: integer
+                alert_window:
                   type: integer
       responses:
         '200':
