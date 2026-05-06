@@ -297,7 +297,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                                                                           {u.when && ` at ${new Date(u.when).toLocaleString()}`}: 
                                                                           Delta {u.delta > 0 ? `+${u.delta}` : u.delta}
                                                                       </div>
-                                                                      {c.user_email === userEmail && (
+                                                                      {(c.user_email === userEmail || u.user_email === userEmail) && (
                                                                           <button 
                                                                               onClick={() => handleDeleteUpdate(u.id)}
                                                                               title="Delete update"
