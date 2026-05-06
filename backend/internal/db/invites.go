@@ -97,7 +97,7 @@ func AcceptInvite(userID int, inviteID int) error {
 
 	// Verify the user matches the invite email and the invite is pending
 	var invite TagInvite
-	var notifiedAt, reminderSentAt sql.NullTime
+	// var notifiedAt, reminderSentAt sql.NullTime
 	const inviteQuery = `
 		SELECT id, tag_id, email, access_level, status 
 		FROM tag_invites 

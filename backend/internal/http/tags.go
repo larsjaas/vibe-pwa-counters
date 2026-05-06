@@ -296,6 +296,22 @@ func handleUnshareTag(w http.ResponseWriter, r *http.Request, userID int, tagID 
 	w.WriteHeader(http.StatusOK)
 }
 
+func handleGetTagShares(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
+	shares, err := db.GetTagShares(userID, tagID)
+	if err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	emails := make([]string, 0, len(shares))
+	for _, s := range shares {
+		emails = append(emails, s.Email)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(emails)
+}
+
 func handleCreateInvite(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
 	var body struct {
 		Email       string `json:"email"`
