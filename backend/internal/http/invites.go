@@ -98,7 +98,13 @@ func InvitesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleListInvites(w http.ResponseWriter, r *http.Request, email string) {
-	invites, err := db.GetPendingInvites(email)
+	userID, err := db.GetUserIDByEmail(email)
+	if err != nil {
+		http.Error(w, "user not found", http.StatusNotFound)
+		return
+	}
+
+	invites, err := db.GetUserInvites(userID, email)
 	if err != nil {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { IconButton } from './components/IconButton';
-import { LogOut, Trash2, Plus, Key, Check } from 'lucide-react';
+import { LogOut, Trash2, Plus, Key, Check, X } from 'lucide-react';
 import { ConfirmationModal } from './components/ConfirmationModal';
 
 interface UserInfo {
@@ -23,12 +23,23 @@ interface TagShare {
     access_level: number;
 }
 
+interface TagInvite {
+    id: number;
+    tag_name: string;
+    other_party_email: string;
+    sender_id: number;
+    access_level: number;
+    is_sender: boolean;
+    status: string;
+}
+
 const FRONTEND_VERSION = "0.9.6";
 
 export const AccountPage: React.FC = () => {
     const [user, setUser] = useState<UserInfo | null>(null);
     const [apikeys, setApikeys] = useState<APIKey[]>([]);
     const [tagshares, setTagshares] = useState<TagShare[]>([]);
+    const [invites, setInvites] = useState<TagInvite[]>([]);
     const [beVersion, setBeVersion] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
@@ -38,27 +49,31 @@ export const AccountPage: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [userRes, infoRes, keysRes, sharesRes] = await Promise.all([
+                const [userRes, infoRes, keysRes, sharesRes, invitesRes] = await Promise.all([
                     fetch('/api/account'),
                     fetch('/api/info'),
                     fetch('/api/apikeys'),
                     fetch('/api/tags/shares/me'),
+                    fetch('/api/invites'),
                 ]);
                 
                 if (!userRes.ok) throw new Error('Failed to fetch account information');
                 if (!infoRes.ok) throw new Error('Failed to fetch system information');
                 if (!keysRes.ok) throw new Error('Failed to fetch API keys');
                 if (!sharesRes.ok) throw new Error('Failed to fetch tag shares');
+                if (!invitesRes.ok) throw new Error('Failed to fetch invites');
 
                 const userData = await userRes.json();
                 const infoData = await infoRes.json();
                 const keysData = await keysRes.json();
                 const sharesData = await sharesRes.json();
+                const invitesData = await invitesRes.json();
 
                 setUser(userData);
                 setBeVersion(infoData.version);
                 setApikeys(keysData);
                 setTagshares(sharesData);
+                setInvites(invitesData);
             } catch (e: any) {
                 setError(e.message);
             } finally {
@@ -92,6 +107,46 @@ export const AccountPage: React.FC = () => {
             setApikeys(prev => prev.filter(key => key.id !== id));
         } catch (e: any) {
             alert(`Error deleting API key: ${e.message}`);
+        }
+    };
+
+    const handleAcceptInvite = async (id: number) => {
+        try {
+            const res = await fetch(`/api/invites/${id}/accept`, { method: 'POST' });
+            if (!res.ok) throw new Error('Failed to accept invite');
+            
+            setInvites(prev => prev.filter(i => i.id !== id));
+            
+            // Refresh tag shares list
+            const sharesRes = await fetch('/api/tags/shares/me');
+            if (sharesRes.ok) {
+                const sharesData = await sharesRes.json();
+                setTagshares(sharesData);
+            }
+        } catch (e: any) {
+            alert(`Error accepting invite: ${e.message}`);
+        }
+    };
+
+    const handleRejectInvite = async (id: number) => {
+        try {
+            const res = await fetch(`/api/invites/${id}/reject`, { method: 'POST' });
+            if (!res.ok) throw new Error('Failed to reject invite');
+            
+            setInvites(prev => prev.filter(i => i.id !== id));
+        } catch (e: any) {
+            alert(`Error rejecting invite: ${e.message}`);
+        }
+    };
+
+    const handleRetractInvite = async (id: number) => {
+        try {
+            const res = await fetch(`/api/invites/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed to retract invite');
+            
+            setInvites(prev => prev.filter(i => i.id !== id));
+        } catch (e: any) {
+            alert(`Error retracting invite: ${e.message}`);
         }
     };
 
@@ -186,6 +241,77 @@ export const AccountPage: React.FC = () => {
                                     <td colSpan={5} style={{ padding: '1rem', textAlign: 'center', color: '#999' }}>
                                         No shared tags found.
                                     </td>
+                               </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div style={{ marginTop: '2rem', marginBottom: '2rem', width: '95%' }}>
+                <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    marginBottom: '1rem' 
+                }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Invites</h3>
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                    <table style={{ 
+                        width: '100%', 
+                        borderCollapse: 'collapse', 
+                        fontSize: '0.85rem',
+                        textAlign: 'left'
+                    }}>
+                        <thead>
+                            <tr style={{ borderBottom: '2px solid #eee', color: '#888' }}>
+                               <th style={{ padding: '8px 0' }}>Tag Name</th>
+                               <th style={{ padding: '8px 0' }}>User</th>
+                               <th style={{ padding: '8px 0', textAlign: 'center' }}>RW?</th>
+                               <th style={{ padding: '8px 0', textAlign: 'right' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody style={{ textAlign: 'left' }}>
+                            {invites.map((invite, index) => (
+                                <tr key={`${invite.id}-${index}`} style={{ borderBottom: '1px solid #f9f9f9' }}>
+                                    <td style={{ padding: '8px 0' }}>{invite.tag_name}</td>
+                                    <td style={{ padding: '8px 0', color: '#666' }}>{invite.other_party_email}</td>
+                                    <td style={{ padding: '8px 0', textAlign: 'center' }}>
+                                        {invite.access_level === 2 && <Check size={14} color="#4caf50" />}
+                                    </td>
+                                    <td style={{ padding: '8px 0', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                        {!invite.is_sender ? (
+                                            <>
+                                                <Check 
+                                                    size={16} 
+                                                    color="#4caf50" 
+                                                    style={{ cursor: 'pointer' }} 
+                                                    onClick={() => handleAcceptInvite(invite.id)} 
+                                                />
+                                                <X 
+                                                    size={16} 
+                                                    color="#f44336" 
+                                                    style={{ cursor: 'pointer' }} 
+                                                    onClick={() => handleRejectInvite(invite.id)} 
+                                                />
+                                            </>
+                                        ) : (
+                                            <Trash2 
+                                                size={16} 
+                                                color="#888" 
+                                                style={{ cursor: 'pointer' }} 
+                                                onClick={() => handleRetractInvite(invite.id)} 
+                                            />
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                            {invites.length === 0 && (
+                               <tr>
+                                   <td colSpan={4} style={{ padding: '1rem', textAlign: 'center', color: '#999' }}>
+                                       No pending invites.
+                                   </td>
                                </tr>
                             )}
                         </tbody>

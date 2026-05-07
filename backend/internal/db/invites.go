@@ -21,6 +21,17 @@ type TagInvite struct {
 	ReminderSentAt *time.Time `json:"reminder_sent_at"`
 }
 
+// TagInviteDetail provides detailed information about a tag invite, including tag name and other party email.
+type TagInviteDetail struct {
+	ID              int    `json:"id"`
+	TagName         string `json:"tag_name"`
+	OtherPartyEmail string `json:"other_party_email"`
+	SenderID        int    `json:"sender_id"`
+	AccessLevel     int    `json:"access_level"`
+	IsSender        bool   `json:"is_sender"`
+	Status          string `json:"status"`
+}
+
 // CreateInvite creates a new invite for a tag.
 func CreateInvite(senderID int, tagID int, email string, accessLevel int) (*TagInvite, error) {
 	if db == nil {
@@ -85,6 +96,40 @@ func GetPendingInvites(email string) ([]*TagInvite, error) {
 			i.ReminderSentAt = &reminderSentAt.Time
 		}
 		invites = append(invites, &i)
+	}
+	return invites, nil
+}
+
+// GetUserInvites retrieves all pending invites where the user is either the sender or the recipient.
+func GetUserInvites(userID int, email string) ([]*TagInviteDetail, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+
+	const query = `
+		SELECT i.id, t.name, 
+		       CASE WHEN i.sender_id = $1 THEN i.email ELSE u.email END,
+		       i.sender_id, i.access_level, i.status, (i.sender_id = $1)
+		FROM tag_invites i
+		JOIN tags t ON i.tag_id = t.id
+		JOIN users u ON i.sender_id = u.id
+		WHERE (i.email = $2 OR i.sender_id = $1) AND i.status = 'pending' AND i.expires_at > NOW()
+		ORDER BY i.created_at DESC`
+
+	rows, err := db.Query(query, userID, email)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	invites := make([]*TagInviteDetail, 0)
+	for rows.Next() {
+		var d TagInviteDetail
+		err := rows.Scan(&d.ID, &d.TagName, &d.OtherPartyEmail, &d.SenderID, &d.AccessLevel, &d.Status, &d.IsSender)
+		if err != nil {
+			return nil, err
+		}
+		invites = append(invites, &d)
 	}
 	return invites, nil
 }
