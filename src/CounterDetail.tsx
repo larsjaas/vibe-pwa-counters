@@ -7,14 +7,19 @@ interface Counter {
     id: number;
     name: string;
     step: number;
+    count: number;
     archivetime: string | null;
     user_email: string;
+    type: 'standard' | 'repeating';
+    priority_score: number;
+    frequency?: number;
+    alert_window?: number;
 }
 
 interface CounterDetailProps {
     counter: Counter;
     onBack: () => void;
-    onUpdate: (id: number, name: string, step: number) => void;
+    onUpdate: (id: number, updates: any) => void;
     onDelete: (id: number) => void;
     onArchive: (id: number) => void;
 }
@@ -23,10 +28,33 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
     const [isEditing, setIsEditing] = useState(false);
     const [name, setName] = useState(counter.name);
     const [step, setStep] = useState(counter.step);
+    const [type, setType] = useState(counter.type);
+    const [frequency, setFrequency] = useState(counter.frequency || 3600);
+    const [alertWindow, setAlertWindow] = useState(counter.alert_window || 0);
     const [tags, setTags] = useState('');
     const [loadingTags, setLoadingTags] = useState(true);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [tagsToCreate, setTagsToCreate] = useState<string[]>([]);
+
+    const FREQUENCY_MAP: Record<string, number> = {
+        hourly: 3600,
+        daily: 86400,
+        'every other day': 172800,
+        weekly: 604800,
+        biweekly: 1209600,
+        monthly: 2592000,
+        yearly: 31536000,
+    };
+
+    const getFrequencyLabel = (val: number) => {
+        return Object.entries(FREQUENCY_MAP).find(([_, v]) => v === val)?.[0] || 'custom';
+    };
+
+    const handleFrequencyChange = (val: string) => {
+        const period = FREQUENCY_MAP[val] || 3600;
+        setFrequency(period);
+        setAlertWindow(Math.round(period * 0.15));
+    };
 
     useEffect(() => {
         const loadTags = async () => {
@@ -119,7 +147,13 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                 setShowConfirmModal(true);
             } else {
                 await executeSaveTags(tags);
-                onUpdate(counter.id, name, step);
+                onUpdate(counter.id, { 
+                    name, 
+                    step, 
+                    type, 
+                    frequency: type === 'repeating' ? frequency : 0, 
+                    alert_window: type === 'repeating' ? alertWindow : 0 
+                });
                 setIsEditing(false);
             }
         } catch (e) {
@@ -130,7 +164,13 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
     const confirmCreateTags = async () => {
         try {
             await executeSaveTags(tags);
-            onUpdate(counter.id, name, step);
+            onUpdate(counter.id, { 
+                name, 
+                step, 
+                type, 
+                frequency: type === 'repeating' ? frequency : 0, 
+                alert_window: type === 'repeating' ? alertWindow : 0 
+            });
             setIsEditing(false);
             setShowConfirmModal(false);
         } catch (e) {
@@ -153,6 +193,42 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                             className="form-input"
                         />
                     </div>
+                    <div className="form-field">
+                        <label className="form-label">Type:</label>
+                        <select 
+                            value={type} 
+                            onChange={(e) => setType(e.target.value as 'standard' | 'repeating')} 
+                            className="form-input"
+                        >
+                            <option value="standard">Standard</option>
+                            <option value="repeating">Repeating</option>
+                        </select>
+                    </div>
+                    {type === 'repeating' && (
+                        <>
+                            <div className="form-field">
+                                <label className="form-label">Target Frequency:</label>
+                                <select 
+                                    value={getFrequencyLabel(frequency)} 
+                                    onChange={(e) => handleFrequencyChange(e.target.value)} 
+                                    className="form-input"
+                                >
+                                    {Object.entries(FREQUENCY_MAP).map(([label, value]) => (
+                                        <option key={label} value={label}>{label.charAt(0).toUpperCase() + label.slice(1)}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="form-field">
+                                <label className="form-label">Alert Window (seconds):</label>
+                                <input 
+                                    type="number"
+                                    value={alertWindow} 
+                                    onChange={(e) => setAlertWindow(parseInt(e.target.value) || 0)} 
+                                    className="form-input"
+                                />
+                            </div>
+                        </>
+                    )}
                     <div className="form-field">
                         <label className="form-label">Step:</label>
                         <input 
@@ -180,6 +256,13 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
             ) : (
                 <div className="form-group">
                     <p><strong>Name:</strong> {name}</p>
+                    <p><strong>Type:</strong> {type === 'standard' ? 'Standard' : 'Repeating'}</p>
+                    {type === 'repeating' && (
+                        <>
+                            <p><strong>Frequency:</strong> {getFrequencyLabel(frequency)}</p>
+                            <p><strong>Alert Window:</strong> {alertWindow} seconds</p>
+                        </>
+                    )}
                     <p><strong>Step:</strong> {step}</p>
                     <p><strong>Tags:</strong> {loadingTags ? 'Loading...' : (tags || 'None')}</p>
                     <button onClick={() => setIsEditing(true)} className="btn-secondary" style={{ width: 'fit-content' }}>Edit</button>

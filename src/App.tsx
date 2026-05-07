@@ -72,12 +72,12 @@ const App: React.FC = () => {
         };
     }, []);
 
-    const handleUpdateCounter = async (id: number, name: string, step: number) => {
+    const handleUpdateCounter = async (id: number, updates: any) => {
         try {
             const res = await fetch('/api/counters', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, name, step }),
+                body: JSON.stringify({ id, ...updates }),
             });
             if (!res.ok) throw new Error('Update failed');
             setEditingCounter(null);

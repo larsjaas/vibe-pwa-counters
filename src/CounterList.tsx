@@ -10,6 +10,8 @@ export interface Counter {
     count: number;
     archivetime: string | null;
     user_email: string;
+    type: 'standard' | 'repeating';
+    priority_score: number;
 }
 
 interface CounterListProps {
@@ -27,6 +29,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
     const [loading, setLoading] = useState(true);
     const [showArchived, setShowArchived] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [viewMode, setViewMode] = useState<'counters' | 'tasks'>('counters');
     const [selectedTagForSharing, setSelectedTagForSharing] = useState<{ id: number; name: string } | null>(null);
     const [expandedCounterId, setExpandedCounterId] = useState<number | null>(null);
 
@@ -40,7 +43,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
 
             if (!resCounters.ok || !resUpdates.ok || !resTags.ok) throw new Error('Failed to fetch data');
 
-            const countersData: Array<{ id: number; name: string; step: number; archivetime: string | null; user_email: string }> = await resCounters.json();
+            const countersData: Array<{ id: number; name: string; step: number; archivetime: string | null; user_email: string; type: 'standard' | 'repeating'; priority_score: number }> = await resCounters.json();
             const updatesData = await resUpdates.json();
             const tagsData: Array<{ id: number; name: string, user_email: string }> = await resTags.json();
             setAllTags(tagsData);
@@ -69,20 +72,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                 return { ...c, count };
             });
 
-            // MRU Ordering: Most recently updated counters first.
-            // Since /api/counts returns in insert order, the last occurrence of a counter ID is the most recent.
-            const lastUsedMap = new Map<number, number>();
-            updates.forEach((u, index) => {
-                lastUsedMap.set(u.counter, index);
-            });
-
-            const sortedCounters = countersWithCount.sort((a, b) => {
-                const aLastUsed = lastUsedMap.get(a.id) ?? -1;
-                const bLastUsed = lastUsedMap.get(b.id) ?? -1;
-                return bLastUsed - aLastUsed;
-            });
-
-            setCounters(sortedCounters);
+            setCounters(countersWithCount);
         } catch (e) {
             console.error('Error loading counters', e);
         } finally {
@@ -123,10 +113,41 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
         }
     };
 
+    const sortedCounters = React.useMemo(() => {
+        const filteredByView = counters.filter(c => 
+            viewMode === 'counters' ? c.type === 'standard' : c.type === 'repeating'
+        );
+
+        if (viewMode === 'counters') {
+            const lastUsedMap = new Map<number, number>();
+            updates.forEach((u, index) => {
+                lastUsedMap.set(u.counter, index);
+            });
+            return [...filteredByView].sort((a, b) => {
+                const aLastUsed = lastUsedMap.get(a.id) ?? -1;
+                const bLastUsed = lastUsedMap.get(b.id) ?? -1;
+                return bLastUsed - aLastUsed;
+            });
+        } else {
+            return [...filteredByView].sort((a, b) => b.priority_score - a.priority_score);
+        }
+    }, [counters, updates, viewMode]);
+
+    const visibleTags = React.useMemo(() => {
+        const activeCounters = counters.filter(c => 
+            viewMode === 'counters' ? c.type === 'standard' : c.type === 'repeating'
+        );
+        const usedTags = new Set<string>();
+        activeCounters.forEach(c => {
+            (counterTags[c.id] || []).forEach(tag => usedTags.add(tag));
+        });
+        return allTags.filter(tag => usedTags.has(tag.name));
+    }, [allTags, counters, counterTags, viewMode]);
+
     if (loading) return <div className="loading-text">Loading counters...</div>;
 
-    const nonArchived = counters.filter(c => c.archivetime === null);
-    const archived = counters.filter(c => c.archivetime !== null);
+    const nonArchived = sortedCounters.filter(c => c.archivetime === null);
+    const archived = sortedCounters.filter(c => c.archivetime !== null);
     const filteredCounters = (showArchived ? [...nonArchived, ...archived] : nonArchived)
         .filter(c => {
             const query = searchQuery.toLowerCase();
@@ -151,18 +172,56 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
 
     return (
         <div className="counter-list-container">
-            <div className="counter-list-header">
-                <h2>Counters</h2>
-                <IconButton 
-                    icon={Plus} 
-                    onClick={() => {
-                        const matchedTag = allTags.find(t => t.name.toLowerCase() === searchQuery.toLowerCase());
-                        onCreate(matchedTag ? matchedTag.name : undefined);
-                    }} 
-                    title="Create New Counter" 
-                    backgroundColor="#0070f3" 
-                    color="#fff" 
-                />
+            <div className="counter-list-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h2 style={{ margin: 0 }}>{viewMode === 'counters' ? 'Counters' : 'Tasks'}</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ display: 'flex', gap: '2px', background: '#eee', padding: '2px', borderRadius: '6px' }}>
+                        <button 
+                            onClick={() => setViewMode('counters')}
+                            style={{ 
+                                padding: '4px 10px', 
+                                borderRadius: '4px', 
+                                border: 'none', 
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                                backgroundColor: viewMode === 'counters' ? '#fff' : 'transparent',
+                                boxShadow: viewMode === 'counters' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                                fontWeight: viewMode === 'counters' ? 'bold' : 'normal',
+                                color: viewMode === 'counters' ? '#000' : '#666',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            Counters
+                        </button>
+                        <button 
+                            onClick={() => setViewMode('tasks')}
+                            style={{ 
+                                padding: '4px 10px', 
+                                borderRadius: '4px', 
+                                border: 'none', 
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                                backgroundColor: viewMode === 'tasks' ? '#fff' : 'transparent',
+                                boxShadow: viewMode === 'tasks' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                                fontWeight: viewMode === 'tasks' ? 'bold' : 'normal',
+                                color: viewMode === 'tasks' ? '#000' : '#666',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            Tasks
+                        </button>
+                    </div>
+                    <IconButton 
+                        icon={Plus} 
+                        onClick={() => {
+                            const matchedTag = allTags.find(t => t.name.toLowerCase() === searchQuery.toLowerCase());
+                            onCreate(matchedTag ? matchedTag.name : undefined);
+                        }} 
+                        title="Create New Counter" 
+                        backgroundColor="#0070f3" 
+                        color="#fff" 
+                    />
+                </div>
             </div>
 
             <div className="search-input-container">
@@ -199,9 +258,9 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                 </div>
             </div>
 
-            {allTags.length > 0 && (
+            {visibleTags.length > 0 && (
                 <div className="tags-filter-container">
-                    {allTags
+                    {visibleTags
                         .filter(tag => !searchQuery.toLowerCase().includes(tag.name.toLowerCase()))
                         .map(tag => (
                             <span 

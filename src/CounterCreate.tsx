@@ -11,20 +11,50 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
     const [name, setName] = useState('');
     const [initial, setInitial] = useState(0);
     const [step, setStep] = useState(1);
+    const [type, setType] = useState<'standard' | 'repeating'>('standard');
+    const [frequency, setFrequency] = useState('hourly');
+    const [alertWindow, setAlertWindow] = useState(540);
     const [tags, setTags] = useState(initialTags || '');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [tagsToCreate, setTagsToCreate] = useState<string[]>([]);
 
+    const FREQUENCY_MAP: Record<string, number> = {
+        hourly: 3600,
+        daily: 86400,
+        'every other day': 172800,
+        weekly: 604800,
+        biweekly: 1209600,
+        monthly: 2592000,
+        yearly: 31536000,
+    };
+
+    const handleFrequencyChange = (val: string) => {
+        setFrequency(val);
+        const period = FREQUENCY_MAP[val] || 3600;
+        setAlertWindow(Math.round(period * 0.15));
+    };
+
     const finalizeCreate = async () => {
         setLoading(true);
         setError(null);
         try {
+            const payload: any = { name, initial, step, type };
+            
+            if (type === 'repeating') {
+                payload.frequency = FREQUENCY_MAP[frequency] || 3600;
+                payload.alert_window = alertWindow;
+            } else {
+                payload.frequency = 0;
+                payload.alert_window = 0;
+                payload.last_performed_at = 0;
+            }
+
             const res = await fetch('/api/counters', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, initial, step }),
+                body: JSON.stringify(payload),
             });
 
             if (!res.ok) throw new Error(`Server error: ${res.status}`);
@@ -109,6 +139,46 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
                         className="form-input"
                     />
                 </div>
+                <div className="form-field">
+                    <label className="form-label">Type:</label>
+                    <select 
+                        value={type} 
+                        onChange={(e) => setType(e.target.value as 'standard' | 'repeating')} 
+                        className="form-input"
+                    >
+                        <option value="standard">Standard</option>
+                        <option value="repeating">Repeating</option>
+                    </select>
+                </div>
+                {type === 'repeating' && (
+                    <>
+                        <div className="form-field">
+                            <label className="form-label">Target Frequency:</label>
+                            <select 
+                                value={frequency} 
+                                onChange={(e) => handleFrequencyChange(e.target.value)} 
+                                className="form-input"
+                            >
+                                <option value="hourly">Hourly</option>
+                                <option value="daily">Daily</option>
+                                <option value="every other day">Every other day</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="biweekly">Biweekly</option>
+                                <option value="monthly">Monthly</option>
+                                <option value="yearly">Yearly</option>
+                            </select>
+                        </div>
+                        <div className="form-field">
+                            <label className="form-label">Alert Window (seconds):</label>
+                            <input 
+                                type="number" 
+                                value={alertWindow} 
+                                onChange={(e) => setAlertWindow(parseInt(e.target.value) || 0)} 
+                                className="form-input"
+                            />
+                        </div>
+                    </>
+                )}
                 <div className="form-field">
                     <label className="form-label">Initial Value:</label>
                     <input 

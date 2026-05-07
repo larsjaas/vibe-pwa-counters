@@ -87,13 +87,19 @@ func CountersHandler(w http.ResponseWriter, r *http.Request) {
         }
 
         type counterResponse struct {
-            ID         int       `json:"id"`
-            UserEmail  string    `json:"user_email"`
-            Name       string    `json:"name"`
-            CreateTime time.Time `json:"createtime"`
-            ArchiveTime interface{} `json:"archivetime"`
-            DeleteTime  interface{} `json:"deletetime"`
-            Step       int       `json:"step"`
+            ID             int         `json:"id"`
+            UserEmail      string      `json:"user_email"`
+            Name           string      `json:"name"`
+            CreateTime     time.Time   `json:"createtime"`
+            ArchiveTime    interface{} `json:"archivetime"`
+            DeleteTime     interface{} `json:"deletetime"`
+            Step           int         `json:"step"`
+            Type           string      `json:"type"`
+            Frequency      *int64      `json:"frequency"`
+            AlertWindow    *int64      `json:"alert_window"`
+            LastPerformedAt interface{} `json:"last_performed_at"`
+            PriorityScore  float64     `json:"priority_score"`
+            RepeatStatus   string      `json:"repeat_status"`
         }
 
         resp := make([]counterResponse, 0, len(counters))
@@ -104,13 +110,19 @@ func CountersHandler(w http.ResponseWriter, r *http.Request) {
                 email = user.Email
             }
             resp = append(resp, counterResponse{
-                ID:         c.ID,
-                UserEmail:  email,
-                Name:       c.Name,
-                CreateTime: c.CreateTime,
-                ArchiveTime: c.ArchiveTime,
-                DeleteTime:  c.DeleteTime,
-                Step:       c.Step,
+                ID:             c.ID,
+                UserEmail:      email,
+                Name:           c.Name,
+                CreateTime:     c.CreateTime,
+                ArchiveTime:    c.ArchiveTime,
+                DeleteTime:     c.DeleteTime,
+                Step:           c.Step,
+                Type:           c.Type,
+                Frequency:      c.Frequency,
+                AlertWindow:    c.AlertWindow,
+                LastPerformedAt: c.LastPerformedAt,
+                PriorityScore:  c.PriorityScore,
+                RepeatStatus:   c.RepeatStatus,
             })
         }
 
