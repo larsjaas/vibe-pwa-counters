@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { IconButton } from './components/IconButton';
-import { LogOut, Trash2, Plus, Key } from 'lucide-react';
+import { LogOut, Trash2, Plus, Key, Check } from 'lucide-react';
 import { ConfirmationModal } from './components/ConfirmationModal';
 
 interface UserInfo {
@@ -15,11 +15,20 @@ interface APIKey {
     lastused: string | null;
 }
 
+interface TagShare {
+    tag_id: number;
+    tag_name: string;
+    owner_email: string;
+    user_email: string;
+    access_level: number;
+}
+
 const FRONTEND_VERSION = "0.9.6";
 
 export const AccountPage: React.FC = () => {
     const [user, setUser] = useState<UserInfo | null>(null);
     const [apikeys, setApikeys] = useState<APIKey[]>([]);
+    const [tagshares, setTagshares] = useState<TagShare[]>([]);
     const [beVersion, setBeVersion] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
@@ -29,23 +38,27 @@ export const AccountPage: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [userRes, infoRes, keysRes] = await Promise.all([
+                const [userRes, infoRes, keysRes, sharesRes] = await Promise.all([
                     fetch('/api/account'),
                     fetch('/api/info'),
                     fetch('/api/apikeys'),
+                    fetch('/api/tags/shares/me'),
                 ]);
                 
                 if (!userRes.ok) throw new Error('Failed to fetch account information');
                 if (!infoRes.ok) throw new Error('Failed to fetch system information');
                 if (!keysRes.ok) throw new Error('Failed to fetch API keys');
+                if (!sharesRes.ok) throw new Error('Failed to fetch tag shares');
 
                 const userData = await userRes.json();
                 const infoData = await infoRes.json();
                 const keysData = await keysRes.json();
+                const sharesData = await sharesRes.json();
 
                 setUser(userData);
                 setBeVersion(infoData.version);
                 setApikeys(keysData);
+                setTagshares(sharesData);
             } catch (e: any) {
                 setError(e.message);
             } finally {
@@ -130,6 +143,55 @@ export const AccountPage: React.FC = () => {
                     {user.name && <div><strong>Name:</strong> {user.name}</div>}
                 </div>
             )}
+
+            <div style={{ marginTop: '2rem', marginBottom: '2rem', width: '95%' }}>
+                <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    marginBottom: '1rem' 
+                }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Tag Sharing</h3>
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                    <table style={{ 
+                        width: '100%', 
+                        borderCollapse: 'collapse', 
+                        fontSize: '0.85rem',
+                        textAlign: 'left'
+                    }}>
+                        <thead>
+                            <tr style={{ borderBottom: '2px solid #eee', color: '#888' }}>
+                               <th style={{ padding: '8px 0' }}>Tag Name</th>
+                               <th style={{ padding: '8px 0' }}>Owner</th>
+                               <th style={{ padding: '8px 0' }}>User</th>
+                               <th style={{ padding: '8px 0', textAlign: 'center' }}>RW?</th>
+                               <th style={{ padding: '8px 0', textAlign: 'right' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody style={{ textAlign: 'left' }}>
+                            {tagshares.map((share, index) => (
+                                <tr key={`${share.tag_id}-${index}`} style={{ borderBottom: '1px solid #f9f9f9' }}>
+                                    <td style={{ padding: '8px 0' }}>{share.tag_name}</td>
+                                    <td style={{ padding: '8px 0', color: '#666' }}>{share.owner_email}</td>
+                                    <td style={{ padding: '8px 0', color: '#666' }}>{share.user_email}</td>
+                                    <td style={{ padding: '8px 0', textAlign: 'center' }}>
+                                        {share.access_level === 2 && <Check size={14} color="#4caf50" />}
+                                    </td>
+                                    <td style={{ padding: '8px 0', textAlign: 'right' }}></td>
+                                </tr>
+                            ))}
+                            {tagshares.length === 0 && (
+                               <tr>
+                                    <td colSpan={5} style={{ padding: '1rem', textAlign: 'center', color: '#999' }}>
+                                        No shared tags found.
+                                    </td>
+                               </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
             <div style={{ marginTop: '2rem', marginBottom: '3rem', width: '95%' }}>
                 <div style={{ 

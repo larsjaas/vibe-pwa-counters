@@ -21,6 +21,47 @@ type TagShare struct {
 	AccessLevel int    `json:"access_level"`
 }
 
+// TagShareDetail provides detailed information about a tag share.
+type TagShareDetail struct {
+	TagID       int    `json:"tag_id"`
+	TagName     string `json:"tag_name"`
+	OwnerEmail  string `json:"owner_email"`
+	UserEmail   string `json:"user_email"`
+	AccessLevel int    `json:"access_level"`
+}
+
+// GetUserTagShares retrieves all tag shares involving the user.
+// This includes tags owned by the user and shared with others,
+// and tags owned by others and shared with the user.
+func GetUserTagShares(userID int) ([]*TagShareDetail, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+	const query = `
+		SELECT t.id, t.name, u_owner.email as owner, u_user.email as user, ts.access_level
+		FROM tags t
+		JOIN users u_owner ON t.user_id = u_owner.id
+		JOIN tag_shares ts ON t.id = ts.tag_id
+		JOIN users u_user ON ts.user_id = u_user.id
+		WHERE (t.user_id = $1 OR ts.user_id = $1) AND t.deletetime IS NULL
+		ORDER BY t.name, u_user.email`
+	rows, err := db.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	shares := make([]*TagShareDetail, 0)
+	for rows.Next() {
+		var s TagShareDetail
+		if err := rows.Scan(&s.TagID, &s.TagName, &s.OwnerEmail, &s.UserEmail, &s.AccessLevel); err != nil {
+			return nil, err
+		}
+		shares = append(shares, &s)
+	}
+	return shares, nil
+}
+
 // InsertTag creates a new tag for the given user.
 func InsertTag(userID int, name string) (*Tag, error) {
 	if db == nil {
@@ -104,7 +145,7 @@ func SoftDeleteTag(userID int, tagID int) (bool, error) {
 	return rows > 0, nil
 }
 
-// AddTagToCounter associates a tag with a counter. 
+// AddTagToCounter associates a tag with a counter.
 // Requires that the user owns BOTH the tag and the counter.
 func AddTagToCounter(userID int, tagID int, counterID int) error {
 	if db == nil {
@@ -139,7 +180,7 @@ func RemoveTagFromCounter(userID int, tagID int, counterID int) (bool, error) {
 	}
 
 	// Only tag owner can remove tags from counters
-	const query = `DELETE FROM counter_tags WHERE tag_id = $1 AND counter_id = $2 
+	const query = `DELETE FROM counter_tags WHERE tag_id = $1 AND counter_id = $2
 	               AND EXISTS (SELECT 1 FROM tags WHERE id = $1 AND user_id = $3)`
 	res, err := db.Exec(query, tagID, counterID, userID)
 	if err != nil {
@@ -157,7 +198,7 @@ func ShareTagWithUser(ownerID int, tagID int, targetUserID int, accessLevel int)
 	if db == nil {
 		return fmt.Errorf("database not initialized")
 	}
-	const query = `INSERT INTO tag_shares (tag_id, user_id, access_level) VALUES ($1, $2, $3) 
+	const query = `INSERT INTO tag_shares (tag_id, user_id, access_level) VALUES ($1, $2, $3)
 	               ON CONFLICT (tag_id, user_id) DO UPDATE SET access_level = EXCLUDED.access_level`
 	// We should verify ownership first
 	const checkQuery = `SELECT 1 FROM tags WHERE id = $1 AND user_id = $2 AND deletetime IS NULL`
@@ -176,7 +217,7 @@ func UnshareTagFromUser(ownerID int, tagID int, targetUserID int) (bool, error) 
 	if db == nil {
 		return false, fmt.Errorf("database not initialized")
 	}
-	const query = `DELETE FROM tag_shares WHERE tag_id = $1 AND user_id = $2 
+	const query = `DELETE FROM tag_shares WHERE tag_id = $1 AND user_id = $2
 	               AND EXISTS (SELECT 1 FROM tags WHERE id = $1 AND user_id = $3)`
 	res, err := db.Exec(query, tagID, targetUserID, ownerID)
 	if err != nil {
@@ -270,7 +311,7 @@ func GetTagShares(ownerID int, tagID int) ([]*TagShare, error) {
 	const query = `
 		SELECT u.email, ts.access_level FROM users u
 		JOIN tag_shares ts ON u.id = ts.user_id
-		WHERE ts.tag_id = $1 
+		WHERE ts.tag_id = $1
 		  AND EXISTS (SELECT 1 FROM tags WHERE id = $1 AND user_id = $2)
 		ORDER BY u.email`
 	rows, err := db.Query(query, tagID, ownerID)

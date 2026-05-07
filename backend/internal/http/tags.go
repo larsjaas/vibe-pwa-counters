@@ -39,6 +39,16 @@ func TagsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Handle /api/tags/shares/me
+	if path == "/api/tags/shares/me" {
+		if method == http.MethodGet {
+			handleGetUserTagShares(w, r, userID)
+		} else {
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		}
+		return
+	}
+
 	// Handle /api/tags/:id ...
 	if strings.HasPrefix(path, "/api/tags/") {
 		parts := strings.Split(strings.TrimPrefix(path, "/api/tags/"), "/")
@@ -310,6 +320,17 @@ func handleGetTagShares(w http.ResponseWriter, r *http.Request, userID int, tagI
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(emails)
+}
+
+func handleGetUserTagShares(w http.ResponseWriter, r *http.Request, userID int) {
+	shares, err := db.GetUserTagShares(userID)
+	if err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(shares)
 }
 
 func handleCreateInvite(w http.ResponseWriter, r *http.Request, userID int, tagID int) {

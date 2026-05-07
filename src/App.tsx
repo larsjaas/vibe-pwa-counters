@@ -16,6 +16,19 @@ const App: React.FC = () => {
     const [refreshCount, setRefreshCount] = useState(0);
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [userEmail, setUserEmail] = useState<string | null>(null);
+    const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
+
+    const fetchInvitesCount = async () => {
+        try {
+            const res = await fetch('/api/invites');
+            if (res.ok) {
+                const data = await res.json();
+                setPendingInvitesCount(data.length);
+            }
+        } catch (e) {
+            console.error('Failed to fetch invites', e);
+        }
+    };
 
     useEffect(() => {
         const fetchAccount = async () => {
@@ -24,6 +37,7 @@ const App: React.FC = () => {
                 if (res.ok) {
                     const data = await res.json();
                     setUserEmail(data.email);
+                    await fetchInvitesCount();
                 }
             } catch (e) {
                 console.error('Failed to fetch account info', e);
@@ -49,6 +63,7 @@ const App: React.FC = () => {
                 }
             } else {
                 setRefreshCount(prev => prev + 1);
+                fetchInvitesCount();
             }
         };
 
@@ -137,7 +152,7 @@ const App: React.FC = () => {
                 </Routes>
             </div>
 
-            <NavBar />
+            <NavBar pendingInvitesCount={pendingInvitesCount} />
 
             {/* Modals Overlay */}
             {showCreateModal && (
