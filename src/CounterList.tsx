@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocalStorage } from './hooks/useLocalStorage';
 import { IconButton } from './components/IconButton';
 import { Plus, Edit2, SquareCheckBig, Search, X, UserRoundPlus, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { TagSharingModal } from './components/TagSharingModal';
@@ -27,11 +28,11 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
     const [counterTags, setCounterTags] = useState<Record<number, string[]>>({});
     const [allTags, setAllTags] = useState<{ id: number; name: string, user_email: string }[]>([]);
     const [loading, setLoading] = useState(true);
-    const [showArchived, setShowArchived] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [viewMode, setViewMode] = useState<'counters' | 'tasks'>('counters');
+    const [showArchived, setShowArchived] = useLocalStorage('counter-list-show-archived', false);
+    const [searchQuery, setSearchQuery] = useLocalStorage('counter-list-search-query', '');
+    const [viewMode, setViewMode] = useLocalStorage<'counters' | 'tasks'>('counter-list-view-mode', 'counters');
     const [selectedTagForSharing, setSelectedTagForSharing] = useState<{ id: number; name: string } | null>(null);
-    const [expandedCounterId, setExpandedCounterId] = useState<number | null>(null);
+    const [expandedCounterId, setExpandedCounterId] = useLocalStorage<number | null>('counter-list-expanded-id', null);
 
     const loadCounters = async () => {
         try {
