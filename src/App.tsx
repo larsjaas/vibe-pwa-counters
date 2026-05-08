@@ -23,7 +23,8 @@ const App: React.FC = () => {
             const res = await fetch('/api/invites');
             if (res.ok) {
                 const data = await res.json();
-                setPendingInvitesCount(data.length);
+                const receivedInvites = data.filter((i: any) => !i.is_sender);
+                setPendingInvitesCount(receivedInvites.length);
             }
         } catch (e) {
             console.error('Failed to fetch invites', e);
@@ -148,7 +149,7 @@ const App: React.FC = () => {
                         />
                     } />
                     <Route path="/stats" element={<StatisticsPage refreshTrigger={refreshCount} />} />
-                    <Route path="/profile" element={<AccountPage />} />
+                    <Route path="/profile" element={<AccountPage fetchInvitesCount={fetchInvitesCount} />} />
                 </Routes>
             </div>
 

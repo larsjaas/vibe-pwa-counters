@@ -35,7 +35,11 @@ interface TagInvite {
 
 const FRONTEND_VERSION = "0.9.6";
 
-export const AccountPage: React.FC = () => {
+interface AccountPageProps {
+    fetchInvitesCount?: () => Promise<void>;
+}
+
+export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount }) => {
     const [user, setUser] = useState<UserInfo | null>(null);
     const [apikeys, setApikeys] = useState<APIKey[]>([]);
     const [tagshares, setTagshares] = useState<TagShare[]>([]);
@@ -123,6 +127,10 @@ export const AccountPage: React.FC = () => {
                 const sharesData = await sharesRes.json();
                 setTagshares(sharesData);
             }
+
+            if (fetchInvitesCount) {
+                await fetchInvitesCount();
+            }
         } catch (e: any) {
             alert(`Error accepting invite: ${e.message}`);
         }
@@ -134,6 +142,10 @@ export const AccountPage: React.FC = () => {
             if (!res.ok) throw new Error('Failed to reject invite');
             
             setInvites(prev => prev.filter(i => i.id !== id));
+
+            if (fetchInvitesCount) {
+                await fetchInvitesCount();
+            }
         } catch (e: any) {
             alert(`Error rejecting invite: ${e.message}`);
         }
@@ -145,6 +157,10 @@ export const AccountPage: React.FC = () => {
             if (!res.ok) throw new Error('Failed to retract invite');
             
             setInvites(prev => prev.filter(i => i.id !== id));
+
+            if (fetchInvitesCount) {
+                await fetchInvitesCount();
+            }
         } catch (e: any) {
             alert(`Error retracting invite: ${e.message}`);
         }
