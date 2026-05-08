@@ -14,6 +14,7 @@ const App: React.FC = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [createInitialTags, setCreateInitialTags] = useState<string | undefined>(undefined);
     const [refreshCount, setRefreshCount] = useState(0);
+    const [accountRefreshCount, setAccountRefreshCount] = useState(0);
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
@@ -62,6 +63,14 @@ const App: React.FC = () => {
                 } catch (e) {
                     console.error('Failed to parse SSE alert JSON:', e);
                 }
+            } else if (event.data === 'UPDATED TAG_INVITES') {
+                console.log('SSE event UPDATED TAG_INVITES received');
+                fetchInvitesCount();
+                setAccountRefreshCount(prev => prev + 1);
+            } else if (event.data === 'UPDATED TAG_SHARES') {
+                console.log('SSE event UPDATED TAG_SHARES received');
+                setRefreshCount(prev => prev + 1);
+                setAccountRefreshCount(prev => prev + 1);
             } else {
                 setRefreshCount(prev => prev + 1);
                 fetchInvitesCount();
@@ -149,7 +158,7 @@ const App: React.FC = () => {
                         />
                     } />
                     <Route path="/stats" element={<StatisticsPage refreshTrigger={refreshCount} />} />
-                    <Route path="/profile" element={<AccountPage fetchInvitesCount={fetchInvitesCount} />} />
+                    <Route path="/profile" element={<AccountPage fetchInvitesCount={fetchInvitesCount} refreshTrigger={accountRefreshCount} />} />
                 </Routes>
             </div>
 

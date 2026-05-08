@@ -37,9 +37,10 @@ const FRONTEND_VERSION = "0.9.6";
 
 interface AccountPageProps {
     fetchInvitesCount?: () => Promise<void>;
+    refreshTrigger?: number;
 }
 
-export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount }) => {
+export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, refreshTrigger }) => {
     const [user, setUser] = useState<UserInfo | null>(null);
     const [apikeys, setApikeys] = useState<APIKey[]>([]);
     const [tagshares, setTagshares] = useState<TagShare[]>([]);
@@ -51,43 +52,47 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount }) =
     const [apiKeyToDelete, setApiKeyToDelete] = useState<number | null>(null);
     const [tagShareToDelete, setTagShareToDelete] = useState<TagShare | null>(null);
 
+    const fetchData = async () => {
+        console.log('AccountPage: Fetching data...');
+        try {
+            const [userRes, infoRes, keysRes, sharesRes, invitesRes] = await Promise.all([
+                fetch('/api/account'),
+                fetch('/api/info'),
+                fetch('/api/apikeys'),
+                fetch('/api/tags/shares/me'),
+                fetch('/api/invites'),
+            ]);
+            
+            if (!userRes.ok) throw new Error('Failed to fetch account information');
+            if (!infoRes.ok) throw new Error('Failed to fetch system information');
+            if (!keysRes.ok) throw new Error('Failed to fetch API keys');
+            if (!sharesRes.ok) throw new Error('Failed to fetch tag shares');
+            if (!invitesRes.ok) throw new Error('Failed to fetch invites');
+
+            const userData = await userRes.json();
+            const infoData = await infoRes.json();
+            const keysData = await keysRes.json();
+            const sharesData = await sharesRes.json();
+            const invitesData = await invitesRes.json();
+
+            console.log('AccountPage: Data fetched successfully');
+            setUser(userData);
+            setBeVersion(infoData.version);
+            setApikeys(keysData);
+            setTagshares(sharesData);
+            setInvites(invitesData);
+        } catch (e: any) {
+            console.error('AccountPage: Fetch error:', e);
+            setError(e.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [userRes, infoRes, keysRes, sharesRes, invitesRes] = await Promise.all([
-                    fetch('/api/account'),
-                    fetch('/api/info'),
-                    fetch('/api/apikeys'),
-                    fetch('/api/tags/shares/me'),
-                    fetch('/api/invites'),
-                ]);
-                
-                if (!userRes.ok) throw new Error('Failed to fetch account information');
-                if (!infoRes.ok) throw new Error('Failed to fetch system information');
-                if (!keysRes.ok) throw new Error('Failed to fetch API keys');
-                if (!sharesRes.ok) throw new Error('Failed to fetch tag shares');
-                if (!invitesRes.ok) throw new Error('Failed to fetch invites');
-
-                const userData = await userRes.json();
-                const infoData = await infoRes.json();
-                const keysData = await keysRes.json();
-                const sharesData = await sharesRes.json();
-                const invitesData = await invitesRes.json();
-
-                setUser(userData);
-                setBeVersion(infoData.version);
-                setApikeys(keysData);
-                setTagshares(sharesData);
-                setInvites(invitesData);
-            } catch (e: any) {
-                setError(e.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
+        console.log('AccountPage: useEffect triggered with refreshTrigger:', refreshTrigger);
         fetchData();
-    }, []);
+    }, [refreshTrigger]);
 
     const handleCreateAPIKey = async () => {
         try {
