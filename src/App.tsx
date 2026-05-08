@@ -13,6 +13,7 @@ const App: React.FC = () => {
     const [editingCounter, setEditingCounter] = useState<Counter | null>(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [createInitialTags, setCreateInitialTags] = useState<string | undefined>(undefined);
+    const [createInitialType, setCreateInitialType] = useState<'standard' | 'repeating'>('standard');
     const [refreshCount, setRefreshCount] = useState(0);
     const [accountRefreshCount, setAccountRefreshCount] = useState(0);
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
@@ -149,8 +150,9 @@ const App: React.FC = () => {
                     <Route path="/" element={
                         <CounterList 
                             onEdit={(c) => setEditingCounter(c)} 
-                            onCreate={(tags) => {
+                            onCreate={(tags, type) => {
                                 setCreateInitialTags(tags);
+                                if (type) setCreateInitialType(type);
                                 setShowCreateModal(true);
                             }} 
                             refreshTrigger={refreshCount}
@@ -170,9 +172,11 @@ const App: React.FC = () => {
                     <div className="modal-content">
                         <CounterCreate 
                             initialTags={createInitialTags}
+                            initialType={createInitialType}
                             onCreated={() => {
                                setShowCreateModal(false);
                                setCreateInitialTags(undefined);
+                               setCreateInitialType('standard');
                                setRefreshCount(prev => prev + 1);
                             }} 
                             onCancel={() => {

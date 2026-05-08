@@ -21,7 +21,7 @@ export interface Counter {
 
 interface CounterListProps {
     onEdit: (counter: Counter) => void;
-    onCreate: (tags?: string) => void;
+    onCreate: (tags?: string, type?: 'standard' | 'repeating') => void;
     refreshTrigger?: number;
     userEmail?: string | null;
 }
@@ -239,7 +239,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                         icon={Plus} 
                         onClick={() => {
                             const matchedTag = allTags.find(t => t.name.toLowerCase() === searchQuery.toLowerCase());
-                            onCreate(matchedTag ? matchedTag.name : undefined);
+                            onCreate(matchedTag ? matchedTag.name : undefined, viewMode === 'tasks' ? 'repeating' : 'standard');
                         }} 
                         title="Create New Counter" 
                         backgroundColor="#0070f3" 

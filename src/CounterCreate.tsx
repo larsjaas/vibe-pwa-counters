@@ -5,13 +5,14 @@ interface CounterCreateProps {
     onCreated: () => void;
     onCancel: () => void;
     initialTags?: string;
+    initialType?: 'standard' | 'repeating';
 }
 
-export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCancel, initialTags }) => {
+export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCancel, initialTags, initialType }) => {
     const [name, setName] = useState('');
     const [initial, setInitial] = useState(0);
     const [step, setStep] = useState(1);
-    const [type, setType] = useState<'standard' | 'repeating'>('standard');
+    const [type, setType] = useState<'standard' | 'repeating'>(initialType || 'standard');
     const [frequency, setFrequency] = useState('hourly');
     const [alertWindow, setAlertWindow] = useState(540);
     const [tags, setTags] = useState(initialTags || '');
