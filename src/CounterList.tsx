@@ -13,6 +13,10 @@ export interface Counter {
     user_email: string;
     type: 'standard' | 'repeating';
     priority_score: number;
+    repeat_status: string;
+    frequency: number | null;
+    alert_window: number | null;
+    last_performed_at: string | null;
 }
 
 interface CounterListProps {
@@ -44,7 +48,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
 
             if (!resCounters.ok || !resUpdates.ok || !resTags.ok) throw new Error('Failed to fetch data');
 
-            const countersData: Array<{ id: number; name: string; step: number; archivetime: string | null; user_email: string; type: 'standard' | 'repeating'; priority_score: number }> = await resCounters.json();
+            const countersData: Array<{ id: number; name: string; step: number; archivetime: string | null; user_email: string; type: 'standard' | 'repeating'; priority_score: number; repeat_status: string; frequency: number | null; alert_window: number | null; last_performed_at: string | null }> = await resCounters.json();
             const updatesData = await resUpdates.json();
             const tagsData: Array<{ id: number; name: string, user_email: string }> = await resTags.json();
             setAllTags(tagsData);
@@ -114,25 +118,70 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
         }
     };
 
-    const sortedCounters = React.useMemo(() => {
-        const filteredByView = counters.filter(c => 
-            viewMode === 'counters' ? c.type === 'standard' : c.type === 'repeating'
-        );
+    const displayCounters = React.useMemo(() => {
+        let result: Counter[] = [];
 
         if (viewMode === 'counters') {
+            const allCounters = counters.filter(c => c.type === 'standard');
+            
+            // Sort by last used
             const lastUsedMap = new Map<number, number>();
             updates.forEach((u, index) => {
                 lastUsedMap.set(u.counter, index);
             });
-            return [...filteredByView].sort((a, b) => {
+            const sorted = [...allCounters].sort((a, b) => {
                 const aLastUsed = lastUsedMap.get(a.id) ?? -1;
                 const bLastUsed = lastUsedMap.get(b.id) ?? -1;
                 return bLastUsed - aLastUsed;
             });
+
+            const nonArchived = sorted.filter(c => c.archivetime === null);
+            const archived = sorted.filter(c => c.archivetime !== null);
+            
+            result = showArchived ? [...nonArchived, ...archived] : nonArchived;
         } else {
-            return [...filteredByView].sort((a, b) => b.priority_score - a.priority_score);
+            const active = counters
+                .filter(c => c.type === 'repeating' && c.repeat_status === 'active' && c.archivetime === null)
+                .sort((a, b) => b.priority_score - a.priority_score);
+            
+            if (showArchived) {
+                const getWakeUpTime = (c: Counter) => {
+                    if (!c.last_performed_at || c.frequency === null) return Infinity;
+                    const last = new Date(c.last_performed_at).getTime();
+                    const freq = c.frequency;
+                    const alert = c.alert_window || 0;
+                    return last + (freq * 1000) - (alert * 1000);
+                };
+
+                const sleeping = counters
+                    .filter(c => c.type === 'repeating' && c.repeat_status === 'sleeping' && c.archivetime === null)
+                    .sort((a, b) => getWakeUpTime(a) - getWakeUpTime(b));
+                
+                const archived = counters
+                    .filter(c => c.type === 'repeating' && c.archivetime !== null)
+                    .sort((a, b) => b.priority_score - a.priority_score);
+                
+                result = [...active, ...sleeping, ...archived];
+            } else {
+                result = active;
+            }
         }
-    }, [counters, updates, viewMode]);
+
+        // Apply search filter
+        const query = searchQuery.toLowerCase();
+        if (!query) return result;
+
+        return result.filter(c => {
+            const tags = counterTags[c.id] || [];
+            const isGlobalExactTagMatch = allTags.some(tag => tag.name.toLowerCase() === query);
+            if (isGlobalExactTagMatch) {
+                return tags.some(tag => tag.toLowerCase() === query);
+            }
+            const nameMatch = c.name.toLowerCase().includes(query);
+            const tagMatch = tags.some(tag => tag.toLowerCase().includes(query));
+            return nameMatch || tagMatch;
+        });
+    }, [counters, updates, viewMode, showArchived, searchQuery, counterTags, allTags]);
 
     const visibleTags = React.useMemo(() => {
         const activeCounters = counters.filter(c => 
@@ -144,32 +193,6 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
         });
         return allTags.filter(tag => usedTags.has(tag.name));
     }, [allTags, counters, counterTags, viewMode]);
-
-    if (loading) return <div className="loading-text">Loading counters...</div>;
-
-    const nonArchived = sortedCounters.filter(c => c.archivetime === null);
-    const archived = sortedCounters.filter(c => c.archivetime !== null);
-    const filteredCounters = (showArchived ? [...nonArchived, ...archived] : nonArchived)
-        .filter(c => {
-            const query = searchQuery.toLowerCase();
-            if (!query) return true;
-
-            const tags = counterTags[c.id] || [];
-            
-            // Check if the query matches ANY tag globally
-            const isGlobalExactTagMatch = allTags.some(tag => tag.name.toLowerCase() === query);
-            
-            if (isGlobalExactTagMatch) {
-                // Only show counters that have this exact tag
-                return tags.some(tag => tag.toLowerCase() === query);
-            }
-
-            // Otherwise, use the "contains" logic for both name and tags
-            const nameMatch = c.name.toLowerCase().includes(query);
-            const tagMatch = tags.some(tag => tag.toLowerCase().includes(query));
-            return nameMatch || tagMatch;
-        });
-    const displayCounters = filteredCounters;
 
     return (
         <div className="counter-list-container">
@@ -395,7 +418,9 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                     className="btn-link"
                     style={{ fontSize: '0.9rem', color: '#666', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
                 >
-                    {showArchived ? 'Hide archived counters' : 'Show archived counters'}
+                    {viewMode === 'counters' 
+                        ? (showArchived ? 'Hide archived counters' : 'Show archived counters') 
+                        : (showArchived ? 'Hide archived and sleeping tasks' : 'Show archived and sleeping tasks')}
                 </button>
             </div>
 

@@ -40,7 +40,7 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
         setLoading(true);
         setError(null);
         try {
-            const payload: any = { name, initial, step, type };
+            const payload: any = { name, initial, step, type, last_performed_at: 0 };
             
             if (type === 'repeating') {
                 payload.frequency = FREQUENCY_MAP[frequency] || 3600;
@@ -48,7 +48,6 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
             } else {
                 payload.frequency = 0;
                 payload.alert_window = 0;
-                payload.last_performed_at = 0;
             }
 
             const res = await fetch('/api/counters', {

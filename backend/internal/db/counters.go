@@ -66,7 +66,7 @@ func InsertCounter(userID int, name string, step int, cType string, frequency *i
 	if db == nil {
 		return nil, fmt.Errorf("database not initialized")
 	}
-	const query = `INSERT INTO counters ("user", name, step, type, frequency, alert_window) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, createtime, step, type, frequency, alert_window`
+	const query = `INSERT INTO counters ("user", name, step, type, frequency, alert_window, last_performed_at) VALUES ($1, $2, $3, $4, $5, $6, '1970-01-01 00:00:00+00') RETURNING id, createtime, step, type, frequency, alert_window`
 	var c Counter
 	c.UserID = userID
 	c.Name = name

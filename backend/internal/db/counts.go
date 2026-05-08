@@ -59,12 +59,20 @@ func GetCounterIDForCount(countID int) (int, error) {
 }
 
 // InsertCount creates a new row in the count table for the supplied
-// counter, user and delta. It returns the full Count struct with the newly
-// generated ID and timestamp.
+// counter, user and delta. If the delta is positive and the counter is
+// of type 'repeating', it also updates the last_performed_at timestamp.
+// It returns the full Count struct with the newly generated ID and timestamp.
 func InsertCount(counterID int, userID int, delta int) (*Count, error) {
     if db == nil {
         return nil, fmt.Errorf("database not initialized")
     }
+
+    tx, err := db.Begin()
+    if err != nil {
+        return nil, err
+    }
+    defer tx.Rollback()
+
     const query = `INSERT INTO counts ("counter", user_id, delta) VALUES ($1, $2, $3)
         RETURNING id, "counter", user_id, delta, "when", deletetime`
     var c Count
@@ -72,10 +80,23 @@ func InsertCount(counterID int, userID int, delta int) (*Count, error) {
     var uid int
     var when time.Time
     var deleteTime sql.NullTime
-    err := db.QueryRow(query, counterID, userID, delta).Scan(&c.ID, &c.CounterID, &uid, &del, &when, &deleteTime)
+    err = tx.QueryRow(query, counterID, userID, delta).Scan(&c.ID, &c.CounterID, &uid, &del, &when, &deleteTime)
     if err != nil {
         return nil, err
     }
+
+    if delta > 0 {
+        const updateQuery = `UPDATE counters SET last_performed_at = now() WHERE id = $1 AND type = 'repeating'`
+        _, err = tx.Exec(updateQuery, counterID)
+        if err != nil {
+            return nil, err
+        }
+    }
+
+    if err := tx.Commit(); err != nil {
+        return nil, err
+    }
+
     c.CounterID = counterID
     c.UserID = uid
     c.Delta = del
