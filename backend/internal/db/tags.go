@@ -218,7 +218,7 @@ func UnshareTagFromUser(ownerID int, tagID int, targetUserID int) (bool, error) 
 		return false, fmt.Errorf("database not initialized")
 	}
 	const query = `DELETE FROM tag_shares WHERE tag_id = $1 AND user_id = $2
-	               AND EXISTS (SELECT 1 FROM tags WHERE id = $1 AND user_id = $3)`
+	               AND (EXISTS (SELECT 1 FROM tags WHERE id = $1 AND user_id = $3) OR $3 = $2)`
 	res, err := db.Exec(query, tagID, targetUserID, ownerID)
 	if err != nil {
 		return false, err

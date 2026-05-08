@@ -49,6 +49,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount }) =
     const [loading, setLoading] = useState(true);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [apiKeyToDelete, setApiKeyToDelete] = useState<number | null>(null);
+    const [tagShareToDelete, setTagShareToDelete] = useState<TagShare | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -111,6 +112,17 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount }) =
             setApikeys(prev => prev.filter(key => key.id !== id));
         } catch (e: any) {
             alert(`Error deleting API key: ${e.message}`);
+        }
+    };
+
+    const handleDeleteTagShare = async (share: TagShare) => {
+        try {
+            const res = await fetch(`/api/tags/${share.tag_id}/shares/${share.user_email}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed to remove tag share');
+            
+            setTagshares(prev => prev.filter(s => !(s.tag_id === share.tag_id && s.user_email === share.user_email)));
+        } catch (e: any) {
+            alert(`Error removing tag share: ${e.message}`);
         }
     };
 
@@ -242,22 +254,29 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount }) =
                         </thead>
                         <tbody style={{ textAlign: 'left' }}>
                             {tagshares.map((share, index) => (
-                                <tr key={`${share.tag_id}-${index}`} style={{ borderBottom: '1px solid #f9f9f9' }}>
-                                    <td style={{ padding: '8px 0' }}>{share.tag_name}</td>
-                                    <td style={{ padding: '8px 0', color: '#666' }}>{share.owner_email}</td>
-                                    <td style={{ padding: '8px 0', color: '#666' }}>{share.user_email}</td>
-                                    <td style={{ padding: '8px 0', textAlign: 'center' }}>
-                                        {share.access_level === 2 && <Check size={14} color="#4caf50" />}
-                                    </td>
-                                    <td style={{ padding: '8px 0', textAlign: 'right' }}></td>
-                                </tr>
+                               <tr key={`${share.tag_id}-${index}`} style={{ borderBottom: '1px solid #f9f9f9' }}>
+                                   <td style={{ padding: '8px 0' }}>{share.tag_name}</td>
+                                   <td style={{ padding: '8px 0', color: '#666' }}>{share.owner_email}</td>
+                                   <td style={{ padding: '8px 0', color: '#666' }}>{share.user_email}</td>
+                                   <td style={{ padding: '8px 0', textAlign: 'center' }}>
+                                       {share.access_level === 2 && <Check size={14} color="#4caf50" />}
+                                   </td>
+                                   <td style={{ padding: '8px 0', textAlign: 'right' }}>
+                                       <X 
+                                           size={16} 
+                                           color="#f44336" 
+                                           style={{ cursor: 'pointer' }} 
+                                           onClick={() => setTagShareToDelete(share)} 
+                                       />
+                                   </td>
+                               </tr>
                             ))}
                             {tagshares.length === 0 && (
                                <tr>
                                     <td colSpan={5} style={{ padding: '1rem', textAlign: 'center', color: '#999' }}>
                                         No shared tags found.
                                     </td>
-                               </tr>
+                                </tr>
                             )}
                         </tbody>
                     </table>
@@ -291,7 +310,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount }) =
                         <tbody style={{ textAlign: 'left' }}>
                             {invites.map((invite, index) => (
                                 <tr key={`${invite.id}-${index}`} style={{ borderBottom: '1px solid #f9f9f9' }}>
-                                    <td style={{ padding: '8px 0' }}>{invite.tag_name}</td>
+                                   <td style={{ padding: '8px 0' }}>{invite.tag_name}</td>
                                     <td style={{ padding: '8px 0', color: '#666' }}>{invite.other_party_email}</td>
                                     <td style={{ padding: '8px 0', textAlign: 'center' }}>
                                         {invite.access_level === 2 && <Check size={14} color="#4caf50" />}
@@ -360,34 +379,34 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount }) =
                     }}>
                         <thead>
                             <tr style={{ borderBottom: '2px solid #eee', color: '#888' }}>
-                                <th style={{ padding: '8px 0' }}>Key</th>
+                               <th style={{ padding: '8px 0' }}>Key</th>
                                 <th style={{ padding: '8px 0', textAlign: 'right' }}>Created</th>
-                                <th style={{ padding: '8px 0', textAlign: 'right' }}>Actions</th>
+                               <th style={{ padding: '8px 0', textAlign: 'right' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody style={{ textAlign: 'left' }}>
                             {apikeys.map(key => (
-                                <tr key={key.id} style={{ borderBottom: '1px solid #f9f9f9' }}>
-                                    <td style={{ padding: '8px 0', fontFamily: 'monospace' }}>{key.apikey}</td>
-                                    <td style={{ padding: '8px 0', textAlign: 'right', color: '#666' }}>
-                                        {new Date(key.createtime).toLocaleDateString()}
-                                    </td>
-                                    <td style={{ padding: '8px 0', textAlign: 'right' }}>
-                                        <Trash2 
-                                            size={16} 
-                                            color="#d32f2f" 
-                                            style={{ cursor: 'pointer' }} 
-                                            onClick={() => setApiKeyToDelete(key.id)} 
-                                        />
-                                    </td>
-                                </tr>
+                               <tr key={key.id} style={{ borderBottom: '1px solid #f9f9f9' }}>
+                                   <td style={{ padding: '8px 0', fontFamily: 'monospace' }}>{key.apikey}</td>
+                                   <td style={{ padding: '8px 0', textAlign: 'right', color: '#666' }}>
+                                       {new Date(key.createtime).toLocaleDateString()}
+                                   </td>
+                                   <td style={{ padding: '8px 0', textAlign: 'right' }}>
+                                       <Trash2 
+                                           size={16} 
+                                           color="#d32f2f" 
+                                           style={{ cursor: 'pointer' }} 
+                                           onClick={() => setApiKeyToDelete(key.id)} 
+                                       />
+                                   </td>
+                               </tr>
                             ))}
                             {apikeys.length === 0 && (
-                                <tr>
-                                    <td colSpan={3} style={{ padding: '1rem', textAlign: 'center', color: '#999' }}>
-                                        No API keys found.
-                                    </td>
-                                </tr>
+                               <tr>
+                                   <td colSpan={3} style={{ padding: '1rem', textAlign: 'center', color: '#999' }}>
+                                       No API keys found.
+                                   </td>
+                               </tr>
                             )}
                         </tbody>
                     </table>
@@ -424,6 +443,19 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount }) =
                     }} 
                     onCancel={() => setApiKeyToDelete(null)} 
                     confirmText="Delete"
+                    cancelText="Cancel"
+                />
+            )}
+
+            {tagShareToDelete !== null && (
+                <ConfirmationModal 
+                    message={`Do you want to remove sharing for tag "${tagShareToDelete.tag_name}"?`} 
+                    onConfirm={async () => {
+                        await handleDeleteTagShare(tagShareToDelete);
+                        setTagShareToDelete(null);
+                    }} 
+                    onCancel={() => setTagShareToDelete(null)} 
+                    confirmText="Remove"
                     cancelText="Cancel"
                 />
             )}

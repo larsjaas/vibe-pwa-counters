@@ -120,9 +120,14 @@ func handleAcceptInvite(w http.ResponseWriter, r *http.Request, userID int, invi
 		return
 	}
 
-	// Get tagID to notify other users of the change (though this is a new user joining)
-	// Actually, the original tag owner might want to know.
-	// But for now, we just return OK.
+	invite, err := db.GetInviteByID(inviteID)
+	if err == nil {
+		PublishEvent(userID, "UPDATED TAG_INVITES")
+		PublishEvent(userID, "UPDATED TAG_SHARES")
+		PublishEvent(invite.SenderID, "UPDATED TAG_INVITES")
+		PublishEvent(invite.SenderID, "UPDATED TAG_SHARES")
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -132,6 +137,13 @@ func handleRejectInvite(w http.ResponseWriter, r *http.Request, userID int, invi
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
+
+	invite, err := db.GetInviteByID(inviteID)
+	if err == nil {
+		PublishEvent(userID, "UPDATED TAG_INVITES")
+		PublishEvent(invite.SenderID, "UPDATED TAG_INVITES")
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -141,5 +153,14 @@ func handleRetractInvite(w http.ResponseWriter, r *http.Request, userID int, inv
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
+
+	invite, err := db.GetInviteByID(inviteID)
+	if err == nil {
+		PublishEvent(userID, "UPDATED TAG_INVITES")
+		if targetUserID, err := db.GetUserIDByEmail(invite.Email); err == nil {
+			PublishEvent(targetUserID, "UPDATED TAG_INVITES")
+		}
+	}
+
 	w.WriteHeader(http.StatusOK)
 }

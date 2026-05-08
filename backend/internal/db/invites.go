@@ -296,3 +296,31 @@ func MarkInviteNotified(inviteID int, isReminder bool) error {
 	_, err := db.Exec(query, inviteID)
 	return err
 }
+
+// GetInviteByID retrieves a tag invite by its ID.
+func GetInviteByID(inviteID int) (*TagInvite, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+
+	var i TagInvite
+	var notifiedAt, reminderSentAt sql.NullTime
+	const query = `
+		SELECT id, tag_id, email, sender_id, access_level, status, created_at, expires_at, notified_at, reminder_sent_at
+		FROM tag_invites
+		WHERE id = $1`
+	
+	err := db.QueryRow(query, inviteID).Scan(
+		&i.ID, &i.TagID, &i.Email, &i.SenderID, &i.AccessLevel, &i.Status, &i.CreatedAt, &i.ExpiresAt, &notifiedAt, &reminderSentAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if notifiedAt.Valid {
+		i.NotifiedAt = &notifiedAt.Time
+	}
+	if reminderSentAt.Valid {
+		i.ReminderSentAt = &reminderSentAt.Time
+	}
+	return &i, nil
+}

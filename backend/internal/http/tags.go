@@ -302,6 +302,8 @@ func handleUnshareTag(w http.ResponseWriter, r *http.Request, userID int, tagID 
 		http.Error(w, "share not found or unauthorized", http.StatusNotFound)
 		return
 	}
+	PublishEvent(userID, "UPDATED TAG_SHARES")
+	PublishEvent(targetUserID, "UPDATED TAG_SHARES")
 	PublishEvent(targetUserID, "UPDATED COUNTERS")
 	w.WriteHeader(http.StatusOK)
 }
@@ -356,6 +358,12 @@ func handleCreateInvite(w http.ResponseWriter, r *http.Request, userID int, tagI
 	// In a real system, we would send an email here.
 	// For now, we just mark it as notified to simulate the system.
 	db.MarkInviteNotified(invite.ID, false)
+
+	// Notify both parties about the new invite
+	PublishEvent(userID, "UPDATED TAG_INVITES")
+	if targetUserID, err := db.GetUserIDByEmail(body.Email); err == nil {
+		PublishEvent(targetUserID, "UPDATED TAG_INVITES")
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(invite)
