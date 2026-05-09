@@ -141,6 +141,29 @@ const App: React.FC = () => {
         }
     };
 
+    const handleResetCounter = async (id: number, initialValue: number) => {
+        try {
+            const res = await fetch('/api/counts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ counter: id, delta: 0 }),
+            });
+            if (!res.ok) throw new Error('Reset failed');
+            
+            if (initialValue !== 0) {
+                await fetch('/api/counts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ counter: id, delta: initialValue }),
+                });
+            }
+            
+            setRefreshCount(prev => prev + 1);
+        } catch (e) {
+            alert('Failed to reset counter');
+        }
+    };
+
     return (
         <div className="app-container">
             
@@ -197,6 +220,7 @@ const App: React.FC = () => {
                             onUpdate={handleUpdateCounter}
                             onDelete={handleDeleteCounter}
                             onArchive={handleArchiveCounter}
+                            onReset={handleResetCounter}
                         />
                     </div>
                 </div>

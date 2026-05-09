@@ -277,7 +277,7 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                                                     fontWeight: 'bold',
                                                     color: entry.delta >= 0 ? '#2ecc71' : '#e74c3c'
                                                 }}>
-                                                    {entry.delta > 0 ? `+${entry.delta}` : entry.delta}
+                                                    {entry.delta === 0 ? 'reset' : (entry.delta > 0 ? `+${entry.delta}` : entry.delta)}
                                                 </td>
                                                 <td style={{ padding: '8px 0', textAlign: 'right' }}>
                                                     <Trash2 

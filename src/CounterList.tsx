@@ -9,6 +9,7 @@ export interface Counter {
     name: string;
     step: number;
     count: number;
+    createtime: string;
     archivetime: string | null;
     user_email: string;
     type: 'standard' | 'repeating';
@@ -83,7 +84,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
             const countersWithCount = countersData.map(c => {
                 const count = updates
                     .filter(u => u.counter === c.id)
-                    .reduce((sum, u) => sum + u.delta, 0);
+                    .reduce((sum, u) => (u.delta === 0 ? 0 : sum + u.delta), 0);
                 return { ...c, count };
             });
 
@@ -445,7 +446,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                                                                       <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                                                                           <span style={{ fontWeight: 'bold' }}>{u.user_email || 'Unknown'}</span>
                                                                           {u.when && ` at ${new Date(u.when).toLocaleString()}`}: 
-                                                                          Delta {u.delta > 0 ? `+${u.delta}` : u.delta}
+                                                                          {u.delta === 0 ? 'Reset!' : `Delta ${u.delta > 0 ? `+${u.delta}` : u.delta}`}
                                                                       </div>
                                                                       {(c.user_email === userEmail || u.user_email === userEmail) && (
                                                                           <button 

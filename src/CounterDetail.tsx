@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { IconButton } from './components/IconButton';
 import { ConfirmationModal } from './components/ConfirmationModal';
-import { Archive, ArchiveRestore, Trash2 } from 'lucide-react';
+import { Archive, ArchiveRestore, Trash2, RotateCcw } from 'lucide-react';
 import { parseDurationToSeconds, formatSecondsToDuration } from './utils/duration';
 
 interface Counter {
@@ -9,6 +9,7 @@ interface Counter {
     name: string;
     step: number;
     count: number;
+    createtime: string;
     archivetime: string | null;
     user_email: string;
     type: 'standard' | 'repeating';
@@ -23,19 +24,22 @@ interface CounterDetailProps {
     onUpdate: (id: number, updates: any) => void;
     onDelete: (id: number) => void;
     onArchive: (id: number) => void;
+    onReset: (id: number, initialValue: number) => void;
 }
 
-export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, onUpdate, onDelete, onArchive }) => {
+export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, onUpdate, onDelete, onArchive, onReset }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [name, setName] = useState(counter.name);
     const [step, setStep] = useState(counter.step);
     const [type, setType] = useState(counter.type);
     const [frequency, setFrequency] = useState(formatSecondsToDuration(counter.frequency || 3600));
     const [alertWindow, setAlertWindow] = useState(formatSecondsToDuration(counter.alert_window || 0));
+    const [initialValue, setInitialValue] = useState<number>(0);
     const [tags, setTags] = useState('');
     const [loadingTags, setLoadingTags] = useState(true);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [tagsToCreate, setTagsToCreate] = useState<string[]>([]);
+    const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
 
     const FREQUENCY_MAP: Record<string, number> = {
         hourly: 3600,
@@ -60,11 +64,26 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
     };
 
     useEffect(() => {
-        const loadTags = async () => {
+        const loadData = async () => {
             try {
-                const res = await fetch('/api/tags');
-                if (!res.ok) throw new Error('Failed to fetch tags');
-                const allTags: any[] = await res.json();
+                const [resTags, resCounts] = await Promise.all([
+                    fetch('/api/tags'),
+                    fetch('/api/counts')
+                ]);
+
+                if (!resTags.ok || !resCounts.ok) throw new Error('Failed to fetch data');
+                
+                const allTags: any[] = await resTags.json();
+                const counts: any[] = await resCounts.json();
+
+                // Determine Initial Value
+                // Initial value is the first count created within 300ms of counter creation
+                const counterCreateTime = new Date(counter.createtime).getTime();
+                const initialCount = counts.find(c => 
+                    c.counter === counter.id && 
+                    Math.abs(new Date(c.when).getTime() - counterCreateTime) <= 300
+                );
+                setInitialValue(initialCount ? initialCount.delta : 0);
                 
                 const counterTags: string[] = [];
                 for (const tag of allTags) {
@@ -78,13 +97,13 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                 }
                 setTags(counterTags.join(', '));
             } catch (e) {
-                console.error('Error loading tags', e);
+                console.error('Error loading data', e);
             } finally {
                 setLoadingTags(false);
             }
         };
 
-        loadTags();
+        loadData();
     }, [counter.id]);
 
     const executeSaveTags = async (currentTags: string) => {
@@ -283,6 +302,7 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                             <p><strong>Alert Window:</strong> {formatSecondsToDuration(counter.alert_window || 0)}</p>
                         </>
                     )}
+                    <p><strong>Initial Value:</strong> {initialValue}</p>
                     <p><strong>Step:</strong> {step}</p>
                     <p><strong>Tags:</strong> {loadingTags ? 'Loading...' : (tags || 'None')}</p>
                     <button onClick={() => setIsEditing(true)} className="btn-secondary" style={{ width: 'fit-content' }}>Edit</button>
@@ -295,6 +315,11 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                         icon={counter.archivetime ? ArchiveRestore : Archive} 
                         onClick={() => onArchive(counter.id)} 
                         title={counter.archivetime ? "Unarchive" : "Archive"} 
+                    />
+                    <IconButton 
+                        icon={RotateCcw} 
+                        onClick={() => setShowResetConfirmModal(true)} 
+                        title="Reset" 
                     />
                     <IconButton 
                         icon={Trash2} 
@@ -313,6 +338,19 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                     cancelText="Cancel"
                     onConfirm={confirmCreateTags}
                     onCancel={() => setShowConfirmModal(false)}
+                />
+            )}
+
+            {showResetConfirmModal && (
+                <ConfirmationModal 
+                    message={`Are you sure you want to reset the count for "${counter.name}"? This will set the current count to 0.`}
+                    confirmText="Reset"
+                    cancelText="Cancel"
+                    onConfirm={() => {
+                        onReset(counter.id, initialValue);
+                        setShowResetConfirmModal(false);
+                    }}
+                    onCancel={() => setShowResetConfirmModal(false)}
                 />
             )}
         </div>
