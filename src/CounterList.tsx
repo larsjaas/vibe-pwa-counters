@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { IconButton } from './components/IconButton';
-import { Plus, Edit2, SquareCheckBig, Search, X, UserRoundPlus, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Plus, Edit2, SquareCheckBig, Search, X, UserRoundPlus, ChevronDown, ChevronUp, Trash2, ChevronsUpDown } from 'lucide-react';
 import { TagSharingModal } from './components/TagSharingModal';
 
 export interface Counter {
@@ -37,6 +37,16 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
     const [viewMode, setViewMode] = useLocalStorage<'counters' | 'tasks'>('counter-list-view-mode', 'counters');
     const [selectedTagForSharing, setSelectedTagForSharing] = useState<{ id: number; name: string } | null>(null);
     const [expandedCounterId, setExpandedCounterId] = useLocalStorage<number | null>('counter-list-expanded-id', null);
+    const [counterNameSort, setCounterNameSort] = useLocalStorage<'asc' | 'desc' | null>('counter-list-name-sort', null);
+    const [counterValueSort, setCounterValueSort] = useLocalStorage<'asc' | 'desc' | null>('counter-list-value-sort', null);
+    const [taskNameSort, setTaskNameSort] = useLocalStorage<'asc' | 'desc' | null>('task-list-name-sort', null);
+    const [taskValueSort, setTaskValueSort] = useLocalStorage<'asc' | 'desc' | null>('task-list-value-sort', null);
+
+    const nameSort = viewMode === 'counters' ? counterNameSort : taskNameSort;
+    const valueSort = viewMode === 'counters' ? counterValueSort : taskValueSort;
+
+    const setNameSort = viewMode === 'counters' ? setCounterNameSort : setTaskNameSort;
+    const setValueSort = viewMode === 'counters' ? setCounterValueSort : setTaskValueSort;
 
     const loadCounters = async () => {
         try {
@@ -124,12 +134,24 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
         if (viewMode === 'counters') {
             const allCounters = counters.filter(c => c.type === 'standard');
             
-            // Sort by last used
+            // MRU map for secondary sorting
             const lastUsedMap = new Map<number, number>();
             updates.forEach((u, index) => {
                 lastUsedMap.set(u.counter, index);
             });
+
             const sorted = [...allCounters].sort((a, b) => {
+                // Primary Sort: Name
+                if (nameSort !== null) {
+                    const nameComp = a.name.localeCompare(b.name);
+                    if (nameComp !== 0) return nameSort === 'asc' ? nameComp : -nameComp;
+                }
+                // Primary Sort: Count
+                if (valueSort !== null) {
+                    const countComp = a.count - b.count;
+                    if (countComp !== 0) return valueSort === 'asc' ? countComp : -countComp;
+                }
+                // Secondary Sort: MRU
                 const aLastUsed = lastUsedMap.get(a.id) ?? -1;
                 const bLastUsed = lastUsedMap.get(b.id) ?? -1;
                 return bLastUsed - aLastUsed;
@@ -140,9 +162,24 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
             
             result = showArchived ? [...nonArchived, ...archived] : nonArchived;
         } else {
-            const active = counters
-                .filter(c => c.type === 'repeating' && c.repeat_status === 'active' && c.archivetime === null)
-                .sort((a, b) => b.priority_score - a.priority_score);
+            const activeCounters = counters.filter(c => c.type === 'repeating' && c.archivetime === null);
+            
+            const sorted = [...activeCounters].sort((a, b) => {
+                // Primary Sort: Name
+                if (nameSort !== null) {
+                    const nameComp = a.name.localeCompare(b.name);
+                    if (nameComp !== 0) return nameSort === 'asc' ? nameComp : -nameComp;
+                }
+                // Primary Sort: Count
+                if (valueSort !== null) {
+                    const countComp = a.count - b.count;
+                    if (countComp !== 0) return valueSort === 'asc' ? countComp : -countComp;
+                }
+                // Secondary Sort: Priority (for tasks)
+                return b.priority_score - a.priority_score;
+            });
+
+            const active = sorted.filter(c => c.repeat_status === 'active');
             
             if (showArchived) {
                 const getWakeUpTime = (c: Counter) => {
@@ -153,8 +190,8 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                     return last + (freq * 1000) - (alert * 1000);
                 };
 
-                const sleeping = counters
-                    .filter(c => c.type === 'repeating' && c.repeat_status === 'sleeping' && c.archivetime === null)
+                const sleeping = sorted
+                    .filter(c => c.repeat_status === 'sleeping')
                     .sort((a, b) => getWakeUpTime(a) - getWakeUpTime(b));
                 
                 const archived = counters
@@ -181,7 +218,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
             const tagMatch = tags.some(tag => tag.toLowerCase().includes(query));
             return nameMatch || tagMatch;
         });
-    }, [counters, updates, viewMode, showArchived, searchQuery, counterTags, allTags]);
+    }, [counters, updates, viewMode, showArchived, searchQuery, counterTags, allTags, nameSort, valueSort]);
 
     const visibleTags = React.useMemo(() => {
         const activeCounters = counters.filter(c => 
@@ -303,8 +340,38 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
             <table className="counter-table">
                 <thead>
                     <tr className="table-header-row">
-                        <th className="table-cell">Name</th>
-                        <th className="table-cell text-right">Count</th>
+                        <th className="table-cell" style={{ cursor: 'pointer' }}
+                            onClick={() => {
+                                setValueSort(null);
+                                setNameSort(prev => {
+                                    if (prev === null) return 'asc';
+                                    if (prev === 'asc') return 'desc';
+                                    return null;
+                                });
+                            }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                Name
+                                {nameSort === 'asc' && <ChevronUp size={14} />}
+                                {nameSort === 'desc' && <ChevronDown size={14} />}
+                                {nameSort === null && <ChevronsUpDown size={14} style={{ opacity: 0.3 }} />}
+                            </div>
+                        </th>
+                        <th className="table-cell text-right" style={{ cursor: 'pointer' }}
+                            onClick={() => {
+                                setNameSort(null);
+                                setValueSort(prev => {
+                                    if (prev === null) return 'desc';
+                                    if (prev === 'desc') return 'asc';
+                                    return null;
+                                });
+                            }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
+                                Count
+                                {valueSort === 'asc' && <ChevronUp size={14} />}
+                                {valueSort === 'desc' && <ChevronDown size={14} />}
+                                {valueSort === null && <ChevronsUpDown size={14} style={{ opacity: 0.3 }} />}
+                            </div>
+                        </th>
                         <th className="table-cell text-right">Actions</th>
                     </tr>
                 </thead>
