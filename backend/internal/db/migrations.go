@@ -17,6 +17,7 @@ import (
 // instance. It will log fatally if the migration fails, mimicking the
 // behaviour of the original implementation found in main.go.
 func RunMigrations(db *sql.DB) {
+    log.Println("Checking for database migrations...")
     driver, err := postgres.WithInstance(db, &postgres.Config{})
     if err != nil {
         log.Fatalf("Failed to create postgres driver for migrations: %v", err)
@@ -29,7 +30,13 @@ func RunMigrations(db *sql.DB) {
     if err != nil {
         log.Fatalf("Failed to initialise migrations: %v", err)
     }
-    if err := mig.Up(); err != nil && err != migrate.ErrNoChange {
-        log.Fatalf("Database migration failed: %v", err)
+    if err := mig.Up(); err != nil {
+        if err == migrate.ErrNoChange {
+            log.Println("Database is up to date. No migrations to apply.")
+        } else {
+            log.Fatalf("Database migration failed: %v", err)
+        }
+    } else {
+        log.Println("Database migrations applied successfully.")
     }
 }
