@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { IconButton } from './components/IconButton';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { Archive, ArchiveRestore, Trash2 } from 'lucide-react';
+import { parseDurationToSeconds, formatSecondsToDuration } from './utils/duration';
 
 interface Counter {
     id: number;
@@ -29,8 +30,8 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
     const [name, setName] = useState(counter.name);
     const [step, setStep] = useState(counter.step);
     const [type, setType] = useState(counter.type);
-    const [frequency, setFrequency] = useState(counter.frequency || 3600);
-    const [alertWindow, setAlertWindow] = useState(counter.alert_window || 0);
+    const [frequency, setFrequency] = useState(formatSecondsToDuration(counter.frequency || 3600));
+    const [alertWindow, setAlertWindow] = useState(formatSecondsToDuration(counter.alert_window || 0));
     const [tags, setTags] = useState('');
     const [loadingTags, setLoadingTags] = useState(true);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -51,9 +52,11 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
     };
 
     const handleFrequencyChange = (val: string) => {
-        const period = FREQUENCY_MAP[val] || 3600;
-        setFrequency(period);
-        setAlertWindow(Math.round(period * 0.15));
+        setFrequency(val);
+        const seconds = parseDurationToSeconds(val);
+        if (seconds !== null) {
+            setAlertWindow(formatSecondsToDuration(Math.round(seconds * 0.15)));
+        }
     };
 
     useEffect(() => {
@@ -135,6 +138,15 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
 
     const handleSave = async () => {
         try {
+            const parsedFrequency = parseDurationToSeconds(frequency);
+            if (parsedFrequency === null) {
+                throw new Error('Invalid Ideal Frequency duration format');
+            }
+            const parsedAlertWindow = parseDurationToSeconds(alertWindow);
+            if (parsedAlertWindow === null) {
+                throw new Error('Invalid Alert Window duration format');
+            }
+
             const tagNames = tags.split(',').map(t => t.trim()).filter(t => t !== '');
             const res = await fetch('/api/tags');
             if (!res.ok) throw new Error('Failed to fetch tags');
@@ -151,8 +163,8 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                     name, 
                     step, 
                     type, 
-                    frequency: type === 'repeating' ? frequency : 0, 
-                    alert_window: type === 'repeating' ? alertWindow : 0 
+                    frequency: type === 'repeating' ? parsedFrequency : 0, 
+                    alert_window: type === 'repeating' ? parsedAlertWindow : 0 
                 });
                 setIsEditing(false);
             }
@@ -163,13 +175,22 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
 
     const confirmCreateTags = async () => {
         try {
+            const parsedFrequency = parseDurationToSeconds(frequency);
+            if (parsedFrequency === null) {
+                throw new Error('Invalid Ideal Frequency duration format');
+            }
+            const parsedAlertWindow = parseDurationToSeconds(alertWindow);
+            if (parsedAlertWindow === null) {
+                throw new Error('Invalid Alert Window duration format');
+            }
+
             await executeSaveTags(tags);
             onUpdate(counter.id, { 
                 name, 
                 step, 
                 type, 
-                frequency: type === 'repeating' ? frequency : 0, 
-                alert_window: type === 'repeating' ? alertWindow : 0 
+                frequency: type === 'repeating' ? parsedFrequency : 0, 
+                alert_window: type === 'repeating' ? parsedAlertWindow : 0 
             });
             setIsEditing(false);
             setShowConfirmModal(false);
@@ -207,24 +228,23 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                     {type === 'repeating' && (
                         <>
                             <div className="form-field">
-                                <label className="form-label">Target Frequency:</label>
-                                <select 
-                                    value={getFrequencyLabel(frequency)} 
+                                <label className="form-label">Ideal Frequency:</label>
+                                <input 
+                                    type="text"
+                                    value={frequency} 
                                     onChange={(e) => handleFrequencyChange(e.target.value)} 
                                     className="form-input"
-                                >
-                                    {Object.entries(FREQUENCY_MAP).map(([label, value]) => (
-                                        <option key={label} value={label}>{label.charAt(0).toUpperCase() + label.slice(1)}</option>
-                                    ))}
-                                </select>
+                                    placeholder="e.g. 1w, 1mo, 2h"
+                                />
                             </div>
                             <div className="form-field">
-                                <label className="form-label">Alert Window (seconds):</label>
+                                <label className="form-label">Alert Window:</label>
                                 <input 
-                                    type="number"
+                                    type="text"
                                     value={alertWindow} 
-                                    onChange={(e) => setAlertWindow(parseInt(e.target.value) || 0)} 
+                                    onChange={(e) => setAlertWindow(e.target.value)} 
                                     className="form-input"
+                                    placeholder="e.g. 1h30m, 90m, 1:30:00"
                                 />
                             </div>
                         </>
@@ -259,8 +279,8 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                     <p><strong>Type:</strong> {type === 'standard' ? 'Standard' : 'Repeating'}</p>
                     {type === 'repeating' && (
                         <>
-                            <p><strong>Frequency:</strong> {getFrequencyLabel(frequency)}</p>
-                            <p><strong>Alert Window:</strong> {alertWindow} seconds</p>
+                            <p><strong>Frequency:</strong> {formatSecondsToDuration(counter.frequency || 0)}</p>
+                            <p><strong>Alert Window:</strong> {formatSecondsToDuration(counter.alert_window || 0)}</p>
                         </>
                     )}
                     <p><strong>Step:</strong> {step}</p>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ConfirmationModal } from './components/ConfirmationModal';
+import { parseDurationToSeconds, formatSecondsToDuration } from './utils/duration';
 
 interface CounterCreateProps {
     onCreated: () => void;
@@ -13,8 +14,8 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
     const [initial, setInitial] = useState(0);
     const [step, setStep] = useState(1);
     const [type, setType] = useState<'standard' | 'repeating'>(initialType || 'standard');
-    const [frequency, setFrequency] = useState('hourly');
-    const [alertWindow, setAlertWindow] = useState(540);
+    const [frequency, setFrequency] = useState('1w');
+    const [alertWindow, setAlertWindow] = useState('540');
     const [tags, setTags] = useState(initialTags || '');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -33,19 +34,30 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
 
     const handleFrequencyChange = (val: string) => {
         setFrequency(val);
-        const period = FREQUENCY_MAP[val] || 3600;
-        setAlertWindow(Math.round(period * 0.15));
+        const seconds = parseDurationToSeconds(val);
+        if (seconds !== null) {
+            setAlertWindow(formatSecondsToDuration(Math.round(seconds * 0.15)));
+        }
     };
 
     const finalizeCreate = async () => {
         setLoading(true);
         setError(null);
         try {
+            const parsedFrequency = parseDurationToSeconds(frequency);
+            if (parsedFrequency === null) {
+                throw new Error('Invalid Ideal Frequency duration format');
+            }
+            const parsedAlertWindow = parseDurationToSeconds(alertWindow);
+            if (parsedAlertWindow === null) {
+                throw new Error('Invalid Alert Window duration format');
+            }
+
             const payload: any = { name, initial, step, type, last_performed_at: 0 };
             
             if (type === 'repeating') {
-                payload.frequency = FREQUENCY_MAP[frequency] || 3600;
-                payload.alert_window = alertWindow;
+                payload.frequency = parsedFrequency;
+                payload.alert_window = parsedAlertWindow;
             } else {
                 payload.frequency = 0;
                 payload.alert_window = 0;
@@ -153,28 +165,23 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
                 {type === 'repeating' && (
                     <>
                         <div className="form-field">
-                            <label className="form-label">Target Frequency:</label>
-                            <select 
+                            <label className="form-label">Ideal Frequency:</label>
+                            <input 
+                                type="text" 
                                 value={frequency} 
                                 onChange={(e) => handleFrequencyChange(e.target.value)} 
                                 className="form-input"
-                            >
-                                <option value="hourly">Hourly</option>
-                                <option value="daily">Daily</option>
-                                <option value="every other day">Every other day</option>
-                                <option value="weekly">Weekly</option>
-                                <option value="biweekly">Biweekly</option>
-                                <option value="monthly">Monthly</option>
-                                <option value="yearly">Yearly</option>
-                            </select>
+                                placeholder="e.g. 1w, 1mo, 2h"
+                            />
                         </div>
                         <div className="form-field">
-                            <label className="form-label">Alert Window (seconds):</label>
+                            <label className="form-label">Alert Window:</label>
                             <input 
-                                type="number" 
+                                type="text" 
                                 value={alertWindow} 
-                                onChange={(e) => setAlertWindow(parseInt(e.target.value) || 0)} 
+                                onChange={(e) => setAlertWindow(e.target.value)} 
                                 className="form-input"
+                                placeholder="e.g. 1h30m, 90m, 1:30:00"
                             />
                         </div>
                     </>
