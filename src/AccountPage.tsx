@@ -33,12 +33,12 @@ interface TagInvite {
     status: string;
 }
 
-const FRONTEND_VERSION = "0.9.6";
-
 interface AccountPageProps {
     fetchInvitesCount?: () => Promise<void>;
     refreshTrigger?: number;
 }
+
+const FRONTEND_VERSION = "0.9.7";
 
 export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, refreshTrigger }) => {
     const [user, setUser] = useState<UserInfo | null>(null);
