@@ -93,9 +93,9 @@ func main() {
         ticker := time.NewTicker(1 * time.Hour)
         defer ticker.Stop()
         for range ticker.C {
-            count, err := db.ProcessPendingInvites()
+            count, err := db.ProcessReminderInvites(email.SendEmail)
             if err != nil {
-                log.Printf("Error processing pending invites: %v", err)
+                log.Printf("Error processing invite reminders: %v", err)
             } else if count > 0 {
                 log.Printf("Sent %d invite reminders", count)
             }

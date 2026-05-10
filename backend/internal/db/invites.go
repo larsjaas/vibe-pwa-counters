@@ -238,24 +238,26 @@ func RetractInvite(senderID int, inviteID int) error {
 	return nil
 }
 
-func ProcessPendingInvites() (int, error) {
+func ProcessReminderInvites(sendEmail func(to, subject, body string) error) (int, error) {
 	if db == nil {
 		return 0, fmt.Errorf("database not initialized")
 	}
 
-	// Find invites that:
-	// 1. Are pending
-	// 2. Have been notified initially
-	// 3. Have NOT been reminded yet
-	// 4. Are NOT expired
-	// 5. Were created more than 7 days ago
 	const query = `
-		SELECT id FROM tag_invites 
-		WHERE status = 'pending' 
-		  AND notified_at IS NOT NULL 
-		  AND reminder_sent_at IS NULL 
-		  AND expires_at > NOW() 
-		  AND created_at < NOW() - INTERVAL '7 days'`
+		SELECT 
+			i.id, i.email, 
+			u_rec.id as recipient_id, u_rec.name as recipient_name,
+			u_send.name as sender_name,
+			t.name as tag_name
+		FROM tag_invites i
+		JOIN tags t ON i.tag_id = t.id
+		JOIN users u_send ON i.sender_id = u_send.id
+		LEFT JOIN users u_rec ON i.email = u_rec.email
+		WHERE i.status = 'pending' 
+		  AND i.notified_at IS NOT NULL 
+		  AND i.reminder_sent_at IS NULL 
+		  AND i.expires_at > NOW() 
+		  AND i.created_at < NOW() - INTERVAL '48 hours'`
 	
 	rows, err := db.Query(query)
 	if err != nil {
@@ -266,34 +268,92 @@ func ProcessPendingInvites() (int, error) {
 	count := 0
 	for rows.Next() {
 		var id int
-		if err := rows.Scan(&id); err != nil {
+		var email, recipientName, senderName, tagName string
+		var recUserID sql.NullInt64
+		if err := rows.Scan(&id, &email, &recUserID, &recipientName, &senderName, &tagName); err != nil {
 			return count, err
 		}
-		// In a real system, we would send the reminder email here.
-		err := MarkInviteNotified(id, true)
-		if err != nil {
-			log.Printf("failed to mark invite %d as reminded: %v", id, err)
-			continue
+
+		shouldSend := false
+		if !recUserID.Valid {
+			// For non-users, we can decide if we send a reminder. 
+			// The prompt says "verify that tag_sharing_reminder is true for the user".
+			// We'll assume we only send reminders to existing users.
+			shouldSend = false
+		} else {
+			// User exists, check their preference for reminders
+			enabled, err := GetUserSettingBool(int(recUserID.Int64), "tag_sharing_reminder", false)
+			if err != nil {
+				log.Printf("error checking reminder settings for user %d: %v", recUserID.Int64, err)
+				continue
+			}
+			if enabled {
+				shouldSend = true
+			}
 		}
-		count++
+
+		if shouldSend {
+			subject := "Reminder: You have an invite to shared counters"
+			
+			salutation := "Hello,"
+			if recUserID.Valid && recipientName != "" {
+				salutation = fmt.Sprintf("Hello %s,", recipientName)
+			}
+
+			body := fmt.Sprintf(
+				"<p>%s</p><p>This is a reminder that User %s has invited you to share the counters tagged '%s' on counters.crudbytes.com. Log in to your profile to accept or reject the invite, and maybe go to Account Settings if you want to alter your email preferences.</p><p>Best regards,<br>CrudBytes Apps &lt;Apps@CrudBytes.com&gt;</p>",
+				salutation, senderName, tagName,
+			)
+			
+			if err := sendEmail(email, subject, body); err != nil {
+				log.Printf("failed to send reminder email to %s: %v", email, err)
+				continue
+			}
+			
+			if err := MarkInviteNotified(id, true, time.Time{}); err != nil {
+				log.Printf("failed to mark invite %d as reminded: %v", id, err)
+				continue
+			}
+			count++
+		} else {
+			// Mark as reminded with epoch to avoid future delivery if settings change
+			if err := MarkInviteNotified(id, true, time.Unix(0, 0)); err != nil {
+				log.Printf("failed to mark invite %d as handled (skipped reminder): %v", id, err)
+			}
+		}
 	}
 	return count, nil
 }
 
 // MarkInviteNotified updates the notification timestamp.
-func MarkInviteNotified(inviteID int, isReminder bool) error {
+// If ts is zero (time.Time{}), it uses the current database time (NOW()).
+func MarkInviteNotified(inviteID int, isReminder bool, ts time.Time) error {
 	if db == nil {
 		return fmt.Errorf("database not initialized")
 	}
 
 	var query string
+	var args []interface{}
+
 	if isReminder {
-		query = `UPDATE tag_invites SET reminder_sent_at = NOW() WHERE id = $1`
+		if ts.IsZero() {
+			query = `UPDATE tag_invites SET reminder_sent_at = NOW() WHERE id = $1`
+			args = append(args, inviteID)
+		} else {
+			query = `UPDATE tag_invites SET reminder_sent_at = $1 WHERE id = $2`
+			args = append(args, ts, inviteID)
+		}
 	} else {
-		query = `UPDATE tag_invites SET notified_at = NOW() WHERE id = $1`
+		if ts.IsZero() {
+			query = `UPDATE tag_invites SET notified_at = NOW() WHERE id = $1`
+			args = append(args, inviteID)
+		} else {
+			query = `UPDATE tag_invites SET notified_at = $1 WHERE id = $2`
+			args = append(args, ts, inviteID)
+		}
 	}
 
-	_, err := db.Exec(query, inviteID)
+	_, err := db.Exec(query, args...)
 	return err
 }
 
@@ -366,11 +426,16 @@ func ProcessInitialInvites(sendEmail func(to, subject, body string) error) (int,
 				continue
 			}
 			
-			if err := MarkInviteNotified(id, false); err != nil {
+			if err := MarkInviteNotified(id, false, time.Time{}); err != nil {
 				log.Printf("failed to mark invite %d as notified: %v", id, err)
 				continue
 			}
 			count++
+		} else {
+			// Mark as notified with epoch to avoid future delivery if settings change
+			if err := MarkInviteNotified(id, false, time.Unix(0, 0)); err != nil {
+				log.Printf("failed to mark invite %d as handled (skipped): %v", id, err)
+			}
 		}
 	}
 	return count, nil
