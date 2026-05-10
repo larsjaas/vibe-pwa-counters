@@ -90,6 +90,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
     const [tagShareToDelete, setTagShareToDelete] = useState<TagShare | null>(null);
     const [view, setView] = useState<'info' | 'settings'>('info');
     const [emailAlerts, setEmailAlerts] = useState(false);
+    const [inviteReminders, setInviteReminders] = useState(false);
 
     const fetchData = async () => {
         console.log('AccountPage: Fetching data...');
@@ -495,6 +496,11 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
                         label="Email alerts about tag sharing invites" 
                         checked={emailAlerts} 
                         onChange={setEmailAlerts} 
+                    />
+                    <SettingSwitch 
+                        label="Tag sharing invite reminder email" 
+                        checked={inviteReminders} 
+                        onChange={setInviteReminders} 
                     />
                 </div>
             )}
