@@ -349,15 +349,24 @@ func handleCreateInvite(w http.ResponseWriter, r *http.Request, userID int, tagI
 		body.AccessLevel = 2 // Default to Edit access
 	}
 
+	// Check if the recipient user exists and has disabled tag sharing.
+	if targetUserID, err := db.GetUserIDByEmail(body.Email); err == nil {
+		enabled, err := db.GetUserSettingBool(targetUserID, "tag_sharing", true)
+		if err != nil {
+			log.Printf("error checking sharing setting for user %d: %v", targetUserID, err)
+		} else if !enabled {
+			// User has explicitly disabled tag sharing. 
+			// We return 200 OK but don't create the invite.
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+	}
+
 	invite, err := db.CreateInvite(userID, tagID, body.Email, body.AccessLevel)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
-
-	// In a real system, we would send an email here.
-	// For now, we just mark it as notified to simulate the system.
-	db.MarkInviteNotified(invite.ID, false)
 
 	// Notify both parties about the new invite
 	PublishEvent(userID, "UPDATED TAG_INVITES")

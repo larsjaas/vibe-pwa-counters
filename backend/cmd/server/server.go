@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/larsa/pwa-counter/backend/internal/db"
+	"github.com/larsa/pwa-counter/backend/internal/email"
 	httpHandlers "github.com/larsa/pwa-counter/backend/internal/http"
 	_ "github.com/lib/pq"
 	redis "github.com/redis/go-redis/v9"
@@ -42,6 +43,15 @@ func main() {
         fmt.Println("Error: GOOGLE_REDIRECT_URI environment variable is not set")
         os.Exit(1)
     }
+
+    smtpVars := []string{"SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS"}
+    for _, v := range smtpVars {
+        if os.Getenv(v) == "" {
+            fmt.Printf("Error: %s environment variable is not set\n", v)
+            os.Exit(1)
+        }
+    }
+
     // otherwise fall back to the default Postgres container settings.
     dsn := os.Getenv("DATABASE_URL")
     if dsn == "" {
@@ -63,6 +73,20 @@ func main() {
     // Run database migrations on startup. Delegated to the internal
     // database package for better separation of concerns.
     db.RunMigrations(dbConn)
+
+    // Start the background worker for initial invite notifications
+    go func() {
+        ticker := time.NewTicker(5 * time.Minute)
+        defer ticker.Stop()
+        for range ticker.C {
+            count, err := db.ProcessInitialInvites(email.SendEmail)
+            if err != nil {
+                log.Printf("Error processing initial invites: %v", err)
+            } else if count > 0 {
+                log.Printf("Sent %d initial invite emails", count)
+            }
+        }
+    }()
 
     // Start the background worker for invite reminders
     go func() {

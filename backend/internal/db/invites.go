@@ -297,7 +297,84 @@ func MarkInviteNotified(inviteID int, isReminder bool) error {
 	return err
 }
 
-// GetInviteByID retrieves a tag invite by its ID.
+func ProcessInitialInvites(sendEmail func(to, subject, body string) error) (int, error) {
+	if db == nil {
+		return 0, fmt.Errorf("database not initialized")
+	}
+
+	const query = `
+		SELECT 
+			i.id, i.email, 
+			u_rec.id as recipient_id, u_rec.name as recipient_name,
+			u_send.name as sender_name,
+			t.name as tag_name
+		FROM tag_invites i
+		JOIN tags t ON i.tag_id = t.id
+		JOIN users u_send ON i.sender_id = u_send.id
+		LEFT JOIN users u_rec ON i.email = u_rec.email
+		WHERE i.status = 'pending' 
+		  AND i.notified_at IS NULL 
+		  AND i.expires_at > NOW() 
+		  AND i.created_at < NOW() - INTERVAL '15 minutes'`
+	
+	rows, err := db.Query(query)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	count := 0
+	for rows.Next() {
+		var id int
+		var email, recipientName, senderName, tagName string
+		var recUserID sql.NullInt64
+		if err := rows.Scan(&id, &email, &recUserID, &recipientName, &senderName, &tagName); err != nil {
+			return count, err
+		}
+
+		shouldSend := false
+		if !recUserID.Valid {
+			// User doesn't exist, send invite to bring them in
+			shouldSend = true
+		} else {
+			// User exists, check their preference for email notifications
+			enabled, err := GetUserSettingBool(int(recUserID.Int64), "tag_sharing_email", false)
+			if err != nil {
+				log.Printf("error checking settings for user %d: %v", recUserID.Int64, err)
+				continue
+			}
+			if enabled {
+				shouldSend = true
+			}
+		}
+
+		if shouldSend {
+			subject := "You have an invite to shared counters"
+			
+			salutation := "Hello,"
+			if recUserID.Valid && recipientName != "" {
+				salutation = fmt.Sprintf("Hello %s,", recipientName)
+			}
+
+			body := fmt.Sprintf(
+				"<p>%s</p><p>User %s has invited you to share the counters tagged '%s' on counters.crudbytes.com. Log in to your profile to accept or reject the invite, and maybe go to Account Settings if you want to alter your email preferences.</p><p>Best regards,<br>CrudBytes Apps &lt;Apps@CrudBytes.com&gt;</p>",
+				salutation, senderName, tagName,
+			)
+			
+			if err := sendEmail(email, subject, body); err != nil {
+				log.Printf("failed to send invite email to %s: %v", email, err)
+				continue
+			}
+			
+			if err := MarkInviteNotified(id, false); err != nil {
+				log.Printf("failed to mark invite %d as notified: %v", id, err)
+				continue
+			}
+			count++
+		}
+	}
+	return count, nil
+}
 func GetInviteByID(inviteID int) (*TagInvite, error) {
 	if db == nil {
 		return nil, fmt.Errorf("database not initialized")
