@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { IconButton } from './components/IconButton';
 import { LogOut, Trash2, Plus, Key, Check, X, Settings, User } from 'lucide-react';
 import { ConfirmationModal } from './components/ConfirmationModal';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface UserInfo {
     email: string;
@@ -78,6 +79,8 @@ const SettingSwitch = ({ label, checked, onChange }: { label: string, checked: b
 );
 
 export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, refreshTrigger }) => {
+    const location = useLocation();
+    const navigate = useNavigate();
     const [user, setUser] = useState<UserInfo | null>(null);
     const [apikeys, setApikeys] = useState<APIKey[]>([]);
     const [tagshares, setTagshares] = useState<TagShare[]>([]);
@@ -88,19 +91,22 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [apiKeyToDelete, setApiKeyToDelete] = useState<number | null>(null);
     const [tagShareToDelete, setTagShareToDelete] = useState<TagShare | null>(null);
-    const [view, setView] = useState<'info' | 'settings'>('info');
+    const [tagSharing, setTagSharing] = useState(true);
     const [emailAlerts, setEmailAlerts] = useState(false);
     const [inviteReminders, setInviteReminders] = useState(false);
+
+    const view = location.pathname.endsWith('/settings') ? 'settings' : 'info';
 
     const fetchData = async () => {
         console.log('AccountPage: Fetching data...');
         try {
-            const [userRes, infoRes, keysRes, sharesRes, invitesRes] = await Promise.all([
+            const [userRes, infoRes, keysRes, sharesRes, invitesRes, settingsRes] = await Promise.all([
                 fetch('/api/account'),
                 fetch('/api/info'),
                 fetch('/api/apikeys'),
                 fetch('/api/tags/shares/me'),
                 fetch('/api/invites'),
+                fetch('/api/settings'),
             ]);
             
             if (!userRes.ok) throw new Error('Failed to fetch account information');
@@ -108,12 +114,19 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
             if (!keysRes.ok) throw new Error('Failed to fetch API keys');
             if (!sharesRes.ok) throw new Error('Failed to fetch tag shares');
             if (!invitesRes.ok) throw new Error('Failed to fetch invites');
+            if (!settingsRes.ok) throw new Error('Failed to fetch settings');
 
             const userData = await userRes.json();
             const infoData = await infoRes.json();
             const keysData = await keysRes.json();
             const sharesData = await sharesRes.json();
             const invitesData = await invitesRes.json();
+            const settingsData = await settingsRes.json();
+
+            const parseBool = (val: any, defaultVal: boolean) => {
+                if (val === undefined || val === null) return defaultVal;
+                return val === 'true' || val === true;
+            };
 
             console.log('AccountPage: Data fetched successfully');
             setUser(userData);
@@ -121,6 +134,9 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
             setApikeys(keysData);
             setTagshares(sharesData);
             setInvites(invitesData);
+            setTagSharing(parseBool(settingsData.tag_sharing, true));
+            setEmailAlerts(parseBool(settingsData.tag_sharing_email, false));
+            setInviteReminders(parseBool(settingsData.tag_sharing_reminder, false));
         } catch (e: any) {
             console.error('AccountPage: Fetch error:', e);
             setError(e.message);
@@ -223,6 +239,21 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
         }
     };
 
+    const handleSettingChange = async (setting: string, value: boolean, setter: (val: boolean) => void) => {
+        setter(value);
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ setting: setting, value: String(value) }),
+            });
+            if (!res.ok) throw new Error(`Failed to update ${setting}`);
+        } catch (e: any) {
+            alert(`Error updating setting ${setting}: ${e.message}`);
+            // Optionally revert the state here if we want to be strict, but for now just alert.
+        }
+    };
+
     const handleLogout = () => {
         window.location.href = '/api/logout';
     };
@@ -269,7 +300,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
             <IconButton 
                 style={{ position: 'absolute', top: '15px', right: '15px' }}
                 icon={view === 'info' ? Settings : User} 
-                onClick={() => setView(view === 'info' ? 'settings' : 'info')} 
+                onClick={() => navigate(view === 'info' ? '/profile/settings' : '/profile')} 
                 title={view === 'info' ? 'Account Settings' : 'Account Information'} 
             />
             
@@ -491,16 +522,20 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
                 </>
             ) : (
                 <div className="account-settings" style={{ width: '95%', margin: '0 auto' }}>
-                    <h3 style={{ marginBottom: '1rem' }}>Settings</h3>
+                    <SettingSwitch 
+                        label="Allow tag sharing" 
+                        checked={tagSharing} 
+                        onChange={(val) => handleSettingChange('tag_sharing', val, setTagSharing)} 
+                    />
                     <SettingSwitch 
                         label="Email alerts about tag sharing invites" 
                         checked={emailAlerts} 
-                        onChange={setEmailAlerts} 
+                        onChange={(val) => handleSettingChange('tag_sharing_email', val, setEmailAlerts)} 
                     />
                     <SettingSwitch 
                         label="Tag sharing invite reminder email" 
                         checked={inviteReminders} 
-                        onChange={setInviteReminders} 
+                        onChange={(val) => handleSettingChange('tag_sharing_reminder', val, setInviteReminders)} 
                     />
                 </div>
             )}
