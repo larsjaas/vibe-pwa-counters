@@ -47,6 +47,9 @@ func NewRouter() http.Handler {
     mux.HandleFunc("/api/apikeys/create", APIKeyHandler)
     mux.HandleFunc("/api/apikeys/", APIKeyHandler)
 
+    // User Settings
+    mux.HandleFunc("/api/settings", UserSettingsHandler)
+
     // Tags and Sharing
     mux.HandleFunc("/api/tags", TagsHandler)
     mux.HandleFunc("/api/tags/", TagsHandler)
