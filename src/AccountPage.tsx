@@ -261,17 +261,16 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
     }
 
     return (
-        <div className="account-page-container">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h2 className="account-section" style={{ margin: 0 }}>
-                    {view === 'info' ? 'Account Information' : 'Account Settings'}
-                </h2>
-                <IconButton 
-                    icon={view === 'info' ? Settings : User} 
-                    onClick={() => setView(view === 'info' ? 'settings' : 'info')} 
-                    title={view === 'info' ? 'Account Settings' : 'Account Information'} 
-                />
-            </div>
+        <div className="account-page-container" style={{ position: 'relative' }}>
+            <h2 className="account-section">
+                {view === 'info' ? 'Account Information' : 'Account Settings'}
+            </h2>
+            <IconButton 
+                style={{ position: 'absolute', top: '15px', right: '15px' }}
+                icon={view === 'info' ? Settings : User} 
+                onClick={() => setView(view === 'info' ? 'settings' : 'info')} 
+                title={view === 'info' ? 'Account Settings' : 'Account Information'} 
+            />
             
             {view === 'info' ? (
                 <>
