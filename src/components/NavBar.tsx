@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { IconButton } from './IconButton';
-import { LayoutDashboard, BarChart3, UserCircle } from 'lucide-react';
+import { Tally5, BarChart3, UserCircle } from 'lucide-react';
 
 interface NavBarProps {
   pendingInvitesCount?: number;
@@ -12,7 +12,7 @@ export const NavBar: React.FC<NavBarProps> = ({ pendingInvitesCount = 0 }) => {
   const location = useLocation();
 
   const views = [
-    { path: '/', icon: LayoutDashboard, label: 'Counters' },
+    { path: '/', icon: Tally5, label: 'Counters' },
     { path: '/stats', icon: BarChart3, label: 'Statistics' },
     { path: '/profile', icon: UserCircle, label: 'Account', hasNotification: pendingInvitesCount > 0 },
   ] as const;
