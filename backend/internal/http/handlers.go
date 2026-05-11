@@ -7,7 +7,7 @@ import (
 )
 
 // BackendVersion is the current version of the API.
-const BackendVersion = "0.9.7"
+const BackendVersion = "0.9.8"
 
 // HealthHandler responds to GET /health requests.
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
