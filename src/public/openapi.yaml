@@ -805,6 +805,74 @@ paths:
         '403':
           description: Forbidden
 
+  /tags/{id}/settings:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: List tag settings
+      description: Returns all settings for the authenticated user on this tag. If 'key' query param is provided, returns only that setting.
+      parameters:
+        - name: key
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+        '401':
+          description: Unauthorized
+    post:
+      summary: Set tag setting
+      description: Updates or creates a setting for the authenticated user on this tag.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                setting:
+                  type: string
+                value:
+                  type: string
+              required:
+                - setting
+                - value
+      responses:
+        '200':
+          description: Successfully set the setting
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+    delete:
+      summary: Delete tag setting
+      description: Deletes a specific setting for the authenticated user on this tag.
+      parameters:
+        - name: key
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Successfully deleted
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
   /invites:
     get:
       summary: List received invites

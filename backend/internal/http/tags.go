@@ -141,6 +141,21 @@ func TagsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Case: /api/tags/:id/settings
+		if len(parts) == 2 && parts[1] == "settings" {
+			switch method {
+			case http.MethodGet:
+				handleGetTagSettings(w, r, userID, tagID)
+			case http.MethodPost:
+				handleSetTagSetting(w, r, userID, tagID)
+			case http.MethodDelete:
+				handleDeleteTagSetting(w, r, userID, tagID)
+			default:
+				http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+			}
+			return
+		}
+
 		http.Error(w, "Not Found", http.StatusNotFound)
 	} else {
 		http.Error(w, "Not Found", http.StatusNotFound)
@@ -376,4 +391,70 @@ func handleCreateInvite(w http.ResponseWriter, r *http.Request, userID int, tagI
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(invite)
+}
+
+// handleGetTagSettings returns all tag-level settings for the authenticated user on a specific tag.
+// Supports an optional ?key=... query to retrieve a single setting.
+func handleGetTagSettings(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
+	key := r.URL.Query().Get("key")
+	if key != "" {
+		val, err := db.GetTagSetting(tagID, userID, key)
+		if err != nil {
+			log.Printf("handleGetTagSettings: GetTagSetting failed: %v", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{key: val})
+		return
+	}
+
+	settings, err := db.GetTagSettings(tagID, userID)
+	if err != nil {
+		log.Printf("handleGetTagSettings: GetTagSettings failed: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(settings)
+}
+
+// handleSetTagSetting creates or updates a single tag-level setting.
+func handleSetTagSetting(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
+	var body struct {
+		Setting string `json:"setting"`
+		Value   string `json:"value"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	if body.Setting == "" {
+		http.Error(w, "setting key required", http.StatusBadRequest)
+		return
+	}
+
+	if err := db.SetTagSetting(tagID, userID, body.Setting, body.Value); err != nil {
+		log.Printf("handleSetTagSetting: SetTagSetting failed: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// handleDeleteTagSetting removes a single tag-level setting.
+func handleDeleteTagSetting(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
+	key := r.URL.Query().Get("key")
+	if key == "" {
+		http.Error(w, "key query parameter required", http.StatusBadRequest)
+		return
+	}
+
+	if err := db.DeleteTagSetting(tagID, userID, key); err != nil {
+		log.Printf("handleDeleteTagSetting: DeleteTagSetting failed: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
