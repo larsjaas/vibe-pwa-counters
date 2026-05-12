@@ -32,6 +32,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
     const [updates, setUpdates] = useState<Array<{ id: number; counter: number; delta: number; user_email?: string; when?: string }>>([]);
     const [counterTags, setCounterTags] = useState<Record<number, string[]>>({});
     const [allTags, setAllTags] = useState<{ id: number; name: string, user_email: string }[]>([]);
+    const [tagFocusMode, setTagFocusMode] = useState<Record<string, boolean>>({});
     const [loading, setLoading] = useState(true);
     const [showArchived, setShowArchived] = useLocalStorage('counter-list-show-archived', false);
     const [searchQuery, setSearchQuery] = useLocalStorage('counter-list-search-query', '');
@@ -66,19 +67,28 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
             const updates: Array<{ id: number; counter: number; delta: number; user_email?: string; when?: string }> = updatesData || [];
             setUpdates(updates);
 
-            // Load tag associations
+            // Load tag associations and focus_mode settings
             const tagMap: Record<number, string[]> = {};
+            const focusModeMap: Record<string, boolean> = {};
             await Promise.all(tagsData.map(async (tag) => {
-                const res = await fetch(`/api/tags/${tag.id}/counters`);
-                if (res.ok) {
-                    const cids: number[] = await res.json();
+                const [countersRes, settingsRes] = await Promise.all([
+                    fetch(`/api/tags/${tag.id}/counters`),
+                    fetch(`/api/tags/${tag.id}/settings?key=focus_mode`)
+                ]);
+                if (countersRes.ok) {
+                    const cids: number[] = await countersRes.json();
                     cids.forEach(cid => {
                         if (!tagMap[cid]) tagMap[cid] = [];
                         tagMap[cid].push(tag.name);
                     });
                 }
+                if (settingsRes.ok) {
+                    const settings = await settingsRes.json();
+                    focusModeMap[tag.name] = settings.focus_mode === 'true';
+                }
             }));
             setCounterTags(tagMap);
+            setTagFocusMode(focusModeMap);
 
             // Calculate current counts
             const countersWithCount = countersData.map(c => {
@@ -205,12 +215,23 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
             }
         }
 
-        // Apply search filter
+        // Apply search filter, with focus_mode logic:
+        //   - Counters tagged with a focus_mode tag are only shown if the query
+        //     exactly matches one of their focus tag names.
+        //   - All other counters use normal search filtering.
         const query = searchQuery.toLowerCase();
-        if (!query) return result;
+        const focusTagNames = new Set(allTags.filter(t => tagFocusMode[t.name]).map(t => t.name.toLowerCase()));
 
         return result.filter(c => {
             const tags = counterTags[c.id] || [];
+            // Find tags with focus_mode enabled on this counter
+            const focusTags = tags.filter(t => focusTagNames.has(t.toLowerCase()));
+            if (focusTags.length > 0) {
+                // This counter has a focus_mode tag — only show if query matches one of them exactly
+                return focusTags.some(t => t.toLowerCase() === query);
+            }
+            // No focus_mode tags on this counter; apply normal search filtering
+            if (!query) return true;
             const isGlobalExactTagMatch = allTags.some(tag => tag.name.toLowerCase() === query);
             if (isGlobalExactTagMatch) {
                 return tags.some(tag => tag.toLowerCase() === query);
@@ -219,7 +240,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
             const tagMatch = tags.some(tag => tag.toLowerCase().includes(query));
             return nameMatch || tagMatch;
         });
-    }, [counters, updates, viewMode, showArchived, searchQuery, counterTags, allTags, nameSort, valueSort]);
+    }, [counters, updates, viewMode, showArchived, searchQuery, counterTags, allTags, nameSort, valueSort, tagFocusMode]);
 
     const visibleTags = React.useMemo(() => {
         const activeCounters = counters.filter(c => 

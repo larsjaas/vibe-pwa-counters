@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, UserPlus, Trash2, Check } from 'lucide-react';
+import { X, UserPlus, Trash2, Check, Focus } from 'lucide-react';
 
 interface TagSharingModalProps {
     tagId: number;
@@ -13,6 +13,7 @@ export const TagSharingModal: React.FC<TagSharingModalProps> = ({ tagId, tagName
     const [accessLevel, setAccessLevel] = useState<'RO' | 'RW'>('RO');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [focusMode, setFocusMode] = useState(false);
 
     const fetchShares = async () => {
         try {
@@ -25,8 +26,20 @@ export const TagSharingModal: React.FC<TagSharingModalProps> = ({ tagId, tagName
         }
     };
 
+    const fetchFocusMode = async () => {
+        try {
+            const res = await fetch(`/api/tags/${tagId}/settings?key=focus_mode`);
+            if (!res.ok) return;
+            const data = await res.json();
+            setFocusMode(data.focus_mode === 'true');
+        } catch {
+            // Silently ignore – focus mode defaults to false
+        }
+    };
+
     useEffect(() => {
         fetchShares();
+        fetchFocusMode();
     }, [tagId]);
 
     const handleAddUser = async (e: React.FormEvent) => {
@@ -70,6 +83,24 @@ export const TagSharingModal: React.FC<TagSharingModalProps> = ({ tagId, tagName
         }
     };
 
+    const handleFocusModeToggle = async () => {
+        const newValue = !focusMode;
+        setFocusMode(newValue);
+        try {
+            const res = await fetch(`/api/tags/${tagId}/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ setting: 'focus_mode', value: String(newValue) }),
+            });
+            if (!res.ok) {
+                setFocusMode(!newValue);
+                throw new Error('Failed to update focus mode');
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Error updating focus mode');
+        }
+    };
+
     return (
         <div className="modal-overlay">
             <div className="modal-content" style={{ maxWidth: '500px' }}>
@@ -105,6 +136,21 @@ export const TagSharingModal: React.FC<TagSharingModalProps> = ({ tagId, tagName
                 </form>
 
                 {error && <div className="form-error" style={{ marginBottom: '10px' }}>{error}</div>}
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px', padding: '10px 0', borderBottom: '1px solid var(--color-border)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Focus size={18} />
+                        <span>Focus Mode</span>
+                    </div>
+                    <button
+                        onClick={handleFocusModeToggle}
+                        className={focusMode ? 'btn-primary' : 'btn-secondary'}
+                        style={{ minWidth: '60px' }}
+                        title={focusMode ? 'Disable Focus Mode' : 'Enable Focus Mode'}
+                    >
+                        {focusMode ? 'ON' : 'OFF'}
+                    </button>
+                </div>
 
                 <table className="counter-table" style={{ fontSize: '1rem' }}>
                     <thead className="table-header-row">
