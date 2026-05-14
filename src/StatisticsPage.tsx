@@ -19,7 +19,10 @@ interface Count {
 
 export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }) => {
     const [counters, setCounters] = useState<Counter[]>([]);
-    const [selectedCounterId, setSelectedCounterId] = useState<number | null>(null);
+    const [selectedCounterId, setSelectedCounterId] = useState<number | null>(() => {
+        const saved = localStorage.getItem('statsSelectedCounterId');
+        return saved ? parseInt(saved, 10) : null;
+    });
     const [stats, setStats] = useState<number[]>(new Array(24).fill(0));
     const [loading, setLoading] = useState(true);
     const [allCounts, setAllCounts] = useState<Count[]>([]);
@@ -27,9 +30,25 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
     const [countToDelete, setCountToDelete] = useState<number | null>(null);
     const [countToEdit, setCountToEdit] = useState<{ id: number; when: string } | null>(null);
     const [editWhen, setEditWhen] = useState('');
+    const [frequencyTimeScope, setFrequencyTimeScope] = useState<'Day' | 'Week' | 'Month' | 'YTD' | 'Year'>(() => {
+        return (localStorage.getItem('statsFrequencyTimeScope') as any) || 'Day';
+    });
+    const [timelineTimeScope, setTimelineTimeScope] = useState<'Day' | 'Week' | 'Month' | 'YTD' | 'Year'>(() => {
+        return (localStorage.getItem('statsTimelineTimeScope') as any) || 'Month';
+    });
     const [graphMode, setGraphMode] = useState<GraphMode>(() => {
         return (localStorage.getItem('statsGraphMode') as GraphMode) || 'frequency';
     });
+
+    const currentScope = graphMode === 'frequency' ? frequencyTimeScope : timelineTimeScope;
+
+    const setCurrentScope = (scope: 'Day' | 'Week' | 'Month' | 'YTD' | 'Year') => {
+        if (graphMode === 'frequency') {
+            setFrequencyTimeScope(scope);
+        } else {
+            setTimelineTimeScope(scope);
+        }
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -64,9 +83,15 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
 
                 setCounters(sortedCounters);
                 setAllCounts(countsData);
-                
-                if (sortedCounters.length > 0) {
+
+                if (selectedCounterId === null && sortedCounters.length > 0) {
                     setSelectedCounterId(sortedCounters[0].id);
+                } else if (selectedCounterId !== null && !sortedCounters.some(c => c.id === selectedCounterId)) {
+                    if (sortedCounters.length > 0) {
+                        setSelectedCounterId(sortedCounters[0].id);
+                    } else {
+                        setSelectedCounterId(null);
+                    }
                 }
             } catch (e) {
                 console.error('Error loading stats', e);
@@ -79,18 +104,86 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
     }, [refreshTrigger]);
 
     useEffect(() => {
+        localStorage.setItem('statsFrequencyTimeScope', frequencyTimeScope);
+    }, [frequencyTimeScope]);
+
+    useEffect(() => {
+        localStorage.setItem('statsTimelineTimeScope', timelineTimeScope);
+    }, [timelineTimeScope]);
+
+    useEffect(() => {
+        if (selectedCounterId !== null) {
+            localStorage.setItem('statsSelectedCounterId', selectedCounterId.toString());
+        }
+        return () => {
+            localStorage.removeItem('statsSelectedCounterId');
+        };
+    }, [selectedCounterId]);
+
+    useEffect(() => {
         if (selectedCounterId === null) return;
 
-        const hourBuckets = new Array(24).fill(0);
-        allCounts
-            .filter(c => c.counter === selectedCounterId)
-            .forEach(c => {
-                const date = new Date(c.when);
-                const hour = date.getHours();
-                hourBuckets[hour] += Math.abs(c.delta);
-            });
-        setStats(hourBuckets);
-    }, [selectedCounterId, allCounts]);
+        const now = new Date();
+        const filteredCounts = allCounts.filter(c => c.counter === selectedCounterId);
+        let buckets: number[] = [];
+
+        switch (currentScope) {
+            case 'Day': {
+                buckets = new Array(24).fill(0);
+                const todayStart = new Date(now.setHours(0,0,0,0));
+                filteredCounts.filter(c => new Date(c.when) >= todayStart)
+                    .forEach(c => {
+                        buckets[new Date(c.when).getHours()] += Math.abs(c.delta);
+                    });
+                break;
+            }
+            case 'Week': {
+                buckets = new Array(7).fill(0);
+                const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                filteredCounts.filter(c => new Date(c.when) >= weekAgo)
+                    .forEach(c => {
+                        const diff = Math.floor((new Date(c.when).getTime() - weekAgo.getTime()) / (24 * 60 * 60 * 1000));
+                        if (diff >= 0 && diff < 7) buckets[diff] += Math.abs(c.delta);
+                    });
+                break;
+            }
+            case 'Month': {
+                buckets = new Array(30).fill(0);
+                const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+                filteredCounts.filter(c => new Date(c.when) >= monthAgo)
+                    .forEach(c => {
+                        const diff = Math.floor((new Date(c.when).getTime() - monthAgo.getTime()) / (24 * 60 * 60 * 1000));
+                        if (diff >= 0 && diff < 30) buckets[diff] += Math.abs(c.delta);
+                    });
+                break;
+            }
+            case 'YTD': {
+                const currentYear = new Date().getFullYear();
+                const currentMonth = new Date().getMonth();
+                buckets = new Array(currentMonth + 1).fill(0);
+                const startOfYear = new Date(currentYear, 0, 1);
+                filteredCounts.filter(c => new Date(c.when) >= startOfYear)
+                    .forEach(c => {
+                        const m = new Date(c.when).getMonth();
+                        if (m >= 0 && m <= currentMonth) buckets[m] += Math.abs(c.delta);
+                    });
+                break;
+            }
+            case 'Year': {
+                buckets = new Array(12).fill(0);
+                const yearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+                filteredCounts.filter(c => new Date(c.when) >= yearAgo)
+                    .forEach(c => {
+                        const date = new Date(c.when);
+                        const diffMonths = (date.getFullYear() - new Date().getFullYear()) * 12 + (date.getMonth() - new Date().getMonth());
+                        const bucketIdx = 11 + diffMonths;
+                        if (bucketIdx >= 0 && bucketIdx < 12) buckets[bucketIdx] += Math.abs(c.delta);
+                    });
+                break;
+            }
+        }
+        setStats(buckets);
+    }, [selectedCounterId, allCounts, frequencyTimeScope, timelineTimeScope, graphMode]);
 
     const handleModeChange = (mode: GraphMode) => {
         setGraphMode(mode);
@@ -106,7 +199,7 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                 body: JSON.stringify({ when: new Date(editWhen).toISOString() }),
             });
             if (!res.ok) throw new Error('Failed to update timestamp');
-            
+
             // Refresh data
             const [resCounters, resCounts] = await Promise.all([
                 fetch('/api/counters'),
@@ -116,7 +209,7 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
             const countsData = await resCounts.json();
             setCounters(countersData);
             setAllCounts(countsData);
-            
+
             setCountToEdit(null);
         } catch (e) {
             console.error('Error updating timestamp', e);
@@ -177,13 +270,13 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                             </div>
                         </div>
                         <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
-                            <select 
-                                value={selectedCounterId} 
+                            <select
+                                value={selectedCounterId}
                                 onChange={(e) => setSelectedCounterId(parseInt(e.target.value))}
-                                style={{ 
-                                    fontSize: '1.2rem', 
-                                    fontWeight: 'bold', 
-                                    padding: '5px', 
+                                style={{
+                                    fontSize: '1.2rem',
+                                    fontWeight: 'bold',
+                                    padding: '5px',
                                     cursor: 'pointer',
                                     textAlign: 'center',
                                     width: 'auto',
@@ -193,37 +286,37 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                                     border: 'none',
                                     color: 'inherit'
                                 }}
-                            > 
+                            >
                                 {counters.map(c => (
                                     <option key={c.id} value={c.id}>{c.name}</option>
                                 ))}
                             </select>
                         </div>
-                        <div style={{ 
-                            display: 'flex', 
-                            alignItems: 'flex-end', 
-                            justifyContent: 'center', 
-                            width: '100%', 
-                            maxWidth: '650px', 
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'flex-end',
+                            justifyContent: 'center',
+                            width: '100%',
+                            maxWidth: '650px',
                             margin: '0 auto',
                             paddingBottom: '20px',
                             borderBottom: '2px solid #eee'
                         }}>
-                            <div style={{ 
-                                position: 'relative', 
-                                height: '180px', 
-                                width: '40px', 
+                            <div style={{
+                                position: 'relative',
+                                height: '180px',
+                                width: '40px',
                                 marginBottom: '0px',
                                 display: 'flex',
                                 justifyContent: 'flex-end'
                             }}>
-                                <div style={{ 
-                                    position: 'absolute', 
-                                    right: 0, 
-                                    top: 0, 
-                                    bottom: 0, 
-                                    width: '1px', 
-                                    backgroundColor: '#ccc' 
+                                <div style={{
+                                    position: 'absolute',
+                                    right: 0,
+                                    top: 0,
+                                    bottom: 0,
+                                    width: '1px',
+                                    backgroundColor: '#ccc'
                                 }} />
                                 {(() => {
                                     const maxStats = Math.max(...stats);
@@ -249,44 +342,44 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                                     return labels.map(l => {
                                         const pos = maxStats === 0 ? 0 : (l / maxStats) * 100;
                                         return (
-                                            <div key={l} style={{ 
-                                                position: 'absolute', 
-                                                bottom: `${pos}%`, 
-                                                right: 0, 
-                                                display: 'flex', 
-                                                alignItems: 'center', 
+                                            <div key={l} style={{
+                                                position: 'absolute',
+                                                bottom: `${pos}%`,
+                                                right: 0,
+                                                display: 'flex',
+                                                alignItems: 'center',
                                                 justifyContent: 'flex-end',
                                                 width: '40px',
-                                                fontSize: '0.7rem', 
+                                                fontSize: '0.7rem',
                                                 color: '#666',
                                                 pointerEvents: 'none',
                                                 transform: 'translateY(50%)'
                                             }}>
                                                 <span style={{ marginRight: '4px' }}>{l}</span>
-                                                <div style={{ 
-                                                    width: '4px', 
-                                                    height: '1px', 
-                                                    backgroundColor: '#ccc' 
+                                                <div style={{
+                                                    width: '4px',
+                                                    height: '1px',
+                                                    backgroundColor: '#ccc'
                                                 }} />
                                             </div>
                                         );
                                     });
                                 })()}
                             </div>
-                            <div style={{ 
-                                display: 'flex', 
-                                alignItems: 'flex-end', 
-                                justifyContent: 'center', 
-                                gap: '4px', 
-                                height: '180px', 
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'flex-end',
+                                justifyContent: 'center',
+                                gap: '4px',
+                                height: '180px',
                                 width: '100%',
                                 maxWidth: '600px',
                             }}>
                                 {stats.map((value, hour) => (
-                                    <div key={hour} style={{ 
-                                        flex: 1, 
-                                        backgroundColor: '#0070f3', 
-                                        height: `${(value / (Math.max(...stats) || 1)) * 100}%`, 
+                                    <div key={hour} style={{
+                                        flex: 1,
+                                        backgroundColor: '#0070f3',
+                                        height: `${(value / (Math.max(...stats) || 1)) * 100}%`,
                                         minHeight: '2px',
                                         borderRadius: '4px 4px 0 0',
                                         position: 'relative',
@@ -300,22 +393,48 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                                 ))}
                             </div>
                         </div>
-                        <div style={{ 
-                            display: 'flex', 
-                            justifyContent: 'space-between', 
-                            width: '100%', 
-                            maxWidth: '600px', 
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            width: '100%',
+                            maxWidth: '600px',
                             margin: '10px auto 0',
                             fontSize: '0.7rem',
                             color: '#666'
                         }}>
-                            <span>0:00</span>
-                            <span>12:00</span>
-                            <span>23:00</span>
+                            <span>{currentScope === 'Day' ? '0:00' : currentScope === 'Week' ? '7d ago' : currentScope === 'Month' ? '30d ago' : currentScope === 'YTD' ? 'Jan' : '1y ago'}</span>
+                            <span>{currentScope === 'Day' ? '12:00' : currentScope === 'Week' ? '3d ago' : currentScope === 'Month' ? '15d ago' : currentScope === 'YTD' ? 'Mid' : '6m ago'}</span>
+                            <span>{currentScope === 'Day' ? '23:00' : 'Now'}</span>
+                        </div>
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            gap: '10px',
+                            margin: '1rem auto',
+                            width: 'fit-content'
+                        }}>
+                            {['Day', 'Week', 'Month', 'YTD', 'Year'].map(scope => (
+                                <button
+                                    key={scope}
+                                    onClick={() => setCurrentScope(scope as any)}
+                                    style={{
+                                        padding: '5px 12px',
+                                        borderRadius: '4px',
+                                        border: '1px solid #ccc',
+                                        backgroundColor: currentScope === scope ? '#0070f3' : '#fff',
+                                        color: currentScope === scope ? '#fff' : '#666',
+                                        cursor: 'pointer',
+                                        fontWeight: currentScope === scope ? 'bold' : 'normal',
+                                        fontSize: '0.8rem'
+                                    }}
+                                >
+                                    {scope}
+                                </button>
+                            ))}
                         </div>
                         {countToDelete !== null && (
-                            <ConfirmationModal 
-                                message="Do you want to delete the selected count?" 
+                            <ConfirmationModal
+                                message="Do you want to delete the selected count?"
                                 onConfirm={async () => {
                                     try {
                                         await fetch(`/api/counts/${countToDelete}`, { method: 'DELETE' });
@@ -344,41 +463,41 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                                    <h2 style={{ marginBottom: '1rem', color: 'var(--color-text)' }}>Edit Timestamp</h2>
                                    <div style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
                                        <label style={{ fontSize: '0.9rem', color: '#666' }}>Select new time:</label>
-                                       <input 
-                                           type="datetime-local" 
-                                           value={editWhen} 
-                                           onChange={(e) => setEditWhen(e.target.value)} 
-                                           style={{ 
-                                                               padding: '8px', 
-                                                                borderRadius: '4px', 
+                                       <input
+                                           type="datetime-local"
+                                           value={editWhen}
+                                           onChange={(e) => setEditWhen(e.target.value)}
+                                           style={{
+                                                               padding: '8px',
+                                                                borderRadius: '4px',
                                                                 border: '1px solid #ccc',
                                                                 fontSize: '1rem'
                                                             }}
                                        />
                                    </div>
                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
-                                       <button 
-                                           onClick={() => setCountToEdit(null)} 
-                                           style={{ 
-                                               padding: '10px 20px', 
-                                               backgroundColor: '#ccc', 
-                                               color: '#333', 
-                                               border: 'none', 
-                                               borderRadius: '5px', 
+                                       <button
+                                           onClick={() => setCountToEdit(null)}
+                                           style={{
+                                               padding: '10px 20px',
+                                               backgroundColor: '#ccc',
+                                               color: '#333',
+                                               border: 'none',
+                                               borderRadius: '5px',
                                                cursor: 'pointer',
                                                fontWeight: 'bold'
                                            }}
                                        >
                                            Cancel
                                        </button>
-                                       <button 
-                                           onClick={handleUpdateTimestamp} 
-                                           style={{ 
-                                               padding: '10px 20px', 
-                                               backgroundColor: 'var(--color-primary)', 
-                                               color: 'white', 
-                                               border: 'none', 
-                                               borderRadius: '5px', 
+                                       <button
+                                           onClick={handleUpdateTimestamp}
+                                           style={{
+                                               padding: '10px 20px',
+                                               backgroundColor: 'var(--color-primary)',
+                                               color: 'white',
+                                               border: 'none',
+                                               borderRadius: '5px',
                                                cursor: 'pointer',
                                                fontWeight: 'bold'
                                            }}
@@ -389,17 +508,17 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                                </div>
                             </div>
                         )}
-                        <div style={{ 
-                            marginTop: '3rem', 
-                            width: '100%', 
-                            maxWidth: '600px', 
+                        <div style={{
+                            marginTop: '3rem',
+                            width: '100%',
+                            maxWidth: '600px',
                             margin: '3rem auto 0',
                             fontSize: '0.9rem'
                         }}>
                             <h3 style={{ textAlign: 'center', marginBottom: '1rem', color: '#444' }}>Recent Activity</h3>
-                            <table style={{ 
-                                width: '100%', 
-                                borderCollapse: 'collapse', 
+                            <table style={{
+                                width: '100%',
+                                borderCollapse: 'collapse',
                                 textAlign: 'left',
                                 fontSize: '0.85rem'
                             }}>
@@ -424,9 +543,9 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                                <td style={{ padding: '8px 0', color: '#666' }}>
                                    {entry.user_email}
                                </td>
-                                                <td style={{ 
-                                                    padding: '8px 0', 
-                                                    textAlign: 'right', 
+                                                <td style={{
+                                                    padding: '8px 0',
+                                                    textAlign: 'right',
                                                     fontWeight: 'bold',
                                                     color: entry.delta >= 0 ? '#2ecc71' : '#e74c3c'
                                                 }}>
@@ -434,20 +553,20 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                                                 </td>
                                                 <td style={{ padding: '8px 0', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '8px', alignItems: 'center' }}>
                             {entry.user_email === currentUserEmail && (
-                                <Pencil 
-                                    size={16} 
-                                    color="#666" 
-                                    style={{ cursor: 'pointer' }} 
+                                <Pencil
+                                    size={16}
+                                    color="#666"
+                                    style={{ cursor: 'pointer' }}
                                     onClick={() => {
                                         setCountToEdit({ id: entry.id, when: entry.when });
                                         setEditWhen(formatForInput(entry.when));
                                     }}
                                 />
                             )}
-                            <Trash2 
-                                size={16} 
-                                color="#d32f2f" 
-                                style={{ cursor: 'pointer' }} 
+                            <Trash2
+                                size={16}
+                                color="#d32f2f"
+                                style={{ cursor: 'pointer' }}
                                 onClick={() => setCountToDelete(entry.id)}
                             />
                         </td>
