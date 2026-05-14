@@ -182,7 +182,7 @@ const App: React.FC = () => {
                             userEmail={userEmail}
                         />
                     } />
-                    <Route path="/stats" element={<StatisticsPage refreshTrigger={refreshCount} />} />
+                    <Route path="/stats" element={<StatisticsPage refreshTrigger={refreshCount} userEmail={userEmail} />} />
                     <Route path="/profile">
                         <Route index element={<AccountPage fetchInvitesCount={fetchInvitesCount} refreshTrigger={accountRefreshCount} />} />
                         <Route path="settings" element={<AccountPage fetchInvitesCount={fetchInvitesCount} refreshTrigger={accountRefreshCount} />} />

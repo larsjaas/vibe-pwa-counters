@@ -1,10 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { Counter } from './CounterList';
-import { Trash2 } from 'lucide-react';
+import { Activity, Timer, Trash2, Pencil } from 'lucide-react';
 import { ConfirmationModal } from './components/ConfirmationModal';
+
+type GraphMode = 'frequency' | 'timeline';
 
 interface StatisticsPageProps {
     refreshTrigger?: number;
+}
+
+interface Count {
+    id: number;
+    counter: number;
+    delta: number;
+    when: string;
+    user_email: string;
 }
 
 export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }) => {
@@ -12,21 +22,31 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
     const [selectedCounterId, setSelectedCounterId] = useState<number | null>(null);
     const [stats, setStats] = useState<number[]>(new Array(24).fill(0));
     const [loading, setLoading] = useState(true);
-    const [allCounts, setAllCounts] = useState<Array<{ id: number; counter: number; delta: number; when: string }>>([]);
+    const [allCounts, setAllCounts] = useState<Count[]>([]);
+    const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
     const [countToDelete, setCountToDelete] = useState<number | null>(null);
+    const [countToEdit, setCountToEdit] = useState<{ id: number; when: string } | null>(null);
+    const [editWhen, setEditWhen] = useState('');
+    const [graphMode, setGraphMode] = useState<GraphMode>(() => {
+        return (localStorage.getItem('statsGraphMode') as GraphMode) || 'frequency';
+    });
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [resCounters, resCounts] = await Promise.all([
+                const [resCounters, resCounts, resAccount] = await Promise.all([
                     fetch('/api/counters'),
-                    fetch('/api/counts')
+                    fetch('/api/counts'),
+                    fetch('/api/account')
                 ]);
 
-                if (!resCounters.ok || !resCounts.ok) throw new Error('Failed to fetch data');
+                if (!resCounters.ok || !resCounts.ok || !resAccount.ok) throw new Error('Failed to fetch data');
 
                 const countersData: Counter[] = await resCounters.json();
-                const countsData: Array<{ id: number; counter: number; delta: number; when: string }> = await resCounts.json();
+                const countsData: Count[] = await resCounts.json();
+                const accountData: { email: string } = await resAccount.json();
+
+                setCurrentUserEmail(accountData.email);
 
                 // MRU Ordering: Most recently updated counters first.
                 const lastUsedMap = new Map<number, number>();
@@ -72,6 +92,44 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
         setStats(hourBuckets);
     }, [selectedCounterId, allCounts]);
 
+    const handleModeChange = (mode: GraphMode) => {
+        setGraphMode(mode);
+        localStorage.setItem('statsGraphMode', mode);
+    };
+
+    const handleUpdateTimestamp = async () => {
+        if (!countToEdit) return;
+        try {
+            const res = await fetch(`/api/counts/${countToEdit.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ when: new Date(editWhen).toISOString() }),
+            });
+            if (!res.ok) throw new Error('Failed to update timestamp');
+            
+            // Refresh data
+            const [resCounters, resCounts] = await Promise.all([
+                fetch('/api/counters'),
+                fetch('/api/counts')
+            ]);
+            const countersData = await resCounters.json();
+            const countsData = await resCounts.json();
+            setCounters(countersData);
+            setAllCounts(countsData);
+            
+            setCountToEdit(null);
+        } catch (e) {
+            console.error('Error updating timestamp', e);
+        }
+    };
+
+    const formatForInput = (dateStr: string) => {
+        const date = new Date(dateStr);
+        const tzOffset = date.getTimezoneOffset() * 60000;
+        const localISOTime = new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+        return localISOTime;
+    };
+
     if (loading) return <div className="stats-page">Loading...</div>;
 
     return (
@@ -79,12 +137,51 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
             <div className="stats-container">
                 {selectedCounterId ? (
                     <>
+                        <div style={{ position: 'relative', marginBottom: '1rem' }}>
+                            <h1 style={{ textAlign: 'center', margin: 0, fontSize: '1.5rem' }}>Statistics</h1>
+                            <div style={{ position: 'absolute', top: '50%', right: '16px', transform: 'translateY(-50%)', display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                    onClick={() => handleModeChange('frequency')}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        padding: '6px',
+                                        backgroundColor: graphMode === 'frequency' ? '#0070f3' : 'transparent',
+                                        color: graphMode === 'frequency' ? '#fff' : 'inherit',
+                                        border: '1px solid #0070f3',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer'
+                                    }}
+                                    title="Frequency"
+                                >
+                                    <Activity size={20} />
+                                </button>
+                                <button
+                                    onClick={() => handleModeChange('timeline')}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        padding: '6px',
+                                        backgroundColor: graphMode === 'timeline' ? '#0070f3' : 'transparent',
+                                        color: graphMode === 'timeline' ? '#fff' : 'inherit',
+                                        border: '1px solid #0070f3',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer'
+                                    }}
+                                    title="Timeline"
+                                >
+                                    <Timer size={20} />
+                                </button>
+                            </div>
+                        </div>
                         <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
                             <select 
                                 value={selectedCounterId} 
                                 onChange={(e) => setSelectedCounterId(parseInt(e.target.value))}
                                 style={{ 
-                                    fontSize: '1.5rem', 
+                                    fontSize: '1.2rem', 
                                     fontWeight: 'bold', 
                                     padding: '5px', 
                                     cursor: 'pointer',
@@ -240,6 +337,58 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                                 onCancel={() => setCountToDelete(null)}
                             />
                         )}
+
+                        {countToEdit !== null && (
+                            <div className="modal-overlay" style={{ zIndex: 1000 }}>
+                               <div className="modal-content" style={{ maxWidth: '400px', textAlign: 'center' }}>
+                                   <h2 style={{ marginBottom: '1rem', color: 'var(--color-text)' }}>Edit Timestamp</h2>
+                                   <div style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                                       <label style={{ fontSize: '0.9rem', color: '#666' }}>Select new time:</label>
+                                       <input 
+                                           type="datetime-local" 
+                                           value={editWhen} 
+                                           onChange={(e) => setEditWhen(e.target.value)} 
+                                           style={{ 
+                                                               padding: '8px', 
+                                                                borderRadius: '4px', 
+                                                                border: '1px solid #ccc',
+                                                                fontSize: '1rem'
+                                                            }}
+                                       />
+                                   </div>
+                                   <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+                                       <button 
+                                           onClick={() => setCountToEdit(null)} 
+                                           style={{ 
+                                               padding: '10px 20px', 
+                                               backgroundColor: '#ccc', 
+                                               color: '#333', 
+                                               border: 'none', 
+                                               borderRadius: '5px', 
+                                               cursor: 'pointer',
+                                               fontWeight: 'bold'
+                                           }}
+                                       >
+                                           Cancel
+                                       </button>
+                                       <button 
+                                           onClick={handleUpdateTimestamp} 
+                                           style={{ 
+                                               padding: '10px 20px', 
+                                               backgroundColor: 'var(--color-primary)', 
+                                               color: 'white', 
+                                               border: 'none', 
+                                               borderRadius: '5px', 
+                                               cursor: 'pointer',
+                                               fontWeight: 'bold'
+                                           }}
+                                       >
+                                           Update
+                                       </button>
+                                   </div>
+                               </div>
+                            </div>
+                        )}
                         <div style={{ 
                             marginTop: '3rem', 
                             width: '100%', 
@@ -257,7 +406,8 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                                 <thead>
                                     <tr style={{ borderBottom: '2px solid #eee', color: '#888' }}>
                                         <th style={{ padding: '8px 0' }}>Time</th>
-                                        <th style={{ padding: '8px 0', textAlign: 'right' }}>Delta</th>
+                                   <th style={{ padding: '8px 0' }}>Who</th>
+                                   <th style={{ padding: '8px 0', textAlign: 'right' }}>Delta</th>
                                         <th style={{ padding: '8px 0', textAlign: 'right' }}></th>
                                     </tr>
                                 </thead>
@@ -269,8 +419,11 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                                         .map((entry, idx) => (
                                             <tr key={entry.id} style={{ borderBottom: '1px solid #f9f9f9' }}>
                                                 <td style={{ padding: '8px 0', color: '#666' }}>
-                                                    {new Date(entry.when).toLocaleString()}
-                                                </td>
+                                   {new Date(entry.when).toLocaleString()}
+                               </td>
+                               <td style={{ padding: '8px 0', color: '#666' }}>
+                                   {entry.user_email}
+                               </td>
                                                 <td style={{ 
                                                     padding: '8px 0', 
                                                     textAlign: 'right', 
@@ -279,14 +432,25 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                                                 }}>
                                                     {entry.delta === 0 ? 'reset' : (entry.delta > 0 ? `+${entry.delta}` : entry.delta)}
                                                 </td>
-                                                <td style={{ padding: '8px 0', textAlign: 'right' }}>
-                                                    <Trash2 
-                                                        size={16} 
-                                                        color="#d32f2f" 
-                                                        style={{ cursor: 'pointer' }} 
-                                                        onClick={() => setCountToDelete(entry.id)}
-                                                    />
-                                                </td>
+                                                <td style={{ padding: '8px 0', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '8px', alignItems: 'center' }}>
+                            {entry.user_email === currentUserEmail && (
+                                <Pencil 
+                                    size={16} 
+                                    color="#666" 
+                                    style={{ cursor: 'pointer' }} 
+                                    onClick={() => {
+                                        setCountToEdit({ id: entry.id, when: entry.when });
+                                        setEditWhen(formatForInput(entry.when));
+                                    }}
+                                />
+                            )}
+                            <Trash2 
+                                size={16} 
+                                color="#d32f2f" 
+                                style={{ cursor: 'pointer' }} 
+                                onClick={() => setCountToDelete(entry.id)}
+                            />
+                        </td>
                                             </tr>
                                         ))}
                                 </tbody>

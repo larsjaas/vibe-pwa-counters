@@ -22,7 +22,7 @@ import (
 // DELETE /api/counts/{id} soft deletes a count record if the user owns the counter.
 func CountHandler(w http.ResponseWriter, r *http.Request) {
     log.Printf("/api/counts called: method=%s", r.Method)
-    if r.Method != http.MethodPost && r.Method != http.MethodGet && r.Method != http.MethodDelete {
+    if r.Method != http.MethodPost && r.Method != http.MethodGet && r.Method != http.MethodDelete && r.Method != http.MethodPut {
         http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
         return
     }
@@ -93,6 +93,51 @@ func CountHandler(w http.ResponseWriter, r *http.Request) {
         }
         if updated {
             CountsDeletedTotal.Inc()
+            if cid, err := db.GetCounterIDForCount(countID); err == nil {
+                users, err := db.GetUsersWithAccessToCounter(cid)
+                if err == nil {
+                    for _, uid := range users {
+                        PublishEvent(uid, "UPDATED COUNTS")
+                    }
+                }
+            }
+            w.WriteHeader(http.StatusOK)
+        } else {
+            http.Error(w, "not found", http.StatusNotFound)
+        }
+        return
+    }
+
+    if r.Method == http.MethodPut {
+        if !strings.HasPrefix(r.URL.Path, "/api/counts/") {
+            http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+            return
+        }
+        idStr := strings.TrimPrefix(r.URL.Path, "/api/counts/")
+        countID, err := strconv.Atoi(idStr)
+        if err != nil {
+            http.Error(w, "bad request", http.StatusBadRequest)
+            return
+        }
+        var payload struct {
+            When string `json:"when"`
+        }
+        if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+            http.Error(w, "bad request", http.StatusBadRequest)
+            return
+        }
+        when, err := time.Parse(time.RFC3339, payload.When)
+        if err != nil {
+            http.Error(w, "invalid timestamp format", http.StatusBadRequest)
+            return
+        }
+
+        updated, err := db.UpdateCountTimestamp(userID, countID, when)
+        if err != nil {
+            http.Error(w, "internal server error", http.StatusInternalServerError)
+            return
+        }
+        if updated {
             if cid, err := db.GetCounterIDForCount(countID); err == nil {
                 users, err := db.GetUsersWithAccessToCounter(cid)
                 if err == nil {

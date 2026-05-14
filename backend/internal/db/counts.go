@@ -183,3 +183,25 @@ func SoftDeleteCount(countID int) (bool, error) {
     }
     return rows > 0, nil
 }
+
+// UpdateCountTimestamp updates the 'when' timestamp of a count if owned by user.
+func UpdateCountTimestamp(userID, countID int, when time.Time) (bool, error) {
+	if db == nil {
+		return false, fmt.Errorf("database not initialized")
+	}
+	const query = `
+		UPDATE counts 
+		SET "when" = $1 
+		WHERE id = $2 
+		  AND deletetime IS NULL 
+		  AND counter IN (SELECT id FROM counters WHERE "user" = $3 AND deletetime IS NULL)`
+	res, err := db.Exec(query, when, countID, userID)
+	if err != nil {
+		return false, err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return rows > 0, nil
+}
