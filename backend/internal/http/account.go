@@ -66,8 +66,8 @@ func AccountHandler(w http.ResponseWriter, r *http.Request) {
 
         // Invalidate session data in Redis if it was used
         sessionCookie, err := r.Cookie("session_id")
-        if err == nil && redisClient != nil {
-            _ = redisClient.Del(r.Context(), sessionCookie.Value)
+        if err == nil && cache != nil {
+            _ = cache.Del(r.Context(), sessionCookie.Value)
         }
 
         // Return success instead of redirecting. 
@@ -98,12 +98,12 @@ func ConfirmSignupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if redisClient == nil {
+	if cache == nil {
 		http.Error(w, "Redis unavailable", http.StatusInternalServerError)
 		return
 	}
 
-	val, err := redisClient.Get(r.Context(), "pending_signup:"+body.Token).Result()
+	val, err := cache.Get(r.Context(), "pending_signup:"+body.Token)
 	if err != nil {
 		http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
 		return
@@ -142,7 +142,7 @@ func ConfirmSignupHandler(w http.ResponseWriter, r *http.Request) {
 	createSession(w, r, uid, email, name, accessToken)
 
 	// Cleanup pending data
-	_ = redisClient.Del(r.Context(), "pending_signup:"+body.Token)
+	_ = cache.Del(r.Context(), "pending_signup:"+body.Token)
 
 	w.WriteHeader(http.StatusOK)
 }

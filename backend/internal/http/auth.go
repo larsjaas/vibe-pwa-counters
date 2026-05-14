@@ -26,12 +26,12 @@ import (
 	redis "github.com/redis/go-redis/v9"
 )
 
-// redisClient holds a global Redis client shared across handlers.
-var redisClient *redis.Client
+// cache holds a global robust cache fronting Redis.
+var cache *Cache
 
 // SetRedisClient allows the server bootstrap code to inject a Redis client.
 func SetRedisClient(rdb *redis.Client) {
-    redisClient = rdb
+    cache = NewCache(rdb)
 }
 
 // UserSession contains authentication and identity information for a request.
@@ -72,11 +72,11 @@ func AuthenticateSessionRequest(r *http.Request) (*UserSession, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unauthorized: no session cookie")
 	}
-	if redisClient == nil {
+	if cache == nil {
 		return nil, fmt.Errorf("unauthorized: redis unavailable")
 	}
 
-	val, err := redisClient.Get(r.Context(), sessionCookie.Value).Result()
+	val, err := cache.Get(r.Context(), sessionCookie.Value)
 	if err != nil {
 		return nil, fmt.Errorf("unauthorized: invalid session")
 	}
@@ -114,9 +114,9 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
         HttpOnly: true,
     })
     cookie, err := r.Cookie("session_id")
-    if err == nil && redisClient != nil {
+    if err == nil && cache != nil {
         // Ensure we delete the key to avoid stale entries.
-        _ = redisClient.Del(context.Background(), cookie.Value)
+        _ = cache.Del(context.Background(), cookie.Value)
         sessionCount.Dec()
     }
     http.Redirect(w, r, "/landing_page/index.html", http.StatusFound)
@@ -126,13 +126,13 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 func ValidateSessionHandler(w http.ResponseWriter, r *http.Request) {
     log.Printf("/api/validate-session called: method=%s path=%s", r.Method, r.URL.Path)
     cookie, err := r.Cookie("session_id")
-    if err != nil || redisClient == nil {
+    if err != nil || cache == nil {
         http.Error(w, "Invalid session", http.StatusUnauthorized)
         return
     }
     ctx := context.Background()
-    val, err := redisClient.Get(ctx, cookie.Value).Result()
-    if err == redis.Nil || err != nil {
+    val, err := cache.Get(ctx, cookie.Value)
+    if err != nil {
         http.Error(w, "Invalid session", http.StatusUnauthorized)
         return
     }
@@ -198,8 +198,8 @@ func AuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
                 "access_token": accessToken,
             }
             payload, _ := json.Marshal(pendingUser)
-            if redisClient != nil {
-                err := redisClient.Set(context.Background(), "pending_signup:"+signupToken, string(payload), 15*time.Minute).Err()
+            if cache != nil {
+                err := cache.Set(context.Background(), "pending_signup:"+signupToken, string(payload), 15*time.Minute)
                 if err != nil {
                     log.Printf("Redis pending store error: %v", err)
                 }
@@ -324,10 +324,10 @@ func createSession(w http.ResponseWriter, r *http.Request, userID int, email, na
     session["user_ip"] = ip
     session["user_agent"] = r.Header.Get("User-Agent")
 
-    if redisClient != nil {
+    if cache != nil {
         ctx := context.Background()
         payload, _ := json.Marshal(session)
-        err := redisClient.Set(ctx, sessionID, string(payload), 72*time.Hour).Err()
+        err := cache.Set(ctx, sessionID, string(payload), 72*time.Hour)
         if err != nil {
             log.Printf("Redis session store error: %v", err)
         }

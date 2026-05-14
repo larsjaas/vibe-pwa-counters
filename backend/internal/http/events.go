@@ -26,11 +26,11 @@ func getSessionUserID(r *http.Request) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("no session cookie")
 	}
-	if redisClient == nil {
+	if cache == nil {
 		return 0, fmt.Errorf("redis client not initialized")
 	}
 
-	val, err := redisClient.Get(context.Background(), cookie.Value).Result()
+	val, err := cache.Get(context.Background(), cookie.Value)
 	if err != nil {
 		return 0, fmt.Errorf("session not found or expired")
 	}

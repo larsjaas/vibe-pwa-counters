@@ -31,9 +31,9 @@ func main() {
 
 
     var err error
-    var status = rdb.Ping(context.Background())
+    status := rdb.Ping(context.Background())
     if err := status.Err(); err != nil {
-        panic(err)
+        log.Printf("Warning: Redis is not responding on startup: %v", err)
     }
     httpHandlers.SetRedisClient(rdb)
 
