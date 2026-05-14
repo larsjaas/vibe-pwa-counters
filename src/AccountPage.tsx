@@ -42,36 +42,36 @@ interface AccountPageProps {
 const FRONTEND_VERSION = "0.9.9";
 
 const SettingSwitch = ({ label, checked, onChange }: { label: string, checked: boolean, onChange: (val: boolean) => void }) => (
-    <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between', 
-        padding: '1rem 0', 
+    <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '1rem 0',
         borderBottom: '1px solid #eee',
         width: '95%',
         margin: '0 auto'
     }}>
         <span style={{ fontSize: '1rem' }}>{label}</span>
-        <div 
+        <div
             onClick={() => onChange(!checked)}
-            style={{ 
-                width: '40px', 
-                height: '20px', 
-                backgroundColor: checked ? '#4caf50' : '#ccc', 
-                borderRadius: '10px', 
-                position: 'relative', 
+            style={{
+                width: '40px',
+                height: '20px',
+                backgroundColor: checked ? '#4caf50' : '#ccc',
+                borderRadius: '10px',
+                position: 'relative',
                 cursor: 'pointer',
                 transition: 'background-color 0.2s'
             }}
         >
-            <div style={{ 
-                width: '16px', 
-                height: '16px', 
-                backgroundColor: 'white', 
-                borderRadius: '50%', 
-                position: 'absolute', 
-                top: '2px', 
-                left: checked ? '22px' : '2px', 
+            <div style={{
+                width: '16px',
+                height: '16px',
+                backgroundColor: 'white',
+                borderRadius: '50%',
+                position: 'absolute',
+                top: '2px',
+                left: checked ? '22px' : '2px',
                 transition: 'left 0.2s'
             }} />
         </div>
@@ -108,7 +108,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
                 fetch('/api/invites'),
                 fetch('/api/settings'),
             ]);
-            
+
             if (!userRes.ok) throw new Error('Failed to fetch account information');
             if (!infoRes.ok) throw new Error('Failed to fetch system information');
             if (!keysRes.ok) throw new Error('Failed to fetch API keys');
@@ -154,7 +154,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
         try {
             const res = await fetch('/api/apikeys/create', { method: 'POST' });
             if (!res.ok) throw new Error('Failed to create API key');
-            
+
             // Refresh the list
             const keysRes = await fetch('/api/apikeys');
             if (!keysRes.ok) throw new Error('Failed to refresh API keys');
@@ -169,7 +169,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
         try {
             const res = await fetch(`/api/apikeys/${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Failed to delete API key');
-            
+
             setApikeys(prev => prev.filter(key => key.id !== id));
         } catch (e: any) {
             alert(`Error deleting API key: ${e.message}`);
@@ -180,7 +180,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
         try {
             const res = await fetch(`/api/tags/${share.tag_id}/shares/${share.user_email}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Failed to remove tag share');
-            
+
             setTagshares(prev => prev.filter(s => !(s.tag_id === share.tag_id && s.user_email === share.user_email)));
         } catch (e: any) {
             alert(`Error removing tag share: ${e.message}`);
@@ -191,9 +191,9 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
         try {
             const res = await fetch(`/api/invites/${id}/accept`, { method: 'POST' });
             if (!res.ok) throw new Error('Failed to accept invite');
-            
+
             setInvites(prev => prev.filter(i => i.id !== id));
-            
+
             // Refresh tag shares list
             const sharesRes = await fetch('/api/tags/shares/me');
             if (sharesRes.ok) {
@@ -213,7 +213,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
         try {
             const res = await fetch(`/api/invites/${id}/reject`, { method: 'POST' });
             if (!res.ok) throw new Error('Failed to reject invite');
-            
+
             setInvites(prev => prev.filter(i => i.id !== id));
 
             if (fetchInvitesCount) {
@@ -228,7 +228,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
         try {
             const res = await fetch(`/api/invites/${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Failed to retract invite');
-            
+
             setInvites(prev => prev.filter(i => i.id !== id));
 
             if (fetchInvitesCount) {
@@ -297,13 +297,13 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
             <h2 className="account-section">
                 {view === 'info' ? 'Account Information' : 'Account Settings'}
             </h2>
-            <IconButton 
+            <IconButton
                 style={{ position: 'absolute', top: '15px', right: '15px' }}
-                icon={view === 'info' ? Settings : User} 
-                onClick={() => navigate(view === 'info' ? '/profile/settings' : '/profile')} 
-                title={view === 'info' ? 'Account Settings' : 'Account Information'} 
+                icon={view === 'info' ? Settings : User}
+                onClick={() => navigate(view === 'info' ? '/profile/settings' : '/profile')}
+                title={view === 'info' ? 'Account Settings' : 'Account Information'}
             />
-            
+
             {view === 'info' ? (
                 <>
                     {user && (
@@ -314,18 +314,18 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
                     )}
 
             <div style={{ marginTop: '2rem', marginBottom: '2rem', width: '95%' }}>
-                <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    marginBottom: '1rem' 
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '1rem'
                 }}>
                     <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Tag Sharing</h3>
                 </div>
                 <div style={{ overflowX: 'auto' }}>
-                    <table style={{ 
-                        width: '100%', 
-                        borderCollapse: 'collapse', 
+                    <table style={{
+                        width: '100%',
+                        borderCollapse: 'collapse',
                         fontSize: '0.85rem',
                         textAlign: 'left'
                     }}>
@@ -348,11 +348,11 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
                                        {share.access_level === 2 && <Check size={14} color="#4caf50" />}
                                    </td>
                                    <td style={{ padding: '8px 0', textAlign: 'right' }}>
-                                       <X 
-                                           size={16} 
-                                           color="#f44336" 
-                                           style={{ cursor: 'pointer' }} 
-                                           onClick={() => setTagShareToDelete(share)} 
+                                       <X
+                                           size={16}
+                                           color="#f44336"
+                                           style={{ cursor: 'pointer' }}
+                                           onClick={() => setTagShareToDelete(share)}
                                        />
                                    </td>
                                </tr>
@@ -370,18 +370,18 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
             </div>
 
             <div style={{ marginTop: '2rem', marginBottom: '2rem', width: '95%' }}>
-                <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    marginBottom: '1rem' 
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '1rem'
                 }}>
                     <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Invites</h3>
                 </div>
                 <div style={{ overflowX: 'auto' }}>
-                    <table style={{ 
-                        width: '100%', 
-                        borderCollapse: 'collapse', 
+                    <table style={{
+                        width: '100%',
+                        borderCollapse: 'collapse',
                         fontSize: '0.85rem',
                         textAlign: 'left'
                     }}>
@@ -404,25 +404,25 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
                                     <td style={{ padding: '8px 0', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                                         {!invite.is_sender ? (
                                             <>
-                                                <Check 
-                                                    size={16} 
-                                                    color="#4caf50" 
-                                                    style={{ cursor: 'pointer' }} 
-                                                    onClick={() => handleAcceptInvite(invite.id)} 
+                                                <Check
+                                                    size={16}
+                                                    color="#4caf50"
+                                                    style={{ cursor: 'pointer' }}
+                                                    onClick={() => handleAcceptInvite(invite.id)}
                                                 />
-                                                <X 
-                                                    size={16} 
-                                                    color="#f44336" 
-                                                    style={{ cursor: 'pointer' }} 
-                                                    onClick={() => handleRejectInvite(invite.id)} 
+                                                <X
+                                                    size={16}
+                                                    color="#f44336"
+                                                    style={{ cursor: 'pointer' }}
+                                                    onClick={() => handleRejectInvite(invite.id)}
                                                 />
                                             </>
                                         ) : (
-                                            <Trash2 
-                                                size={16} 
-                                                color="#888" 
-                                                style={{ cursor: 'pointer' }} 
-                                                onClick={() => handleRetractInvite(invite.id)} 
+                                            <Trash2
+                                                size={16}
+                                                color="#888"
+                                                style={{ cursor: 'pointer' }}
+                                                onClick={() => handleRetractInvite(invite.id)}
                                             />
                                         )}
                                     </td>
@@ -441,25 +441,25 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
             </div>
 
             <div style={{ marginTop: '2rem', marginBottom: '3rem', width: '95%' }}>
-                <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    marginBottom: '1rem' 
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '1rem'
                 }}>
                     <h3 style={{ margin: 0, fontSize: '1.1rem' }}>API Keys</h3>
-                    <IconButton 
-                        icon={Plus} 
-                        onClick={handleCreateAPIKey} 
-                        title="Create New API Key" 
-                        backgroundColor="#0070f3" 
-                        color="#fff" 
+                    <IconButton
+                        icon={Plus}
+                        onClick={handleCreateAPIKey}
+                        title="Create New API Key"
+                        backgroundColor="#0070f3"
+                        color="#fff"
                     />
                 </div>
                 <div style={{ overflowX: 'auto' }}>
-                    <table style={{ 
-                        width: '100%', 
-                        borderCollapse: 'collapse', 
+                    <table style={{
+                        width: '100%',
+                        borderCollapse: 'collapse',
                         fontSize: '0.85rem',
                         textAlign: 'left'
                     }}>
@@ -478,11 +478,11 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
                                        {new Date(key.createtime).toLocaleDateString()}
                                    </td>
                                    <td style={{ padding: '8px 0', textAlign: 'right' }}>
-                                       <Trash2 
-                                           size={16} 
-                                           color="#d32f2f" 
-                                           style={{ cursor: 'pointer' }} 
-                                           onClick={() => setApiKeyToDelete(key.id)} 
+                                       <Trash2
+                                           size={16}
+                                           color="#d32f2f"
+                                           style={{ cursor: 'pointer' }}
+                                           onClick={() => setApiKeyToDelete(key.id)}
                                        />
                                    </td>
                                </tr>
@@ -501,19 +501,19 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
 
             <div className="account-actions">
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                    <IconButton 
-                        icon={LogOut} 
-                        onClick={handleLogout} 
-                        title="Log Out" 
+                    <IconButton
+                        icon={LogOut}
+                        onClick={handleLogout}
+                        title="Log Out"
                     />
                     <span className="account-subtitle">Log Out</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                    <IconButton 
-                        icon={Trash2} 
-                        onClick={() => setShowDeleteModal(true)} 
-                        title="Delete Account" 
-                        backgroundColor="#ff4d4f" 
+                    <IconButton
+                        icon={Trash2}
+                        onClick={() => setShowDeleteModal(true)}
+                        title="Delete Account"
+                        backgroundColor="#ff4d4f"
                         color="#fff"
                     />
                     <span className="account-subtitle" style={{ textAlign: 'center', whiteSpace: 'pre-line' }}>Delete{"\n"}Account</span>
@@ -522,45 +522,45 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
                 </>
             ) : (
                 <div className="account-settings" style={{ width: '95%', margin: '0 auto' }}>
-                    <SettingSwitch 
-                        label="Allow tag sharing" 
-                        checked={tagSharing} 
-                        onChange={(val) => handleSettingChange('tag_sharing', val, setTagSharing)} 
+                    <SettingSwitch
+                        label="Allow tag sharing"
+                        checked={tagSharing}
+                        onChange={(val) => handleSettingChange('tag_sharing', val, setTagSharing)}
                     />
-                    <SettingSwitch 
-                        label="Email alerts about tag sharing invites" 
-                        checked={emailAlerts} 
-                        onChange={(val) => handleSettingChange('tag_sharing_email', val, setEmailAlerts)} 
+                    <SettingSwitch
+                        label="Email alerts about tag sharing invites"
+                        checked={emailAlerts}
+                        onChange={(val) => handleSettingChange('tag_sharing_email', val, setEmailAlerts)}
                     />
-                    <SettingSwitch 
-                        label="Tag sharing invite reminder email" 
-                        checked={inviteReminders} 
-                        onChange={(val) => handleSettingChange('tag_sharing_reminder', val, setInviteReminders)} 
+                    <SettingSwitch
+                        label="Tag sharing invite reminder email"
+                        checked={inviteReminders}
+                        onChange={(val) => handleSettingChange('tag_sharing_reminder', val, setInviteReminders)}
                     />
                 </div>
             )}
 
             {apiKeyToDelete !== null && (
-                <ConfirmationModal 
-                    message="Do you want to delete the selected API key?" 
+                <ConfirmationModal
+                    message="Do you want to delete the selected API key?"
                     onConfirm={async () => {
                         await handleDeleteAPIKey(apiKeyToDelete);
                         setApiKeyToDelete(null);
-                    }} 
-                    onCancel={() => setApiKeyToDelete(null)} 
+                    }}
+                    onCancel={() => setApiKeyToDelete(null)}
                     confirmText="Delete"
                     cancelText="Cancel"
                 />
             )}
 
             {tagShareToDelete !== null && (
-                <ConfirmationModal 
-                    message={`Do you want to remove sharing for tag "${tagShareToDelete.tag_name}"?`} 
+                <ConfirmationModal
+                    message={`Do you want to remove sharing for tag "${tagShareToDelete.tag_name}"?`}
                     onConfirm={async () => {
                         await handleDeleteTagShare(tagShareToDelete);
                         setTagShareToDelete(null);
-                    }} 
-                    onCancel={() => setTagShareToDelete(null)} 
+                    }}
+                    onCancel={() => setTagShareToDelete(null)}
                     confirmText="Remove"
                     cancelText="Cancel"
                 />
@@ -569,7 +569,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
             {showDeleteModal && (
                 <div className="modal-overlay" style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', 
+                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex',
                     justifyContent: 'center', alignItems: 'center', zIndex: 1000
                 }}>
                     <div className="modal-content" style={{
@@ -580,17 +580,17 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
                         <h3 style={{ marginTop: 0 }}>Delete Account</h3>
                         <p>Are you sure? This action is permanent.</p>
                         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem' }}>
-                            <button 
-                                onClick={() => setShowDeleteModal(false)} 
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
                                 style={{ padding: '0.5rem 1rem', cursor: 'pointer', borderRadius: '4px', border: '1px solid #ccc', background: '#eee' }}
                             >
                                 Cancel
                             </button>
-                            <button 
+                            <button
                                 onClick={async () => {
                                     setShowDeleteModal(false);
                                     await handleDeleteAccount();
-                                }} 
+                                }}
                                 style={{ padding: '0.5rem 1rem', cursor: 'pointer', borderRadius: '4px', border: 'none', background: '#ff4d4f', color: 'white', fontWeight: 'bold' }}
                             >
                                 Delete
@@ -600,10 +600,10 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
                 </div>
             )}
 
-            <div style={{ 
-                marginTop: '40px', 
-                fontSize: '0.5em', 
-                color: '#999', 
+            <div style={{
+                marginTop: '40px',
+                fontSize: '0.5em',
+                color: '#999',
                 fontStyle: 'italic',
                 display: 'flex',
                 flexDirection: 'column',

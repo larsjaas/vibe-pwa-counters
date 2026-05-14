@@ -51,9 +51,9 @@ export const TagSharingModal: React.FC<TagSharingModalProps> = ({ tagId, tagName
             const res = await fetch(`/api/tags/${tagId}/shares`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    email: newEmail, 
-                    access_level: accessLevel === 'RW' ? 2 : 1 
+                body: JSON.stringify({
+                    email: newEmail,
+                    access_level: accessLevel === 'RW' ? 2 : 1
                 }),
             });
             if (!res.ok) throw new Error('Failed to share tag');
@@ -112,18 +112,18 @@ export const TagSharingModal: React.FC<TagSharingModalProps> = ({ tagId, tagName
                 </div>
 
                 <form onSubmit={handleAddUser} style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-                    <input 
-                        type="email" 
-                        className="form-input" 
-                        placeholder="User email..." 
-                        value={newEmail} 
-                        onChange={(e) => setNewEmail(e.target.value)} 
+                    <input
+                        type="email"
+                        className="form-input"
+                        placeholder="User email..."
+                        value={newEmail}
+                        onChange={(e) => setNewEmail(e.target.value)}
                         required
                         style={{ flex: 2 }}
                     />
-                    <select 
-                        className="form-input" 
-                        value={accessLevel} 
+                    <select
+                        className="form-input"
+                        value={accessLevel}
                         onChange={(e) => setAccessLevel(e.target.value as 'RO' | 'RW')}
                         style={{ width: '70px' }}
                     >
@@ -168,9 +168,9 @@ export const TagSharingModal: React.FC<TagSharingModalProps> = ({ tagId, tagName
                                    {share.access_level === 2 && <Check size={16} style={{ color: 'green' }} />}
                                </td>
                                <td className="table-cell text-right">
-                                   <button 
-                                       onClick={() => handleRemoveUser(share.email)} 
-                                       className="btn-secondary" 
+                                   <button
+                                       onClick={() => handleRemoveUser(share.email)}
+                                       className="btn-secondary"
                                        style={{ color: 'var(--color-error)' }}
                                        title="Remove Access"
                                    >

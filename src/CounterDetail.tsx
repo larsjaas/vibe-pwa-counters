@@ -72,19 +72,19 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                 ]);
 
                 if (!resTags.ok || !resCounts.ok) throw new Error('Failed to fetch data');
-                
+
                 const allTags: any[] = await resTags.json();
                 const counts: any[] = await resCounts.json();
 
                 // Determine Initial Value
                 // Initial value is the first count created within 300ms of counter creation
                 const counterCreateTime = new Date(counter.createtime).getTime();
-                const initialCount = counts.find(c => 
-                    c.counter === counter.id && 
+                const initialCount = counts.find(c =>
+                    c.counter === counter.id &&
                     Math.abs(new Date(c.when).getTime() - counterCreateTime) <= 300
                 );
                 setInitialValue(initialCount ? initialCount.delta : 0);
-                
+
                 const counterTags: string[] = [];
                 for (const tag of allTags) {
                     const associationRes = await fetch(`/api/tags/${tag.id}/counters`);
@@ -109,11 +109,11 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
     const executeSaveTags = async (currentTags: string) => {
         try {
             const tagNames = currentTags.split(',').map(t => t.trim()).filter(t => t !== '');
-            
+
             const res = await fetch('/api/tags');
             if (!res.ok) throw new Error('Failed to fetch tags');
             const allTags: any[] = await res.json();
-            
+
             const associatedTags: any[] = [];
             for (const tag of allTags) {
                 const associationRes = await fetch(`/api/tags/${tag.id}/counters`);
@@ -170,20 +170,20 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
             const res = await fetch('/api/tags');
             if (!res.ok) throw new Error('Failed to fetch tags');
             const allTags: any[] = await res.json();
-            
+
             const newTags = tagNames.filter(name => !allTags.find(t => t.name === name));
-            
+
             if (newTags.length > 0) {
                 setTagsToCreate(newTags);
                 setShowConfirmModal(true);
             } else {
                 await executeSaveTags(tags);
-                onUpdate(counter.id, { 
-                    name, 
-                    step, 
-                    type, 
-                    frequency: type === 'repeating' ? parsedFrequency : 0, 
-                    alert_window: type === 'repeating' ? parsedAlertWindow : 0 
+                onUpdate(counter.id, {
+                    name,
+                    step,
+                    type,
+                    frequency: type === 'repeating' ? parsedFrequency : 0,
+                    alert_window: type === 'repeating' ? parsedAlertWindow : 0
                 });
                 setIsEditing(false);
             }
@@ -204,12 +204,12 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
             }
 
             await executeSaveTags(tags);
-            onUpdate(counter.id, { 
-                name, 
-                step, 
-                type, 
-                frequency: type === 'repeating' ? parsedFrequency : 0, 
-                alert_window: type === 'repeating' ? parsedAlertWindow : 0 
+            onUpdate(counter.id, {
+                name,
+                step,
+                type,
+                frequency: type === 'repeating' ? parsedFrequency : 0,
+                alert_window: type === 'repeating' ? parsedAlertWindow : 0
             });
             setIsEditing(false);
             setShowConfirmModal(false);
@@ -222,22 +222,22 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
     return (
         <div className="form-container">
             <h2 className="form-title">{isEditing ? 'Edit Counter' : 'Counter Settings'}</h2>
-            
+
             {isEditing ? (
                 <div className="form-group">
                     <div className="form-field">
                         <label className="form-label">Name:</label>
-                        <input 
-                            value={name} 
-                            onChange={(e) => setName(e.target.value)} 
+                        <input
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
                             className="form-input"
                         />
                     </div>
                     <div className="form-field">
                         <label className="form-label">Type:</label>
-                        <select 
-                            value={type} 
-                            onChange={(e) => setType(e.target.value as 'standard' | 'repeating')} 
+                        <select
+                            value={type}
+                            onChange={(e) => setType(e.target.value as 'standard' | 'repeating')}
                             className="form-input"
                         >
                             <option value="standard">Standard</option>
@@ -248,20 +248,20 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                         <>
                             <div className="form-field">
                                 <label className="form-label">Ideal Frequency:</label>
-                                <input 
+                                <input
                                     type="text"
-                                    value={frequency} 
-                                    onChange={(e) => handleFrequencyChange(e.target.value)} 
+                                    value={frequency}
+                                    onChange={(e) => handleFrequencyChange(e.target.value)}
                                     className="form-input"
                                     placeholder="e.g. 1w, 1mo, 2h"
                                 />
                             </div>
                             <div className="form-field">
                                 <label className="form-label">Alert Window:</label>
-                                <input 
+                                <input
                                     type="text"
-                                    value={alertWindow} 
-                                    onChange={(e) => setAlertWindow(e.target.value)} 
+                                    value={alertWindow}
+                                    onChange={(e) => setAlertWindow(e.target.value)}
                                     className="form-input"
                                     placeholder="e.g. 1h30m, 90m, 1:30:00"
                                 />
@@ -270,19 +270,19 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                     )}
                     <div className="form-field">
                         <label className="form-label">Step:</label>
-                        <input 
+                        <input
                             type="number"
-                            value={step} 
-                            onChange={(e) => setStep(parseInt(e.target.value) || 1)} 
+                            value={step}
+                            onChange={(e) => setStep(parseInt(e.target.value) || 1)}
                             className="form-input"
                         />
                     </div>
                     <div className="form-field">
                         <label className="form-label">Tags:</label>
-                        <input 
+                        <input
                             type="text"
-                            value={tags} 
-                            onChange={(e) => setTags(e.target.value)} 
+                            value={tags}
+                            onChange={(e) => setTags(e.target.value)}
                             className="form-input"
                             placeholder="comma separated tags"
                         />
@@ -308,31 +308,31 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                     <button onClick={() => setIsEditing(true)} className="btn-secondary" style={{ width: 'fit-content' }}>Edit</button>
                 </div>
             )}
-            
+
             <div className="form-actions" style={{ justifyContent: 'space-between', marginTop: '30px' }}>
                 <div style={{ display: 'flex', gap: '10px' }}>
-                    <IconButton 
-                        icon={counter.archivetime ? ArchiveRestore : Archive} 
-                        onClick={() => onArchive(counter.id)} 
-                        title={counter.archivetime ? "Unarchive" : "Archive"} 
+                    <IconButton
+                        icon={counter.archivetime ? ArchiveRestore : Archive}
+                        onClick={() => onArchive(counter.id)}
+                        title={counter.archivetime ? "Unarchive" : "Archive"}
                     />
-                    <IconButton 
-                        icon={RotateCcw} 
-                        onClick={() => setShowResetConfirmModal(true)} 
-                        title="Reset" 
+                    <IconButton
+                        icon={RotateCcw}
+                        onClick={() => setShowResetConfirmModal(true)}
+                        title="Reset"
                     />
-                    <IconButton 
-                        icon={Trash2} 
-                        onClick={() => { if(confirm('Delete this counter?')) onDelete(counter.id); }} 
-                        title="Delete" 
-                        backgroundColor='#ffcccb' 
+                    <IconButton
+                        icon={Trash2}
+                        onClick={() => { if(confirm('Delete this counter?')) onDelete(counter.id); }}
+                        title="Delete"
+                        backgroundColor='#ffcccb'
                     />
                 </div>
                 <button onClick={onBack} className="btn-secondary">← Back</button>
             </div>
 
             {showConfirmModal && (
-                <ConfirmationModal 
+                <ConfirmationModal
                     message={`The following new tags will be created: ${tagsToCreate.join(', ')}. Do you want to proceed?`}
                     confirmText="Create"
                     cancelText="Cancel"
@@ -342,7 +342,7 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
             )}
 
             {showResetConfirmModal && (
-                <ConfirmationModal 
+                <ConfirmationModal
                     message={`Are you sure you want to reset the count for "${counter.name}"? This will set the current count to 0.`}
                     confirmText="Reset"
                     cancelText="Cancel"

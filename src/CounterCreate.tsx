@@ -54,7 +54,7 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
             }
 
             const payload: any = { name, initial, step, type, last_performed_at: 0 };
-            
+
             if (type === 'repeating') {
                 payload.frequency = parsedFrequency;
                 payload.alert_window = parsedAlertWindow;
@@ -70,7 +70,7 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
             });
 
             if (!res.ok) throw new Error(`Server error: ${res.status}`);
-            
+
             const newCounter = await res.json();
 
             // If initial value is non-zero, set it by posting a delta
@@ -121,7 +121,7 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
             const res = await fetch('/api/tags');
             if (!res.ok) throw new Error('Failed to fetch tags');
             const allTags: any[] = await res.json();
-            
+
             const newTags = tagNames.filter(name => !allTags.find(t => t.name === name));
 
             if (newTags.length > 0) {
@@ -143,19 +143,19 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
             <form onSubmit={handleSubmit} className="form-group">
                 <div className="form-field">
                     <label className="form-label">Name:</label>
-                    <input 
-                        type="text" 
-                        value={name} 
-                        onChange={(e) => setName(e.target.value)} 
-                        required 
+                    <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
                         className="form-input"
                     />
                 </div>
                 <div className="form-field">
                     <label className="form-label">Type:</label>
-                    <select 
-                        value={type} 
-                        onChange={(e) => setType(e.target.value as 'standard' | 'repeating')} 
+                    <select
+                        value={type}
+                        onChange={(e) => setType(e.target.value as 'standard' | 'repeating')}
                         className="form-input"
                     >
                         <option value="standard">Standard</option>
@@ -166,20 +166,20 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
                     <>
                         <div className="form-field">
                             <label className="form-label">Ideal Frequency:</label>
-                            <input 
-                                type="text" 
-                                value={frequency} 
-                                onChange={(e) => handleFrequencyChange(e.target.value)} 
+                            <input
+                                type="text"
+                                value={frequency}
+                                onChange={(e) => handleFrequencyChange(e.target.value)}
                                 className="form-input"
                                 placeholder="e.g. 1w, 1mo, 2h"
                             />
                         </div>
                         <div className="form-field">
                             <label className="form-label">Alert Window:</label>
-                            <input 
-                                type="text" 
-                                value={alertWindow} 
-                                onChange={(e) => setAlertWindow(e.target.value)} 
+                            <input
+                                type="text"
+                                value={alertWindow}
+                                onChange={(e) => setAlertWindow(e.target.value)}
                                 className="form-input"
                                 placeholder="e.g. 1h30m, 90m, 1:30:00"
                             />
@@ -188,28 +188,28 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
                 )}
                 <div className="form-field">
                     <label className="form-label">Initial Value:</label>
-                    <input 
-                        type="number" 
-                        value={initial} 
-                        onChange={(e) => setInitial(parseInt(e.target.value) || 0)} 
+                    <input
+                        type="number"
+                        value={initial}
+                        onChange={(e) => setInitial(parseInt(e.target.value) || 0)}
                         className="form-input"
                     />
                 </div>
                 <div className="form-field">
                     <label className="form-label">Step:</label>
-                    <input 
-                        type="number" 
-                        value={step} 
-                        onChange={(e) => setStep(parseInt(e.target.value) || 1)} 
+                    <input
+                        type="number"
+                        value={step}
+                        onChange={(e) => setStep(parseInt(e.target.value) || 1)}
                         className="form-input"
                     />
                 </div>
                 <div className="form-field">
                     <label className="form-label">Tags:</label>
-                    <input 
-                        type="text" 
-                        value={tags} 
-                        onChange={(e) => setTags(e.target.value)} 
+                    <input
+                        type="text"
+                        value={tags}
+                        onChange={(e) => setTags(e.target.value)}
                         className="form-input"
                         placeholder="comma separated tags"
                     />
@@ -219,9 +219,9 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
 
                 <div className="form-actions">
                     <button type="button" onClick={onCancel} disabled={loading}>Cancel</button>
-                    <button 
-                        type="submit" 
-                        disabled={loading} 
+                    <button
+                        type="submit"
+                        disabled={loading}
                         className="btn-primary"
                     >
                         {loading ? 'Creating...' : 'Create'}
@@ -230,7 +230,7 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
             </form>
 
             {showConfirmModal && (
-                <ConfirmationModal 
+                <ConfirmationModal
                     message={`The following new tags will be created: ${tagsToCreate.join(', ')}. Do you want to proceed?`}
                     confirmText="Create"
                     cancelText="Cancel"

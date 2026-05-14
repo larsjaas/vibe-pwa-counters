@@ -28,18 +28,18 @@ export const NavBar: React.FC<NavBarProps> = ({ pendingInvitesCount = 0 }) => {
             backgroundColor={location.pathname === view.path ? '#e0e0e0' : 'transparent'}
           />
           {view.hasNotification !== undefined && view.hasNotification && (
-            <div 
-              style={{ 
-                position: 'absolute', 
-                top: '3px', 
-                right: '3px', 
-                width: '8px', 
-                height: '8px', 
-                backgroundColor: 'red', 
-                borderRadius: '50%', 
+            <div
+              style={{
+                position: 'absolute',
+                top: '3px',
+                right: '3px',
+                width: '8px',
+                height: '8px',
+                backgroundColor: 'red',
+                borderRadius: '50%',
                 border: '1px solid white',
                 zIndex: 1
-              }} 
+              }}
             />
           )}
         </div>

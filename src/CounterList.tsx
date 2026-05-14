@@ -144,7 +144,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
 
         if (viewMode === 'counters') {
             const allCounters = counters.filter(c => c.type === 'standard');
-            
+
             // MRU map for secondary sorting
             const lastUsedMap = new Map<number, number>();
             updates.forEach((u, index) => {
@@ -170,11 +170,11 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
 
             const nonArchived = sorted.filter(c => c.archivetime === null);
             const archived = sorted.filter(c => c.archivetime !== null);
-            
+
             result = showArchived ? [...nonArchived, ...archived] : nonArchived;
         } else {
             const activeCounters = counters.filter(c => c.type === 'repeating' && c.archivetime === null);
-            
+
             const sorted = [...activeCounters].sort((a, b) => {
                 // Primary Sort: Name
                 if (nameSort !== null) {
@@ -191,7 +191,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
             });
 
             const active = sorted.filter(c => c.repeat_status === 'active');
-            
+
             if (showArchived) {
                 const getWakeUpTime = (c: Counter) => {
                     if (!c.last_performed_at || c.frequency === null) return Infinity;
@@ -204,11 +204,11 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                 const sleeping = sorted
                     .filter(c => c.repeat_status === 'sleeping')
                     .sort((a, b) => getWakeUpTime(a) - getWakeUpTime(b));
-                
+
                 const archived = counters
                     .filter(c => c.type === 'repeating' && c.archivetime !== null)
                     .sort((a, b) => b.priority_score - a.priority_score);
-                
+
                 result = [...active, ...sleeping, ...archived];
             } else {
                 result = active;
@@ -243,7 +243,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
     }, [counters, updates, viewMode, showArchived, searchQuery, counterTags, allTags, nameSort, valueSort, tagFocusMode]);
 
     const visibleTags = React.useMemo(() => {
-        const activeCounters = counters.filter(c => 
+        const activeCounters = counters.filter(c =>
             viewMode === 'counters' ? c.type === 'standard' : c.type === 'repeating'
         );
         const usedTags = new Set<string>();
@@ -259,12 +259,12 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                 <h2 style={{ margin: 0 }}>{viewMode === 'counters' ? 'Counters' : 'Tasks'}</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ display: 'flex', gap: '2px', background: '#eee', padding: '2px', borderRadius: '6px' }}>
-                        <button 
+                        <button
                             onClick={() => setViewMode('counters')}
-                            style={{ 
-                                padding: '4px 10px', 
-                                borderRadius: '4px', 
-                                border: 'none', 
+                            style={{
+                                padding: '4px 10px',
+                                borderRadius: '4px',
+                                border: 'none',
                                 cursor: 'pointer',
                                 fontSize: '0.8rem',
                                 backgroundColor: viewMode === 'counters' ? '#fff' : 'transparent',
@@ -276,12 +276,12 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                         >
                             Counters
                         </button>
-                        <button 
+                        <button
                             onClick={() => setViewMode('tasks')}
-                            style={{ 
-                                padding: '4px 10px', 
-                                borderRadius: '4px', 
-                                border: 'none', 
+                            style={{
+                                padding: '4px 10px',
+                                borderRadius: '4px',
+                                border: 'none',
                                 cursor: 'pointer',
                                 fontSize: '0.8rem',
                                 backgroundColor: viewMode === 'tasks' ? '#fff' : 'transparent',
@@ -294,32 +294,32 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                             Tasks
                         </button>
                     </div>
-                    <IconButton 
-                        icon={Plus} 
+                    <IconButton
+                        icon={Plus}
                         onClick={() => {
                             const matchedTag = allTags.find(t => t.name.toLowerCase() === searchQuery.toLowerCase());
                             onCreate(matchedTag ? matchedTag.name : undefined, viewMode === 'tasks' ? 'repeating' : 'standard');
-                        }} 
-                        title="Create New Counter" 
-                        backgroundColor="#0070f3" 
-                        color="#fff" 
+                        }}
+                        title="Create New Counter"
+                        backgroundColor="#0070f3"
+                        color="#fff"
                     />
                 </div>
             </div>
 
             <div className="search-input-container">
                 <Search className="search-icon" size={20} />
-                <input 
-                    type="text" 
-                    className="search-input" 
-                    placeholder="Filter counters..." 
+                <input
+                    type="text"
+                    className="search-input"
+                    placeholder="Filter counters..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <div className="search-actions">
                     {allTags.some(t => t.name.toLowerCase() === searchQuery.toLowerCase() && t.user_email === userEmail) && (
-                        <button 
-                            className="search-action-btn" 
+                        <button
+                            className="search-action-btn"
                             onClick={() => {
                                const tag = allTags.find(t => t.name.toLowerCase() === searchQuery.toLowerCase());
                                if (tag) setSelectedTagForSharing(tag);
@@ -330,8 +330,8 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                         </button>
                     )}
                     {searchQuery && (
-                        <button 
-                            className="search-action-btn" 
+                        <button
+                            className="search-action-btn"
                             onClick={() => setSearchQuery('')}
                             title="Clear search"
                         >
@@ -346,9 +346,9 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                     {visibleTags
                         .filter(tag => !searchQuery.toLowerCase().includes(tag.name.toLowerCase()))
                         .map(tag => (
-                            <span 
-                                key={tag.id} 
-                                className="tag-filter-label" 
+                            <span
+                                key={tag.id}
+                                className="tag-filter-label"
                                 onClick={() => setSearchQuery(tag.name)}
                                 style={{ fontWeight: tag.user_email === userEmail ? 'bold' : 'normal' }}
                             >
@@ -401,9 +401,9 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                     {displayCounters.map(c => (
                         <React.Fragment key={c.id}>
                             <tr className="table-row">
-                                <td className="table-cell" 
-                                    style={{ 
-                                        fontWeight: c.user_email === userEmail ? 'bold' : 'normal', 
+                                <td className="table-cell"
+                                    style={{
+                                        fontWeight: c.user_email === userEmail ? 'bold' : 'normal',
                                         color: c.user_email === userEmail ? 'black' : '#666',
                                         cursor: 'pointer',
                                         textDecoration: 'underline',
@@ -420,17 +420,17 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                                 </td>
                                 <td className="table-cell text-right font-bold">{c.count}</td>
                                 <td className="table-cell action-cell">
-                                    <IconButton 
-                                        icon={SquareCheckBig} 
+                                    <IconButton
+                                        icon={SquareCheckBig}
                                         onClick={async () => {
                                             await handleDeltaUpdate(c.id, c.step);
-                                        }} 
-                                        title="Increment" 
+                                        }}
+                                        title="Increment"
                                     />
-                                    <IconButton 
-                                        icon={Edit2} 
-                                        onClick={() => onEdit(c)} 
-                                        title="Edit" 
+                                    <IconButton
+                                        icon={Edit2}
+                                        onClick={() => onEdit(c)}
+                                        title="Edit"
                                     />
                                 </td>
                             </tr>
@@ -466,19 +466,19 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                                                                   <div key={idx} className="history-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
                                                                       <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                                                                           <span style={{ fontWeight: 'bold' }}>{u.user_email || 'Unknown'}</span>
-                                                                          {u.when && ` at ${new Date(u.when).toLocaleString()}`}: 
+                                                                          {u.when && ` at ${new Date(u.when).toLocaleString()}`}:
                                                                           {u.delta === 0 ? 'Reset!' : `Delta ${u.delta > 0 ? `+${u.delta}` : u.delta}`}
                                                                       </div>
                                                                       {(c.user_email === userEmail || u.user_email === userEmail) && (
-                                                                          <button 
+                                                                          <button
                                                                               onClick={() => handleDeleteUpdate(u.id)}
                                                                               title="Delete update"
-                                                                              style={{ 
-                                                                                  background: 'none', 
-                                                                                  border: 'none', 
-                                                                                  cursor: 'pointer', 
+                                                                              style={{
+                                                                                  background: 'none',
+                                                                                  border: 'none',
+                                                                                  cursor: 'pointer',
                                                                                   color: '#ff4d4f',
-                                                                                  padding: '2px' 
+                                                                                  padding: '2px'
                                                                               }}
                                                                           >
                                                                               <Trash2 size={14} />
@@ -502,19 +502,19 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                 <p className="empty-text">No counters found. Create one!</p>
             )}
             <div style={{ marginTop: '20px', textAlign: 'center' }}>
-                <button 
-                    onClick={() => setShowArchived(!showArchived)} 
+                <button
+                    onClick={() => setShowArchived(!showArchived)}
                     className="btn-link"
                     style={{ fontSize: '0.9rem', color: '#666', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
                 >
-                    {viewMode === 'counters' 
-                        ? (showArchived ? 'Hide archived counters' : 'Show archived counters') 
+                    {viewMode === 'counters'
+                        ? (showArchived ? 'Hide archived counters' : 'Show archived counters')
                         : (showArchived ? 'Hide archived and sleeping tasks' : 'Show archived and sleeping tasks')}
                 </button>
             </div>
 
             {selectedTagForSharing && (
-                <TagSharingModal 
+                <TagSharingModal
                     tagId={selectedTagForSharing.id}
                     tagName={selectedTagForSharing.name}
                     onClose={() => setSelectedTagForSharing(null)}
