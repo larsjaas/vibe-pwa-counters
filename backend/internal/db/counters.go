@@ -99,7 +99,7 @@ func GetCountersForUser(userID int) ([]*Counter, error) {
 		LEFT JOIN counter_tags ct ON c.id = ct.counter_id
 		LEFT JOIN tags t ON ct.tag_id = t.id
 		LEFT JOIN tag_shares ts ON t.id = ts.tag_id
-		WHERE c.deletetime IS NULL 
+		WHERE c.deletetime IS NULL
 		  AND (c."user" = $1 OR t.user_id = $1 OR ts.user_id = $1)
 		ORDER BY c.id`
 	rows, err := db.Query(query, userID)
@@ -301,7 +301,7 @@ func GetCountersByTag(userID int, tagID int) ([]*Counter, error) {
 		JOIN counter_tags ct ON c.id = ct.counter_id
 		JOIN tags t ON ct.tag_id = t.id
 		LEFT JOIN tag_shares ts ON t.id = ts.tag_id
-		WHERE c.deletetime IS NULL 
+		WHERE c.deletetime IS NULL
 		  AND t.id = $1
 		  AND (t.user_id = $2 OR ts.user_id = $2)
 		ORDER BY c.id`

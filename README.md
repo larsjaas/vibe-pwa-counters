@@ -36,6 +36,13 @@ The gemma4:31b model produced tool calls that pi-coding-agents picks up right ou
 
 The only thing to note about using this model is that it is a bit slow on my setup. One turn (a commit) can easily take 15-20 minutes, but it is impressively often on the money when it comes to the result. Better to be slow and right than fast and wrong... The 26b a4b variant is probably a great deal faster without compromising too much on the model capabilities, so I will probably explore that one pretty soon.
 
+Running into la-la-land and stalling out on this model too often now, at commit fd92d3b5877bbc59eb2ab2d1a258419ad9d0e999. Could be me not being able to set contextSize and maxTokens (or other parameters) to suitable values. Anyways, I am waiting for local MTP-able models to be released soon, to get faster results, and I also want to be able to run more than ollama-models - run models I can fetch directly from huggingface.
+
+## mlx-community/Qwen3.6-27B-OptiQ-4bit with vllm-mlx
+
+First impression is that I am at least getting a lot more speed out of this setup, and the model seems more methodical in its reasoning/approach. Tool usage seems to work, but sometimes slips with a stall-out.
+
+
 
 # Purpose
 
@@ -74,11 +81,21 @@ that kind of setup.
 
 If you can use "localhost" instead, then you don't need the above.
 
-Set up the environment variables the Go backend needs:
+Set up / adjust the environment variables the Go backend needs:
 
+    # OAuth login
     $ export GOOGLE_CLIENT_ID="[...].apps.googleusercontent.com"
     $ export GOOGLE_REDIRECT_URI="http://<server.com>:8080/api/auth/google/callback"
+
+    # redis and postgres
+    $ export REDIS_ADDR="localhost:6379"
     $ export DATABASE_URL="postgres://postgres:postgres@localhost:5432/app?sslmode=disable"
+
+    # email integration
+    $ export SMTP_HOST=smtp.domain.com
+    $ export SMTP_PORT=12345
+    $ export SMTP_USER=no-reply@domain.com
+    $ export SMTP_PASS=...
 
 Create/build the HTML (PWA frontend) directory. Needs to be done when changing frontend code.
 
@@ -109,14 +126,14 @@ To use SSL/TLS, you need to update nginx.conf and docker-compose.yml. The diffs 
     +++ b/nginx.conf
     @@ -6,7 +6,10 @@ http {
          default_type  application/octet-stream;
-    
+
          server {
     -        listen 80;
     +        listen 443 ssl;
     +        server_name hostname.taild6axxx.ts.net;
     +        ssl_certificate /etc/ssl/certs/cert.crt;
     +        ssl_certificate_key /etc/ssl/private/key.key;
-    
+
              # Proxy API requests to the Go backend
              location /api/ {
 

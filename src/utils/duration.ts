@@ -4,7 +4,7 @@
  * - Seconds as number: "540"
  * - HH:MM:SS or MM:SS: "1:30:00", "1:30"
  * - Natural language/shorthand: "1h 30m", "90 minutes", "1.5 hours", "1h30m"
- * 
+ *
  * @param input The duration string to parse
  * @returns The duration in seconds, or null if parsing fails
  */
@@ -21,7 +21,7 @@ export function parseDurationToSeconds(input: string): number | null {
     const timeMatch = trimmed.match(/^(\d+):(\d+)(?::(\d+))?$/);
     if (timeMatch) {
         const parts = timeMatch.slice(1).map(p => parseInt(p || '0', 10));
-        
+
         const colonCount = (trimmed.match(/:/g) || []).length;
         if (colonCount === 2) {
             const [h, m, s] = parts;
@@ -52,7 +52,7 @@ export function parseDurationToSeconds(input: string): number | null {
         const value = parseFloat(match[1]);
         const unit = match[3].toLowerCase();
         const multiplier = unitMap[unit];
-        
+
         if (multiplier === undefined) return null; // Unknown unit
         totalSeconds += value * multiplier;
     }
@@ -63,7 +63,7 @@ export function parseDurationToSeconds(input: string): number | null {
 /**
  * Converts seconds into a compact, human-readable duration string.
  * Format: "1mo 2w 3d 4h 5m 6s"
- * 
+ *
  * @param seconds The duration in seconds
  * @returns A formatted duration string
  */

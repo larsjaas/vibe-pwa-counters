@@ -107,7 +107,7 @@ func GetUserInvites(userID int, email string) ([]*TagInviteDetail, error) {
 	}
 
 	const query = `
-		SELECT i.id, t.name, 
+		SELECT i.id, t.name,
 		       CASE WHEN i.sender_id = $1 THEN i.email ELSE u.email END,
 		       i.sender_id, i.access_level, i.status, (i.sender_id = $1)
 		FROM tag_invites i
@@ -144,8 +144,8 @@ func AcceptInvite(userID int, inviteID int) error {
 	var invite TagInvite
 	// var notifiedAt, reminderSentAt sql.NullTime
 	const inviteQuery = `
-		SELECT id, tag_id, email, access_level, status 
-		FROM tag_invites 
+		SELECT id, tag_id, email, access_level, status
+		FROM tag_invites
 		WHERE id = $1 AND status = 'pending' AND expires_at > NOW()`
 	
 	err := db.QueryRow(inviteQuery, inviteID).Scan(&invite.ID, &invite.TagID, &invite.Email, &invite.AccessLevel, &invite.Status)
@@ -177,7 +177,7 @@ func AcceptInvite(userID int, inviteID int) error {
 		return err
 	}
 
-	const createShareQuery = `INSERT INTO tag_shares (tag_id, user_id, access_level) VALUES ($1, $2, $3) 
+	const createShareQuery = `INSERT INTO tag_shares (tag_id, user_id, access_level) VALUES ($1, $2, $3)
 	                          ON CONFLICT (tag_id, user_id) DO UPDATE SET access_level = EXCLUDED.access_level`
 	_, err = tx.Exec(createShareQuery, invite.TagID, userID, invite.AccessLevel)
 	if err != nil {
@@ -244,8 +244,8 @@ func ProcessReminderInvites(sendEmail func(to, subject, body string) error) (int
 	}
 
 	const query = `
-		SELECT 
-			i.id, i.email, 
+		SELECT
+			i.id, i.email,
 			u_rec.id as recipient_id, u_rec.name as recipient_name,
 			u_send.name as sender_name,
 			t.name as tag_name
@@ -253,10 +253,10 @@ func ProcessReminderInvites(sendEmail func(to, subject, body string) error) (int
 		JOIN tags t ON i.tag_id = t.id
 		JOIN users u_send ON i.sender_id = u_send.id
 		LEFT JOIN users u_rec ON i.email = u_rec.email
-		WHERE i.status = 'pending' 
-		  AND i.notified_at IS NOT NULL 
-		  AND i.reminder_sent_at IS NULL 
-		  AND i.expires_at > NOW() 
+		WHERE i.status = 'pending'
+		  AND i.notified_at IS NOT NULL
+		  AND i.reminder_sent_at IS NULL
+		  AND i.expires_at > NOW()
 		  AND i.created_at < NOW() - INTERVAL '48 hours'`
 	
 	rows, err := db.Query(query)
@@ -276,7 +276,7 @@ func ProcessReminderInvites(sendEmail func(to, subject, body string) error) (int
 
 		shouldSend := false
 		if !recUserID.Valid {
-			// For non-users, we can decide if we send a reminder. 
+			// For non-users, we can decide if we send a reminder.
 			// The prompt says "verify that tag_sharing_reminder is true for the user".
 			// We'll assume we only send reminders to existing users.
 			shouldSend = false
@@ -363,8 +363,8 @@ func ProcessInitialInvites(sendEmail func(to, subject, body string) error) (int,
 	}
 
 	const query = `
-		SELECT 
-			i.id, i.email, 
+		SELECT
+			i.id, i.email,
 			u_rec.id as recipient_id, u_rec.name as recipient_name,
 			u_send.name as sender_name,
 			t.name as tag_name
@@ -372,9 +372,9 @@ func ProcessInitialInvites(sendEmail func(to, subject, body string) error) (int,
 		JOIN tags t ON i.tag_id = t.id
 		JOIN users u_send ON i.sender_id = u_send.id
 		LEFT JOIN users u_rec ON i.email = u_rec.email
-		WHERE i.status = 'pending' 
-		  AND i.notified_at IS NULL 
-		  AND i.expires_at > NOW() 
+		WHERE i.status = 'pending'
+		  AND i.notified_at IS NULL
+		  AND i.expires_at > NOW()
 		  AND i.created_at < NOW() - INTERVAL '15 minutes'`
 	
 	rows, err := db.Query(query)

@@ -370,7 +370,7 @@ func handleCreateInvite(w http.ResponseWriter, r *http.Request, userID int, tagI
 		if err != nil {
 			log.Printf("error checking sharing setting for user %d: %v", targetUserID, err)
 		} else if !enabled {
-			// User has explicitly disabled tag sharing. 
+			// User has explicitly disabled tag sharing.
 			// We return 200 OK but don't create the invite.
 			w.WriteHeader(http.StatusOK)
 			return

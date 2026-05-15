@@ -19,8 +19,8 @@ func GetAPIKeysForUser(userID int) ([]*APIKey, error) {
 	if db == nil {
 		return nil, fmt.Errorf("database not initialized")
 	}
-	const query = `SELECT id, userid, apikey, createtime, deletetime, lastused 
-                   FROM apikeys 
+	const query = `SELECT id, userid, apikey, createtime, deletetime, lastused
+                   FROM apikeys
                    WHERE userid = $1 AND deletetime IS NULL`
 	rows, err := db.Query(query, userID)
 	if err != nil {
@@ -55,7 +55,7 @@ func SoftDeleteAPIKey(userID, keyID int) (bool, error) {
 	if db == nil {
 		return false, fmt.Errorf("database not initialized")
 	}
-	const query = `UPDATE apikeys SET deletetime = NOW() 
+	const query = `UPDATE apikeys SET deletetime = NOW()
                    WHERE id = $1 AND userid = $2 AND deletetime IS NULL`
 	res, err := db.Exec(query, keyID, userID)
 	if err != nil {
@@ -72,21 +72,21 @@ func SoftDeleteAllAPIKeysForUser(userID int) error {
 	if db == nil {
 		return fmt.Errorf("database not initialized")
 	}
-	const query = `UPDATE apikeys SET deletetime = NOW() 
+	const query = `UPDATE apikeys SET deletetime = NOW()
                    WHERE userid = $1 AND deletetime IS NULL`
 	_, err := db.Exec(query, userID)
 	return err
 }
 
 // GetUserIDByAPIKey looks up the userID associated with the given API key,
-// ensuring the key has not been soft-deleted. It also updates the lastused 
+// ensuring the key has not been soft-deleted. It also updates the lastused
 // timestamp to the current time.
 func GetUserIDByAPIKey(key string) (int, error) {
 	if db == nil {
 		return 0, fmt.Errorf("database not initialized")
 	}
-	const query = `UPDATE apikeys SET lastused = NOW() 
-                   WHERE apikey = $1 AND deletetime IS NULL 
+	const query = `UPDATE apikeys SET lastused = NOW()
+                   WHERE apikey = $1 AND deletetime IS NULL
                    RETURNING userid`
 	var userID int
 	err := db.QueryRow(query, key).Scan(&userID)

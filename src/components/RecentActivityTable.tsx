@@ -44,9 +44,9 @@ export const RecentActivityTable: React.FC<RecentActivityTableProps> = ({
     }
 
     return (
-        <div style={{ 
-            width: '100%', 
-            fontSize: compact ? '0.8rem' : '0.9rem' 
+        <div style={{
+            width: '100%',
+            fontSize: compact ? '0.8rem' : '0.9rem'
         }}>
             {title && <h3 style={{ textAlign: 'center', marginBottom: '1rem', color: '#444' }}>{title}</h3>}
             <table style={{

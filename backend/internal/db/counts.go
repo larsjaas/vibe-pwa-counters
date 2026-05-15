@@ -117,8 +117,8 @@ func GetCountsForUser(userID int) ([]*Count, error) {
 		LEFT JOIN counter_tags ctag ON ct.id = ctag.counter_id
 		LEFT JOIN tags t ON ctag.tag_id = t.id
 		LEFT JOIN tag_shares ts ON t.id = ts.tag_id
-		WHERE c.deletetime IS NULL 
-		  AND ct.deletetime IS NULL 
+		WHERE c.deletetime IS NULL
+		  AND ct.deletetime IS NULL
 		  AND (ct."user" = $1 OR t.user_id = $1 OR ts.user_id = $1)
 		ORDER BY c.when ASC`
 	rows, err := db.Query(query, userID)
@@ -148,10 +148,10 @@ func SoftDeleteCountForUser(userID, countID int) (bool, error) {
         return false, fmt.Errorf("database not initialized")
     }
     const query = `
-        UPDATE counts 
-        SET deletetime = NOW() 
-        WHERE id = $1 
-          AND deletetime IS NULL 
+        UPDATE counts
+        SET deletetime = NOW()
+        WHERE id = $1
+          AND deletetime IS NULL
           AND counter IN (SELECT id FROM counters WHERE "user" = $2 AND deletetime IS NULL)`
     res, err := db.Exec(query, countID, userID)
     if err != nil {
@@ -190,10 +190,10 @@ func UpdateCountTimestamp(userID, countID int, when time.Time) (bool, error) {
 		return false, fmt.Errorf("database not initialized")
 	}
 	const query = `
-		UPDATE counts 
-		SET "when" = $1 
-		WHERE id = $2 
-		  AND deletetime IS NULL 
+		UPDATE counts
+		SET "when" = $1
+		WHERE id = $2
+		  AND deletetime IS NULL
 		  AND counter IN (SELECT id FROM counters WHERE "user" = $3 AND deletetime IS NULL)`
 	res, err := db.Exec(query, when, countID, userID)
 	if err != nil {

@@ -41,7 +41,7 @@ type UserSession struct {
 	Name   string
 }
 
-// AuthenticateRequest attempts to identify the user from either the 
+// AuthenticateRequest attempts to identify the user from either the
 // Authorization header (Bearer token) or the session cookie.
 // It returns the UserSession if successful, or an error if unauthorized.
 func AuthenticateRequest(r *http.Request) (*UserSession, error) {

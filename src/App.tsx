@@ -52,10 +52,10 @@ const App: React.FC = () => {
     useEffect(() => {
 
         const eventSource = new EventSource('/api/events');
-        
+
         eventSource.onmessage = (event) => {
             console.log('SSE event received:', event.data);
-            
+
             if (event.data.startsWith('ALERT ')) {
                 try {
                     const jsonStr = event.data.substring(6);
@@ -149,7 +149,7 @@ const App: React.FC = () => {
                 body: JSON.stringify({ counter: id, delta: 0 }),
             });
             if (!res.ok) throw new Error('Reset failed');
-            
+
             if (initialValue !== 0) {
                 await fetch('/api/counts', {
                     method: 'POST',
@@ -157,7 +157,7 @@ const App: React.FC = () => {
                     body: JSON.stringify({ counter: id, delta: initialValue }),
                 });
             }
-            
+
             setRefreshCount(prev => prev + 1);
         } catch (e) {
             alert('Failed to reset counter');
@@ -166,18 +166,18 @@ const App: React.FC = () => {
 
     return (
         <div className="app-container">
-            
+
             {/* Main Content Area */}
             <div className="main-content">
                 <Routes>
                     <Route path="/" element={
-                        <CounterList 
-                            onEdit={(c) => setEditingCounter(c)} 
+                        <CounterList
+                            onEdit={(c) => setEditingCounter(c)}
                             onCreate={(tags, type) => {
                                 setCreateInitialTags(tags);
                                 if (type) setCreateInitialType(type);
                                 setShowCreateModal(true);
-                            }} 
+                            }}
                             refreshTrigger={refreshCount}
                             userEmail={userEmail}
                         />
@@ -196,7 +196,7 @@ const App: React.FC = () => {
             {showCreateModal && (
                 <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowCreateModal(false)}>
                     <div className="modal-content">
-                        <CounterCreate 
+                        <CounterCreate
                             initialTags={createInitialTags}
                             initialType={createInitialType}
                             onCreated={() => {
@@ -204,11 +204,11 @@ const App: React.FC = () => {
                                setCreateInitialTags(undefined);
                                setCreateInitialType('standard');
                                setRefreshCount(prev => prev + 1);
-                            }} 
+                            }}
                             onCancel={() => {
                                 setShowCreateModal(false);
                                 setCreateInitialTags(undefined);
-                            }} 
+                            }}
                         />
                     </div>
                 </div>
@@ -217,9 +217,9 @@ const App: React.FC = () => {
             {editingCounter && (
                 <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setEditingCounter(null)}>
                     <div className="modal-content">
-                        <CounterDetail 
-                            counter={editingCounter} 
-                            onBack={() => setEditingCounter(null)} 
+                        <CounterDetail
+                            counter={editingCounter}
+                            onBack={() => setEditingCounter(null)}
                             onUpdate={handleUpdateCounter}
                             onDelete={handleDeleteCounter}
                             onArchive={handleArchiveCounter}
@@ -230,9 +230,9 @@ const App: React.FC = () => {
             )}
 
             {alertMessage && (
-                <AlertModal 
-                    message={alertMessage} 
-                    onClose={() => setAlertMessage(null)} 
+                <AlertModal
+                    message={alertMessage}
+                    onClose={() => setAlertMessage(null)}
                 />
             )}
         </div>
