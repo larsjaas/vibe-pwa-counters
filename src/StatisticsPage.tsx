@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Counter } from './CounterList';
-import { Activity, Timer, Trash2, Pencil } from 'lucide-react';
+import { Activity, Timer } from 'lucide-react';
 import { ConfirmationModal } from './components/ConfirmationModal';
+import { RecentActivityTable, Count } from './components/RecentActivityTable';
 
 type GraphMode = 'frequency' | 'timeline';
 
@@ -9,20 +10,12 @@ interface StatisticsPageProps {
     refreshTrigger?: number;
 }
 
-interface Count {
-    id: number;
-    counter: number;
-    delta: number;
-    when: string;
-    user_email: string;
-}
-
 export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }) => {
-    const [counters, setCounters] = useState<Counter[]>([]);
     const [selectedCounterId, setSelectedCounterId] = useState<number | null>(() => {
         const saved = localStorage.getItem('statsSelectedCounterId');
         return saved ? parseInt(saved, 10) : null;
     });
+    const [counters, setCounters] = useState<Counter[]>([]);
     const [stats, setStats] = useState<number[]>(new Array(24).fill(0));
     const [loading, setLoading] = useState(true);
     const [allCounts, setAllCounts] = useState<Count[]>([]);
@@ -545,70 +538,17 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                             margin: '3rem auto 0',
                             fontSize: '0.9rem'
                         }}>
-                            <h3 style={{ textAlign: 'center', marginBottom: '1rem', color: '#444' }}>Recent Activity</h3>
-                            <table style={{
-                                width: '100%',
-                                borderCollapse: 'collapse',
-                                textAlign: 'left',
-                                fontSize: '0.85rem'
-                            }}>
-                                <thead>
-                                    <tr style={{ borderBottom: '2px solid #eee', color: '#888' }}>
-                                        <th style={{ padding: '8px 0' }}>Time</th>
-                                   <th style={{ padding: '8px 0' }}>Who</th>
-                                   <th style={{ padding: '8px 0', textAlign: 'right' }}>Delta</th>
-                                        <th style={{ padding: '8px 0', textAlign: 'right' }}></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {allCounts
-                                        .filter(c => c.counter === selectedCounterId)
-                                        .sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime())
-                                        .slice(0, 5)
-                                        .map((entry, idx) => (
-                                            <tr key={entry.id} style={{ borderBottom: '1px solid #f9f9f9' }}>
-                                                <td style={{ padding: '8px 0', color: '#666' }}>
-                                   {new Date(entry.when).toLocaleString()}
-                               </td>
-                               <td style={{ padding: '8px 0', color: '#666' }}>
-                                   {entry.user_email}
-                               </td>
-                                                <td style={{
-                                                    padding: '8px 0',
-                                                    textAlign: 'right',
-                                                    fontWeight: 'bold',
-                                                    color: entry.delta >= 0 ? '#2ecc71' : '#e74c3c'
-                                                }}>
-                                                    {entry.delta === 0 ? 'reset' : (entry.delta > 0 ? `+${entry.delta}` : entry.delta)}
-                                                </td>
-                                                <td style={{ padding: '8px 0', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '8px', alignItems: 'center' }}>
-                            {entry.user_email === currentUserEmail && (
-                                <Pencil
-                                    size={16}
-                                    color="#666"
-                                    style={{ cursor: 'pointer' }}
-                                    onClick={() => {
-                                        setCountToEdit({ id: entry.id, when: entry.when });
-                                        setEditWhen(formatForInput(entry.when));
-                                    }}
-                                />
-                            )}
-                            <Trash2
-                                size={16}
-                                color="#d32f2f"
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => setCountToDelete(entry.id)}
+                            <RecentActivityTable
+                                counterId={selectedCounterId!}
+                                counts={allCounts}
+                                currentUserEmail={currentUserEmail}
+                                title="Recent Activity"
+                                onDelete={(id) => setCountToDelete(id)}
+                                onEdit={(id, when) => {
+                                    setCountToEdit({ id, when });
+                                    setEditWhen(formatForInput(when));
+                                }}
                             />
-                        </td>
-                                            </tr>
-                                        ))}
-                                </tbody>
-                            </table>
-                            {allCounts.filter(c => c.counter === selectedCounterId).length === 0 && (
-                                <div style={{ textAlign: 'center', color: '#999', padding: '1rem 0' }}>
-                                    No activity recorded for this counter.
-                                </div>
-                            )}
                         </div>
                     </>
                 ) : (

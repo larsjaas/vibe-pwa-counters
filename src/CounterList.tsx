@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { IconButton } from './components/IconButton';
+import { RecentActivityTable } from './components/RecentActivityTable';
 import { Plus, Edit2, SquareCheckBig, Search, X, UserRoundPlus, ChevronDown, ChevronUp, Trash2, ChevronsUpDown } from 'lucide-react';
 import { TagSharingModal } from './components/TagSharingModal';
 
@@ -455,40 +456,14 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                                             </div>
                                             <div className="expansion-history-row">
                                                 <span className="expansion-label">Recent activity:</span>
-                                                <div className="history-list">
-                                                    {(() => {
-                                                        const recent = updates
-                                                            .filter(u => u.counter === c.id)
-                                                            .slice(-3)
-                                                            .reverse();
-                                                        if (recent.length === 0) return <div className="history-item">No recent updates</div>;
-                                                        return recent.map((u, idx) => (
-                                                                  <div key={idx} className="history-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-                                                                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                                                          <span style={{ fontWeight: 'bold' }}>{u.user_email || 'Unknown'}</span>
-                                                                          {u.when && ` at ${new Date(u.when).toLocaleString()}`}:
-                                                                          {u.delta === 0 ? 'Reset!' : `Delta ${u.delta > 0 ? `+${u.delta}` : u.delta}`}
-                                                                      </div>
-                                                                      {(c.user_email === userEmail || u.user_email === userEmail) && (
-                                                                          <button
-                                                                              onClick={() => handleDeleteUpdate(u.id)}
-                                                                              title="Delete update"
-                                                                              style={{
-                                                                                  background: 'none',
-                                                                                  border: 'none',
-                                                                                  cursor: 'pointer',
-                                                                                  color: '#ff4d4f',
-                                                                                  padding: '2px'
-                                                                              }}
-                                                                          >
-                                                                              <Trash2 size={14} />
-                                                                          </button>
-                                                                      )}
-                                                                  </div>
-                                                        ));
-
-                                                    })()}
-                                                </div>
+                                                <RecentActivityTable
+                                                    counterId={c.id}
+                                                    counts={updates}
+                                                    currentUserEmail={userEmail}
+                                                    onDelete={handleDeleteUpdate}
+                                                    limit={3}
+                                                    compact={true}
+                                                />
                                             </div>
                                         </div>
                                     </td>

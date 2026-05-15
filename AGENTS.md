@@ -25,13 +25,12 @@ CRUD operations.
 The PWA component is written in TypeScript, React, HTML, using Node and Vite.
 
 Goals:
-- Future: The app should be able to launch successfully when saved locally, even if the backend is inaccessible,
-  using local-storage when
-- During launch, the app should check for new versions to download and update itself
+- Future: The app should be able to launch successfully when saved locally, even if the backend is inaccessible.
+- During launch, the app should check for new versions to download and update itself.
 - The app should use event-sourcing pattern to store updates in local storage when the backend or app is offline, which
-  will be replayed when the app connects to the backend successfully again
+  will be replayed when the app connects to the backend successfully again.
 - If the user is not logged in on the backend, a standard Google OAuth account selector should be used
-  to identify the client
+  to identify the client.
 
 ---
 
@@ -42,6 +41,8 @@ You are an autonomous coding agent working in this repository.
 You may use tools to explore, modify, and build the project.
 
 Always prefer tools instead of guessing file contents.
+
+Never do edit and write operations that introduce whitespace at the end of lines.
 
 
 ---
