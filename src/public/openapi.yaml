@@ -68,6 +68,11 @@ components:
           description: "Window in seconds before the due date that the task becomes visible."
           nullable: true
           example: 172800
+        overdue:
+          type: integer
+          description: "Duration in seconds from the due date."
+          nullable: true
+          example: 3600
         last_performed_at:
           type: string
           format: date-time
@@ -532,6 +537,9 @@ paths:
                   type: integer
                 alert_window:
                   type: integer
+                overdue:
+                  type: integer
+                  description: "Duration in seconds from the due date."
       responses:
         '200':
           description: Successfully updated

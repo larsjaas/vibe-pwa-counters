@@ -20,6 +20,7 @@ type Counter struct {
 	Type            string     `json:"type"`
 	Frequency       *int64     `json:"frequency"`
 	AlertWindow     *int64     `json:"alert_window"`
+	Overdue         *int64     `json:"overdue"`
 	LastPerformedAt *time.Time `json:"last_performed_at"`
 	PriorityScore   float64    `json:"priority_score"`
 	RepeatStatus    string     `json:"repeat_status"`
@@ -94,7 +95,7 @@ func GetCountersForUser(userID int) ([]*Counter, error) {
 		return nil, fmt.Errorf("database not initialized")
 	}
 	const query = `
-		SELECT DISTINCT c.id, c."user", c.name, c.createtime, c.archivetime, c.step, c.deletetime, c.type, c.frequency, c.alert_window, c.last_performed_at
+		SELECT DISTINCT c.id, c."user", c.name, c.createtime, c.archivetime, c.step, c.deletetime, c.type, c.frequency, c.alert_window, c.overdue, c.last_performed_at
 		FROM counters c
 		LEFT JOIN counter_tags ct ON c.id = ct.counter_id
 		LEFT JOIN tags t ON ct.tag_id = t.id
@@ -113,8 +114,8 @@ func GetCountersForUser(userID int) ([]*Counter, error) {
 		var c Counter
 		var archiveTime, deleteTime sql.NullTime
 		var lastPerformedAt sql.NullTime
-		var freq, alert sql.NullInt64
-		if err := rows.Scan(&c.ID, &c.UserID, &c.Name, &c.CreateTime, &archiveTime, &c.Step, &deleteTime, &c.Type, &freq, &alert, &lastPerformedAt); err != nil {
+		var freq, alert, overdue sql.NullInt64
+		if err := rows.Scan(&c.ID, &c.UserID, &c.Name, &c.CreateTime, &archiveTime, &c.Step, &deleteTime, &c.Type, &freq, &alert, &overdue, &lastPerformedAt); err != nil {
 			return nil, err
 		}
 		if archiveTime.Valid {
@@ -122,6 +123,10 @@ func GetCountersForUser(userID int) ([]*Counter, error) {
 		}
 		if deleteTime.Valid {
 			c.DeleteTime = &deleteTime.Time
+		}
+		if overdue.Valid {
+			o := overdue.Int64
+			c.Overdue = &o
 		}
 		if lastPerformedAt.Valid {
 			c.LastPerformedAt = &lastPerformedAt.Time
@@ -169,13 +174,13 @@ func GetCountersForUser(userID int) ([]*Counter, error) {
 
 // UpdateCounter updates the name and step of a counter.
 // It returns true if the counter was updated, false if it wasn't found or belongs to another user.
-func UpdateCounter(userID int, counterID int, name string, step int, cType string, frequency *int64, alertWindow *int64) (bool, error) {
+func UpdateCounter(userID int, counterID int, name string, step int, cType string, frequency *int64, alertWindow *int64, overdue *int64) (bool, error) {
 	if db == nil {
 		return false, fmt.Errorf("database not initialized")
 	}
-	const query = `UPDATE counters SET name = $1, step = $2, type = $3, frequency = $4, alert_window = $5
-	WHERE "user" = $6 AND id = $7 AND deletetime IS NULL`
-	res, err := db.Exec(query, name, step, cType, frequency, alertWindow, userID, counterID)
+	const query = `UPDATE counters SET name = $1, step = $2, type = $3, frequency = $4, alert_window = $5, overdue = $6
+	WHERE "user" = $7 AND id = $8 AND deletetime IS NULL`
+	res, err := db.Exec(query, name, step, cType, frequency, alertWindow, overdue, userID, counterID)
 	if err != nil {
 		return false, err
 	}
@@ -296,7 +301,7 @@ func GetCountersByTag(userID int, tagID int) ([]*Counter, error) {
 		return nil, fmt.Errorf("database not initialized")
 	}
 	const query = `
-		SELECT DISTINCT c.id, c."user", c.name, c.createtime, c.archivetime, c.step, c.deletetime
+		SELECT DISTINCT c.id, c."user", c.name, c.createtime, c.archivetime, c.step, c.deletetime, c.overdue
 		FROM counters c
 		JOIN counter_tags ct ON c.id = ct.counter_id
 		JOIN tags t ON ct.tag_id = t.id
@@ -314,10 +319,10 @@ func GetCountersByTag(userID int, tagID int) ([]*Counter, error) {
 	counters := make([]*Counter, 0)
 	for rows.Next() {
 		var c Counter
-		var archiveTime sql.NullTime
-		var deleteTime sql.NullTime
+		var archiveTime, deleteTime sql.NullTime
+		var overdue sql.NullInt64
 		var step int
-		if err := rows.Scan(&c.ID, &c.UserID, &c.Name, &c.CreateTime, &archiveTime, &step, &deleteTime); err != nil {
+		if err := rows.Scan(&c.ID, &c.UserID, &c.Name, &c.CreateTime, &archiveTime, &step, &deleteTime, &overdue); err != nil {
 			return nil, err
 		}
 		if archiveTime.Valid {
@@ -325,6 +330,10 @@ func GetCountersByTag(userID int, tagID int) ([]*Counter, error) {
 		}
 		if deleteTime.Valid {
 			c.DeleteTime = &deleteTime.Time
+		}
+		if overdue.Valid {
+			o := overdue.Int64
+			c.Overdue = &o
 		}
 		c.Step = step
 		counters = append(counters, &c)

@@ -97,6 +97,7 @@ func CountersHandler(w http.ResponseWriter, r *http.Request) {
             Type           string      `json:"type"`
             Frequency      *int64      `json:"frequency"`
             AlertWindow    *int64      `json:"alert_window"`
+            Overdue        interface{} `json:"overdue"`
             LastPerformedAt interface{} `json:"last_performed_at"`
             PriorityScore  float64     `json:"priority_score"`
             RepeatStatus   string      `json:"repeat_status"`
@@ -120,6 +121,7 @@ func CountersHandler(w http.ResponseWriter, r *http.Request) {
                 Type:           c.Type,
                 Frequency:      c.Frequency,
                 AlertWindow:    c.AlertWindow,
+                Overdue:        c.Overdue,
                 LastPerformedAt: c.LastPerformedAt,
                 PriorityScore:  c.PriorityScore,
                 RepeatStatus:   c.RepeatStatus,
@@ -141,6 +143,7 @@ func CountersHandler(w http.ResponseWriter, r *http.Request) {
                 Type        string  `json:"type"`
                 Frequency   *int64  `json:"frequency"`
                 AlertWindow *int64  `json:"alert_window"`
+                Overdue     *int64  `json:"overdue"`
             }
             if e := json.NewDecoder(r.Body).Decode(&body); e != nil {
                 http.Error(w, "bad request", http.StatusBadRequest)
@@ -149,7 +152,7 @@ func CountersHandler(w http.ResponseWriter, r *http.Request) {
             if body.Type == "" {
                 body.Type = "standard"
             }
-            updated, err := db.UpdateCounter(userID, body.ID, body.Name, body.Step, body.Type, body.Frequency, body.AlertWindow)
+            updated, err := db.UpdateCounter(userID, body.ID, body.Name, body.Step, body.Type, body.Frequency, body.AlertWindow, body.Overdue)
             if err != nil {
                 log.Printf("Update counter failed: %v", err)
                 http.Error(w, "internal server error", http.StatusInternalServerError)

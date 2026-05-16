@@ -1,0 +1,1 @@
+ALTER TABLE counters ADD COLUMN overdue BIGINT;
