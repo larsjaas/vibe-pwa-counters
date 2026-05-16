@@ -16,6 +16,7 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
     const [type, setType] = useState<'standard' | 'repeating'>(initialType || 'standard');
     const [frequency, setFrequency] = useState('1w');
     const [alertWindow, setAlertWindow] = useState('540');
+    const [overdue, setOverdue] = useState('');
     const [tags, setTags] = useState(initialTags || '');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -52,15 +53,21 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
             if (parsedAlertWindow === null) {
                 throw new Error('Invalid Alert Window duration format');
             }
+            const parsedOverdue = parseDurationToSeconds(overdue);
+            if (overdue && parsedOverdue === null) {
+                throw new Error('Invalid Overdue duration format');
+            }
 
             const payload: any = { name, initial, step, type, last_performed_at: 0 };
 
             if (type === 'repeating') {
                 payload.frequency = parsedFrequency;
                 payload.alert_window = parsedAlertWindow;
+                payload.overdue = parsedOverdue;
             } else {
                 payload.frequency = 0;
                 payload.alert_window = 0;
+                payload.overdue = null;
             }
 
             const res = await fetch('/api/counters', {
@@ -182,6 +189,16 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
                                 onChange={(e) => setAlertWindow(e.target.value)}
                                 className="form-input"
                                 placeholder="e.g. 1h30m, 90m, 1:30:00"
+                            />
+                        </div>
+                        <div className="form-field">
+                            <label className="form-label">Overdue (Optional):</label>
+                            <input
+                                type="text"
+                                value={overdue}
+                                onChange={(e) => setOverdue(e.target.value)}
+                                className="form-input"
+                                placeholder="e.g. 1d, 24h"
                             />
                         </div>
                     </>

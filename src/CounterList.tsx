@@ -18,6 +18,7 @@ export interface Counter {
     repeat_status: string;
     frequency: number | null;
     alert_window: number | null;
+    overdue: number | null;
     last_performed_at: string | null;
 }
 
@@ -47,6 +48,13 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
 
     const nameSort = viewMode === 'counters' ? counterNameSort : taskNameSort;
     const valueSort = viewMode === 'counters' ? counterValueSort : taskValueSort;
+
+    const isOverdue = (c: Counter) => {
+        if (c.type !== 'repeating' || c.frequency === null || c.last_performed_at === null) return false;
+        if (c.overdue === null) return false;
+        const last = new Date(c.last_performed_at).getTime();
+        return (last + (c.frequency * 1000) + (c.overdue * 1000)) < Date.now();
+    };
 
     const setNameSort = viewMode === 'counters' ? setCounterNameSort : setTaskNameSort;
     const setValueSort = viewMode === 'counters' ? setCounterValueSort : setTaskValueSort;
@@ -177,6 +185,10 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
             const activeCounters = counters.filter(c => c.type === 'repeating' && c.archivetime === null);
 
             const sorted = [...activeCounters].sort((a, b) => {
+                const aOverdue = isOverdue(a);
+                const bOverdue = isOverdue(b);
+                if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
+
                 // Primary Sort: Name
                 if (nameSort !== null) {
                     const nameComp = a.name.localeCompare(b.name);
@@ -224,6 +236,16 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
         const focusTagNames = new Set(allTags.filter(t => tagFocusMode[t.name]).map(t => t.name.toLowerCase()));
 
         return result.filter(c => {
+            if (c.type === 'repeating' && isOverdue(c)) {
+                // Overdue tasks are always visible regardless of focus mode, 
+                // but still subject to search query if one exists.
+                if (!query) return true;
+                const tags = counterTags[c.id] || [];
+                const nameMatch = c.name.toLowerCase().includes(query);
+                const tagMatch = tags.some(tag => tag.toLowerCase().includes(query));
+                return nameMatch || tagMatch;
+            }
+
             const tags = counterTags[c.id] || [];
             // Find tags with focus_mode enabled on this counter
             const focusTags = tags.filter(t => focusTagNames.has(t.toLowerCase()));
@@ -344,19 +366,23 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
 
             {visibleTags.length > 0 && (
                 <div className="tags-filter-container">
-                    {visibleTags
-                        .filter(tag => !searchQuery.toLowerCase().includes(tag.name.toLowerCase()))
-                        .map(tag => (
+                    {visibleTags.map(tag => {
+                        const isSelected = searchQuery.toLowerCase() === tag.name.toLowerCase();
+                        return (
                             <span
                                 key={tag.id}
                                 className="tag-filter-label"
                                 onClick={() => setSearchQuery(tag.name)}
-                                style={{ fontWeight: tag.user_email === userEmail ? 'bold' : 'normal' }}
+                                style={{ 
+                                    fontWeight: tag.user_email === userEmail ? 'bold' : 'normal',
+                                    backgroundColor: isSelected ? '#0070f3' : '',
+                                    color: isSelected ? 'white' : '',
+                                }}
                             >
                                 {tag.name}
                             </span>
-                        ))
-                    }
+                        );
+                    })}
                 </div>
             )}
 
@@ -405,7 +431,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                                 <td className="table-cell"
                                     style={{
                                         fontWeight: c.user_email === userEmail ? 'bold' : 'normal',
-                                        color: c.user_email === userEmail ? 'black' : '#666',
+                                        color: (c.type === 'repeating' && isOverdue(c)) ? 'darkred' : (c.user_email === userEmail ? 'black' : '#666'),
                                         cursor: 'pointer',
                                         textDecoration: 'underline',
                                         textUnderlineOffset: '3px',

@@ -16,6 +16,7 @@ interface Counter {
     priority_score: number;
     frequency?: number;
     alert_window?: number;
+    overdue?: number;
 }
 
 interface CounterDetailProps {
@@ -34,6 +35,7 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
     const [type, setType] = useState(counter.type);
     const [frequency, setFrequency] = useState(formatSecondsToDuration(counter.frequency || 3600));
     const [alertWindow, setAlertWindow] = useState(formatSecondsToDuration(counter.alert_window || 0));
+    const [overdue, setOverdue] = useState(formatSecondsToDuration(counter.overdue || 0).replace('0s', ''));
     const [initialValue, setInitialValue] = useState<number>(0);
     const [tags, setTags] = useState('');
     const [loadingTags, setLoadingTags] = useState(true);
@@ -165,6 +167,10 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
             if (parsedAlertWindow === null) {
                 throw new Error('Invalid Alert Window duration format');
             }
+            const parsedOverdue = parseDurationToSeconds(overdue);
+            if (overdue && parsedOverdue === null) {
+                throw new Error('Invalid Overdue duration format');
+            }
 
             const tagNames = tags.split(',').map(t => t.trim()).filter(t => t !== '');
             const res = await fetch('/api/tags');
@@ -183,7 +189,8 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                     step,
                     type,
                     frequency: type === 'repeating' ? parsedFrequency : 0,
-                    alert_window: type === 'repeating' ? parsedAlertWindow : 0
+                    alert_window: type === 'repeating' ? parsedAlertWindow : 0,
+                    overdue: type === 'repeating' ? parsedOverdue : null
                 });
                 setIsEditing(false);
             }
@@ -202,6 +209,10 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
             if (parsedAlertWindow === null) {
                 throw new Error('Invalid Alert Window duration format');
             }
+            const parsedOverdue = parseDurationToSeconds(overdue);
+            if (overdue && parsedOverdue === null) {
+                throw new Error('Invalid Overdue duration format');
+            }
 
             await executeSaveTags(tags);
             onUpdate(counter.id, {
@@ -209,7 +220,8 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                 step,
                 type,
                 frequency: type === 'repeating' ? parsedFrequency : 0,
-                alert_window: type === 'repeating' ? parsedAlertWindow : 0
+                alert_window: type === 'repeating' ? parsedAlertWindow : 0,
+                overdue: type === 'repeating' ? parsedOverdue : null
             });
             setIsEditing(false);
             setShowConfirmModal(false);
@@ -266,6 +278,16 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                                     placeholder="e.g. 1h30m, 90m, 1:30:00"
                                 />
                             </div>
+                            <div className="form-field">
+                                <label className="form-label">Overdue (Optional):</label>
+                                <input
+                                    type="text"
+                                    value={overdue}
+                                    onChange={(e) => setOverdue(e.target.value)}
+                                    className="form-input"
+                                    placeholder="e.g. 1d, 24h"
+                                />
+                            </div>
                         </>
                     )}
                     <div className="form-field">
@@ -300,6 +322,7 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                         <>
                             <p><strong>Frequency:</strong> {formatSecondsToDuration(counter.frequency || 0)}</p>
                             <p><strong>Alert Window:</strong> {formatSecondsToDuration(counter.alert_window || 0)}</p>
+                            <p><strong>Overdue:</strong> {counter.overdue ? formatSecondsToDuration(counter.overdue) : 'None'}</p>
                         </>
                     )}
                     <p><strong>Initial Value:</strong> {initialValue}</p>
