@@ -5,6 +5,7 @@ import { RecentActivityTable } from './components/RecentActivityTable';
 import { Plus, Edit2, SquareCheckBig, Search, X, UserRoundPlus, ChevronDown, ChevronUp, Trash2, ChevronsUpDown, Eye, EyeOff } from 'lucide-react';
 import { TagSharingModal } from './components/TagSharingModal';
 import { Counter, Tag } from './types';
+import { api } from './services/api';
 
 interface CounterListProps {
     onEdit: (counter: Counter) => void;
@@ -45,40 +46,29 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
 
     const loadCounters = async () => {
         try {
-            const [resCounters, resUpdates, resTags] = await Promise.all([
-                fetch('/api/counters'),
-                fetch('/api/counts'),
-                fetch('/api/tags')
+            const [countersData, updatesData, tagsData] = await Promise.all([
+                api.getCounters(),
+                api.getCounts(),
+                api.getTags()
             ]);
 
-            if (!resCounters.ok || !resUpdates.ok || !resTags.ok) throw new Error('Failed to fetch data');
-
-            const countersData: Counter[] = await resCounters.json();
-            const updatesData = await resUpdates.json();
-            const tagsData: Tag[] = await resTags.json();
             setAllTags(tagsData);
-            const updates: Array<{ id: number; counter: number; delta: number; user_email?: string; when?: string }> = updatesData || [];
+            const updates = updatesData || [];
             setUpdates(updates);
 
             // Load tag associations and focus_mode settings
             const tagMap: Record<number, string[]> = {};
             const focusModeMap: Record<string, boolean> = {};
             await Promise.all(tagsData.map(async (tag) => {
-                const [countersRes, settingsRes] = await Promise.all([
-                    fetch(`/api/tags/${tag.id}/counters`),
-                    fetch(`/api/tags/${tag.id}/settings?key=focus_mode`)
+                const [cids, settings] = await Promise.all([
+                    api.getCountersForTag(tag.id),
+                    api.getTagSetting(tag.id, 'focus_mode')
                 ]);
-                if (countersRes.ok) {
-                    const cids: number[] = await countersRes.json();
-                    cids.forEach(cid => {
-                        if (!tagMap[cid]) tagMap[cid] = [];
-                        tagMap[cid].push(tag.name);
-                    });
-                }
-                if (settingsRes.ok) {
-                    const settings = await settingsRes.json();
-                    focusModeMap[tag.name] = settings.focus_mode === 'true';
-                }
+                cids.forEach(cid => {
+                    if (!tagMap[cid]) tagMap[cid] = [];
+                    tagMap[cid].push(tag.name);
+                });
+                focusModeMap[tag.name] = settings.focus_mode === 'true';
             }));
             setCounterTags(tagMap);
             setTagFocusMode(focusModeMap);
@@ -105,12 +95,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
 
     const handleDeltaUpdate = async (id: number, delta: number) => {
         try {
-            const res = await fetch('/api/counts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ counter: id, delta }),
-            });
-            if (!res.ok) throw new Error('Update failed');
+            await api.addCount(id, delta);
             loadCounters();
         } catch (e) {
             console.error('Error updating counter', e);
@@ -121,10 +106,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
     const handleDeleteUpdate = async (updateId: number) => {
         if (!confirm('Delete this update?')) return;
         try {
-            const res = await fetch(`/api/counts/${updateId}`, {
-                method: 'DELETE',
-            });
-            if (!res.ok) throw new Error('Delete failed');
+            await api.deleteCount(updateId);
             loadCounters();
         } catch (e) {
             console.error('Error deleting update', e);

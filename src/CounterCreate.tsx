@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { parseDurationToSeconds, formatSecondsToDuration } from './utils/duration';
+import { api } from './services/api';
+import { CreateCounterPayload } from './types';
 
 interface CounterCreateProps {
     onCreated: () => void;
@@ -58,7 +60,13 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
                 throw new Error('Invalid Overdue duration format');
             }
 
-            const payload: any = { name, initial, step, type, last_performed_at: 0 };
+            const payload: CreateCounterPayload = { 
+                name, 
+                initial, 
+                step, 
+                type, 
+                last_performed_at: 0 
+            };
 
             if (type === 'repeating') {
                 payload.frequency = parsedFrequency;
@@ -70,44 +78,24 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
                 payload.overdue = null;
             }
 
-            const res = await fetch('/api/counters', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-
-            if (!res.ok) throw new Error(`Server error: ${res.status}`);
-
-            const newCounter = await res.json();
+            const newCounter = await api.createCounter(payload);
 
             // If initial value is non-zero, set it by posting a delta
             if (initial !== 0) {
-                await fetch('/api/counts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ counter: newCounter.id, delta: initial }),
-                });
+                await api.addCount(newCounter.id, initial);
             }
 
             // Handle Tags
             const tagNames = tags.split(',').map(t => t.trim()).filter(t => t !== '');
-            const tagsRes = await fetch('/api/tags');
-            if (!tagsRes.ok) throw new Error('Failed to fetch tags');
-            const allTags: any[] = await tagsRes.json();
+            const allTags = await api.getTags();
 
             for (const tagName of tagNames) {
                 let tagId = allTags.find(t => t.name === tagName)?.id;
                 if (!tagId) {
-                    const createRes = await fetch('/api/tags', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name: tagName }),
-                    });
-                    if (!createRes.ok) throw new Error(`Failed to create tag ${tagName}`);
-                    const newTag = await createRes.json();
+                    const newTag = await api.createTag(tagName);
                     tagId = newTag.id;
                 }
-                await fetch(`/api/tags/${tagId}/counters/${newCounter.id}`, { method: 'POST' });
+                await api.associateTagWithCounter(tagId, newCounter.id);
             }
 
             onCreated();
@@ -125,9 +113,7 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
 
         try {
             const tagNames = tags.split(',').map(t => t.trim()).filter(t => t !== '');
-            const res = await fetch('/api/tags');
-            if (!res.ok) throw new Error('Failed to fetch tags');
-            const allTags: any[] = await res.json();
+            const allTags = await api.getTags();
 
             const newTags = tagNames.filter(name => !allTags.find(t => t.name === name));
 

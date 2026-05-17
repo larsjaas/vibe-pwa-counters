@@ -7,6 +7,7 @@ import { NavBar } from './components/NavBar';
 import { AccountPage } from './AccountPage';
 import { StatisticsPage } from './StatisticsPage';
 import { AlertModal } from './components/AlertModal';
+import { api } from './services/api';
 
 
 const App: React.FC = () => {
@@ -22,12 +23,9 @@ const App: React.FC = () => {
 
     const fetchInvitesCount = async () => {
         try {
-            const res = await fetch('/api/invites');
-            if (res.ok) {
-                const data = await res.json();
-                const receivedInvites = data.filter((i: any) => !i.is_sender);
-                setPendingInvitesCount(receivedInvites.length);
-            }
+            const invites = await api.getInvites();
+            const receivedInvites = invites.filter((i: any) => !i.is_sender);
+            setPendingInvitesCount(receivedInvites.length);
         } catch (e) {
             console.error('Failed to fetch invites', e);
         }
@@ -36,12 +34,9 @@ const App: React.FC = () => {
     useEffect(() => {
         const fetchAccount = async () => {
             try {
-                const res = await fetch('/api/account');
-                if (res.ok) {
-                    const data = await res.json();
-                    setUserEmail(data.email);
-                    await fetchInvitesCount();
-                }
+                const data = await api.getAccount();
+                setUserEmail(data.email);
+                await fetchInvitesCount();
             } catch (e) {
                 console.error('Failed to fetch account info', e);
             }
@@ -100,12 +95,7 @@ const App: React.FC = () => {
 
     const handleUpdateCounter = async (id: number, updates: any) => {
         try {
-            const res = await fetch('/api/counters', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, ...updates }),
-            });
-            if (!res.ok) throw new Error('Update failed');
+            await api.updateCounter(id, updates);
             setEditingCounter(null);
             setRefreshCount(prev => prev + 1);
         } catch (e) {
@@ -115,8 +105,7 @@ const App: React.FC = () => {
 
     const handleDeleteCounter = async (id: number) => {
         try {
-            const res = await fetch(`/api/counters/${id}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error('Delete failed');
+            await api.deleteCounter(id);
             setEditingCounter(null);
             setRefreshCount(prev => prev + 1);
         } catch (e) {
@@ -128,12 +117,7 @@ const App: React.FC = () => {
         const isArchived = editingCounter?.archivetime;
         const archiveValue = isArchived ? "" : new Date().toISOString();
         try {
-            const res = await fetch(`/api/counters/${id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ archivetime: archiveValue }),
-            });
-            if (!res.ok) throw new Error('Archive failed');
+            await api.updateCounter(id, { archivetime: archiveValue });
             setEditingCounter(null);
             setRefreshCount(prev => prev + 1);
         } catch (e) {
@@ -143,19 +127,10 @@ const App: React.FC = () => {
 
     const handleResetCounter = async (id: number, initialValue: number) => {
         try {
-            const res = await fetch('/api/counts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ counter: id, delta: 0 }),
-            });
-            if (!res.ok) throw new Error('Reset failed');
+            await api.addCount({ counter: id, delta: 0 });
 
             if (initialValue !== 0) {
-                await fetch('/api/counts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ counter: id, delta: initialValue }),
-                });
+                await api.addCount({ counter: id, delta: initialValue });
             }
 
             setRefreshCount(prev => prev + 1);

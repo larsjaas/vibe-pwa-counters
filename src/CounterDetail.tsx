@@ -3,7 +3,8 @@ import { IconButton } from './components/IconButton';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { Archive, ArchiveRestore, Trash2, RotateCcw } from 'lucide-react';
 import { parseDurationToSeconds, formatSecondsToDuration } from './utils/duration';
-import { Counter } from './types';
+import { Counter, Tag } from './types';
+import { api } from './services/api';
 
 interface CounterDetailProps {
     counter: Counter;
@@ -54,33 +55,25 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [resTags, resCounts] = await Promise.all([
-                    fetch('/api/tags'),
-                    fetch('/api/counts')
+                const [allTags, counts] = await Promise.all([
+                    api.getTags(),
+                    api.getCounts()
                 ]);
-
-                if (!resTags.ok || !resCounts.ok) throw new Error('Failed to fetch data');
-
-                const allTags: any[] = await resTags.json();
-                const counts: any[] = await resCounts.json();
 
                 // Determine Initial Value
                 // Initial value is the first count created within 300ms of counter creation
                 const counterCreateTime = new Date(counter.createtime).getTime();
                 const initialCount = counts.find(c =>
                     c.counter === counter.id &&
-                    Math.abs(new Date(c.when).getTime() - counterCreateTime) <= 300
+                    Math.abs(new Date(c.when || '').getTime() - counterCreateTime) <= 300
                 );
                 setInitialValue(initialCount ? initialCount.delta : 0);
 
                 const counterTags: string[] = [];
                 for (const tag of allTags) {
-                    const associationRes = await fetch(`/api/tags/${tag.id}/counters`);
-                    if (associationRes.ok) {
-                        const cids: number[] = await associationRes.json();
-                        if (cids.includes(counter.id)) {
-                            counterTags.push(tag.name);
-                        }
+                    const cids = await api.getCountersForTag(tag.id);
+                    if (cids.includes(counter.id)) {
+                        counterTags.push(tag.name);
                     }
                 }
                 setTags(counterTags.join(', '));
@@ -98,18 +91,13 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
         try {
             const tagNames = currentTags.split(',').map(t => t.trim()).filter(t => t !== '');
 
-            const res = await fetch('/api/tags');
-            if (!res.ok) throw new Error('Failed to fetch tags');
-            const allTags: any[] = await res.json();
+            const allTags = await api.getTags();
 
-            const associatedTags: any[] = [];
+            const associatedTags: Tag[] = [];
             for (const tag of allTags) {
-                const associationRes = await fetch(`/api/tags/${tag.id}/counters`);
-                if (associationRes.ok) {
-                    const cids: number[] = await associationRes.json();
-                    if (cids.includes(counter.id)) {
-                        associatedTags.push(tag);
-                    }
+                const cids = await api.getCountersForTag(tag.id);
+                if (cids.includes(counter.id)) {
+                    associatedTags.push(tag);
                 }
             }
 
@@ -117,7 +105,7 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
 
             for (const tag of associatedTags) {
                 if (!tagNames.includes(tag.name)) {
-                    await fetch(`/api/tags/${tag.id}/counters/${counter.id}`, { method: 'DELETE' });
+                    await api.dissociateTagFromCounter(tag.id, counter.id);
                 }
             }
 
@@ -125,16 +113,10 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                 if (!associatedNames.includes(name)) {
                     let tagId = allTags.find(t => t.name === name)?.id;
                     if (!tagId) {
-                        const createRes = await fetch('/api/tags', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ name }),
-                        });
-                        if (!createRes.ok) throw new Error(`Failed to create tag ${name}`);
-                        const newTag = await createRes.json();
+                        const newTag = await api.createTag(name);
                         tagId = newTag.id;
                     }
-                    await fetch(`/api/tags/${tagId}/counters/${counter.id}`, { method: 'POST' });
+                    await api.associateTagWithCounter(tagId, counter.id);
                 }
             }
         } catch (e) {
@@ -159,9 +141,7 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
             }
 
             const tagNames = tags.split(',').map(t => t.trim()).filter(t => t !== '');
-            const res = await fetch('/api/tags');
-            if (!res.ok) throw new Error('Failed to fetch tags');
-            const allTags: any[] = await res.json();
+            const allTags = await api.getTags();
 
             const newTags = tagNames.filter(name => !allTags.find(t => t.name === name));
 
