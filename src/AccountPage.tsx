@@ -39,7 +39,7 @@ interface AccountPageProps {
     refreshTrigger?: number;
 }
 
-const FRONTEND_VERSION = "0.9.10";
+const FRONTEND_VERSION = "0.9.11";
 
 const SettingSwitch = ({ label, checked, onChange }: { label: string, checked: boolean, onChange: (val: boolean) => void }) => (
     <div style={{
