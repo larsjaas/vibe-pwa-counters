@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { CounterList, Counter } from './CounterList';
+import { CounterList } from './pages/CounterListPage';
+import { Counter } from './types';
 import { CounterCreate } from './CounterCreate';
 import { CounterDetail } from './CounterDetail';
 import { NavBar } from './components/NavBar';
-import { AccountPage } from './AccountPage';
-import { StatisticsPage } from './StatisticsPage';
+import { AccountPage } from './pages/AccountPage';
+import { StatisticsPage } from './pages/StatisticsPage';
 import { AlertModal } from './components/AlertModal';
 import { api } from './services/api';
+import { useSSE } from './hooks/useSSE';
+import { useCounterOperations } from './hooks/useCounterOperations';
 
 
 const App: React.FC = () => {
@@ -20,6 +23,18 @@ const App: React.FC = () => {
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
+
+    const {
+        handleUpdateCounter,
+        handleDeleteCounter,
+        handleArchiveCounter,
+        handleResetCounter,
+    } = useCounterOperations({
+        onSuccess: () => {
+            setEditingCounter(null);
+            setRefreshCount(prev => prev + 1);
+        }
+    });
 
     const fetchInvitesCount = async () => {
         try {
@@ -44,100 +59,12 @@ const App: React.FC = () => {
         fetchAccount();
     }, []);
 
-    useEffect(() => {
-
-        const eventSource = new EventSource('/api/events');
-
-        eventSource.onmessage = (event) => {
-            console.log('SSE event received:', event.data);
-
-            if (event.data.startsWith('ALERT ')) {
-                try {
-                    const jsonStr = event.data.substring(6);
-                    const data = JSON.parse(jsonStr);
-                    setAlertMessage(data.text);
-                } catch (e) {
-                    console.error('Failed to parse SSE alert JSON:', e);
-                }
-            } else if (event.data === 'UPDATED TAG_INVITES') {
-                console.log('SSE event UPDATED TAG_INVITES received');
-                fetchInvitesCount();
-                setAccountRefreshCount(prev => prev + 1);
-            } else if (event.data === 'UPDATED TAG_SHARES') {
-                console.log('SSE event UPDATED TAG_SHARES received');
-                setRefreshCount(prev => prev + 1);
-                setAccountRefreshCount(prev => prev + 1);
-            } else {
-                setRefreshCount(prev => prev + 1);
-                fetchInvitesCount();
-            }
-        };
-
-        eventSource.addEventListener('UPDATED COUNTERS', () => {
-            console.log('SSE event UPDATED COUNTERS received');
-            setRefreshCount(prev => prev + 1);
-        });
-
-        eventSource.addEventListener('UPDATED COUNTS', () => {
-            console.log('SSE event UPDATED COUNTS received');
-            setRefreshCount(prev => prev + 1);
-        });
-
-        eventSource.onerror = (err) => {
-            console.error('SSE connection error:', err);
-            // EventSource automatically attempts to reconnect
-        };
-
-        return () => {
-            eventSource.close();
-        };
-    }, []);
-
-    const handleUpdateCounter = async (id: number, updates: any) => {
-        try {
-            await api.updateCounter(id, updates);
-            setEditingCounter(null);
-            setRefreshCount(prev => prev + 1);
-        } catch (e) {
-            alert('Failed to update counter');
-        }
-    };
-
-    const handleDeleteCounter = async (id: number) => {
-        try {
-            await api.deleteCounter(id);
-            setEditingCounter(null);
-            setRefreshCount(prev => prev + 1);
-        } catch (e) {
-            alert('Failed to delete counter');
-        }
-    };
-
-    const handleArchiveCounter = async (id: number) => {
-        const isArchived = editingCounter?.archivetime;
-        const archiveValue = isArchived ? "" : new Date().toISOString();
-        try {
-            await api.updateCounter(id, { archivetime: archiveValue });
-            setEditingCounter(null);
-            setRefreshCount(prev => prev + 1);
-        } catch (e) {
-            alert('Failed to archive counter');
-        }
-    };
-
-    const handleResetCounter = async (id: number, initialValue: number) => {
-        try {
-            await api.addCount({ counter: id, delta: 0 });
-
-            if (initialValue !== 0) {
-                await api.addCount({ counter: id, delta: initialValue });
-            }
-
-            setRefreshCount(prev => prev + 1);
-        } catch (e) {
-            alert('Failed to reset counter');
-        }
-    };
+    useSSE({
+        onRefresh: () => setRefreshCount(prev => prev + 1),
+        onAccountRefresh: () => setAccountRefreshCount(prev => prev + 1),
+        onAlert: (msg) => setAlertMessage(msg),
+        onInvitesUpdate: () => fetchInvitesCount(),
+    });
 
     return (
         <div className="app-container">
@@ -197,7 +124,7 @@ const App: React.FC = () => {
                             onBack={() => setEditingCounter(null)}
                             onUpdate={handleUpdateCounter}
                             onDelete={handleDeleteCounter}
-                            onArchive={handleArchiveCounter}
+                            onArchive={(id) => handleArchiveCounter(id, editingCounter?.archivetime !== null)}
                             onReset={handleResetCounter}
                         />
                     </div>

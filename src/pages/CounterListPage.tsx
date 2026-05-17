@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useLocalStorage } from './hooks/useLocalStorage';
-import { IconButton } from './components/IconButton';
-import { RecentActivityTable } from './components/RecentActivityTable';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import { IconButton } from '../components/IconButton';
+import { RecentActivityTable } from '../components/RecentActivityTable';
 import { Plus, Edit2, SquareCheckBig, Search, X, UserRoundPlus, ChevronDown, ChevronUp, Trash2, ChevronsUpDown, Eye, EyeOff } from 'lucide-react';
-import { TagSharingModal } from './components/TagSharingModal';
-import { Counter, Tag } from './types';
-import { api } from './services/api';
-import { isOverdue, filterAndSortCounters } from './counters';
+import { TagSharingModal } from '../components/TagSharingModal';
+import { Counter, Tag } from '../types';
+import { api } from '../services/api';
+import { isOverdue, filterAndSortCounters } from '../counters';
 
 interface CounterListProps {
     onEdit: (counter: Counter) => void;

@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { Settings, User } from 'lucide-react';
-import { ConfirmationModal } from './components/ConfirmationModal';
-import { IconButton } from './components/IconButton';
+import { ConfirmationModal } from '../components/ConfirmationModal';
+import { IconButton } from '../components/IconButton';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useAccount } from './hooks/useAccount';
-import { AccountInfoSection } from './components/AccountInfoSection';
-import { TagSharingTable } from './components/TagSharingTable';
-import { InvitesTable } from './components/InvitesTable';
-import { APIKeyTable } from './components/APIKeyTable';
-import { AccountSettingsSection } from './components/AccountSettingsSection';
-import { AccountActions } from './components/AccountActions';
+import { useAccount } from '../hooks/useAccount';
+import { AccountInfoSection } from '../components/AccountInfoSection';
+import { TagSharingTable } from '../components/TagSharingTable';
+import { InvitesTable } from '../components/InvitesTable';
+import { APIKeyTable } from '../components/APIKeyTable';
+import { AccountSettingsSection } from '../components/AccountSettingsSection';
+import { AccountActions } from '../components/AccountActions';
 
 interface AccountPageProps {
     fetchInvitesCount?: () => Promise<void>;

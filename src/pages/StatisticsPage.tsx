@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Counter } from './CounterList';
-import { ConfirmationModal } from './components/ConfirmationModal';
-import { RecentActivityTable, Count } from './components/RecentActivityTable';
-import { api } from './services/api';
-import { useStats, TimeScope, GraphMode } from './hooks/useStats';
-import { StatsChart } from './components/StatsChart';
-import { StatsControls } from './components/StatsControls';
+import { Counter } from '../types';
+import { ConfirmationModal } from '../components/ConfirmationModal';
+import { RecentActivityTable, Count } from '../components/RecentActivityTable';
+import { api } from '../services/api';
+import { useStats, TimeScope, GraphMode } from '../hooks/useStats';
+import { StatsChart } from '../components/StatsChart';
+import { StatsControls } from '../components/StatsControls';
 
 interface StatisticsPageProps {
     refreshTrigger?: number;
