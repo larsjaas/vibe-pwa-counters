@@ -3,21 +3,7 @@ import { IconButton } from './components/IconButton';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { Archive, ArchiveRestore, Trash2, RotateCcw } from 'lucide-react';
 import { parseDurationToSeconds, formatSecondsToDuration } from './utils/duration';
-
-interface Counter {
-    id: number;
-    name: string;
-    step: number;
-    count: number;
-    createtime: string;
-    archivetime: string | null;
-    user_email: string;
-    type: 'standard' | 'repeating';
-    priority_score: number;
-    frequency?: number;
-    alert_window?: number;
-    overdue?: number;
-}
+import { Counter } from './types';
 
 interface CounterDetailProps {
     counter: Counter;

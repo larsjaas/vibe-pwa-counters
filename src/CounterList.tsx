@@ -4,23 +4,7 @@ import { IconButton } from './components/IconButton';
 import { RecentActivityTable } from './components/RecentActivityTable';
 import { Plus, Edit2, SquareCheckBig, Search, X, UserRoundPlus, ChevronDown, ChevronUp, Trash2, ChevronsUpDown, Eye, EyeOff } from 'lucide-react';
 import { TagSharingModal } from './components/TagSharingModal';
-
-export interface Counter {
-    id: number;
-    name: string;
-    step: number;
-    count: number;
-    createtime: string;
-    archivetime: string | null;
-    user_email: string;
-    type: 'standard' | 'repeating';
-    priority_score: number;
-    repeat_status: string;
-    frequency: number | null;
-    alert_window: number | null;
-    overdue: number | null;
-    last_performed_at: string | null;
-}
+import { Counter, Tag } from './types';
 
 interface CounterListProps {
     onEdit: (counter: Counter) => void;
@@ -33,7 +17,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
     const [counters, setCounters] = useState<Counter[]>([]);
     const [updates, setUpdates] = useState<Array<{ id: number; counter: number; delta: number; user_email?: string; when?: string }>>([]);
     const [counterTags, setCounterTags] = useState<Record<number, string[]>>({});
-    const [allTags, setAllTags] = useState<{ id: number; name: string, user_email: string }[]>([]);
+    const [allTags, setAllTags] = useState<Tag[]>([]);
     const [tagFocusMode, setTagFocusMode] = useState<Record<string, boolean>>({});
     const [loading, setLoading] = useState(true);
     const [showArchived, setShowArchived] = useLocalStorage('counter-list-show-archived', false);
@@ -69,9 +53,9 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
 
             if (!resCounters.ok || !resUpdates.ok || !resTags.ok) throw new Error('Failed to fetch data');
 
-            const countersData: Array<{ id: number; name: string; step: number; archivetime: string | null; user_email: string; type: 'standard' | 'repeating'; priority_score: number; repeat_status: string; frequency: number | null; alert_window: number | null; last_performed_at: string | null }> = await resCounters.json();
+            const countersData: Counter[] = await resCounters.json();
             const updatesData = await resUpdates.json();
-            const tagsData: Array<{ id: number; name: string, user_email: string }> = await resTags.json();
+            const tagsData: Tag[] = await resTags.json();
             setAllTags(tagsData);
             const updates: Array<{ id: number; counter: number; delta: number; user_email?: string; when?: string }> = updatesData || [];
             setUpdates(updates);
