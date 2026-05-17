@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { IconButton } from './components/IconButton';
 import { RecentActivityTable } from './components/RecentActivityTable';
-import { Plus, Edit2, SquareCheckBig, Search, X, UserRoundPlus, ChevronDown, ChevronUp, Trash2, ChevronsUpDown } from 'lucide-react';
+import { Plus, Edit2, SquareCheckBig, Search, X, UserRoundPlus, ChevronDown, ChevronUp, Trash2, ChevronsUpDown, Eye, EyeOff } from 'lucide-react';
 import { TagSharingModal } from './components/TagSharingModal';
 
 export interface Counter {
@@ -368,6 +368,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                 <div className="tags-filter-container">
                     {visibleTags.map(tag => {
                         const isSelected = searchQuery.toLowerCase() === tag.name.toLowerCase();
+                        const isFocusTag = tagFocusMode[tag.name];
                         return (
                             <span
                                 key={tag.id}
@@ -377,8 +378,12 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                                     fontWeight: tag.user_email === userEmail ? 'bold' : 'normal',
                                     backgroundColor: isSelected ? '#0070f3' : '',
                                     color: isSelected ? 'white' : '',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
                                 }}
                             >
+                                {isFocusTag && (isSelected ? <Eye size={14} /> : <EyeOff size={14} />)}
                                 {tag.name}
                             </span>
                         );
