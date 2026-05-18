@@ -16,7 +16,7 @@ interface AccountPageProps {
     refreshTrigger?: number;
 }
 
-const FRONTEND_VERSION = "0.9.12";
+const FRONTEND_VERSION = "0.9.13";
 
 export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, refreshTrigger }) => {
     const location = useLocation();
