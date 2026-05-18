@@ -10,7 +10,7 @@ export interface Count {
 }
 
 interface RecentActivityTableProps {
-    counterId: number;
+    counterIds: number[];
     counts: Count[];
     currentUserEmail: string | null;
     onDelete: (id: number) => void;
@@ -21,7 +21,7 @@ interface RecentActivityTableProps {
 }
 
 export const RecentActivityTable: React.FC<RecentActivityTableProps> = ({
-    counterId,
+    counterIds,
     counts,
     currentUserEmail,
     onDelete,
@@ -31,7 +31,7 @@ export const RecentActivityTable: React.FC<RecentActivityTableProps> = ({
     compact = false
 }) => {
     const filteredCounts = counts
-        .filter(c => c.counter === counterId)
+        .filter(c => counterIds.includes(c.counter))
         .sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime())
         .slice(0, limit);
 

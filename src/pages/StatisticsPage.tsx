@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Counter } from '../types';
+import { Counter, Tag } from '../types';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { RecentActivityTable, Count } from '../components/RecentActivityTable';
 import { api } from '../services/api';
 import { useStats, TimeScope, GraphMode } from '../hooks/useStats';
 import { StatsChart } from '../components/StatsChart';
 import { StatsControls } from '../components/StatsControls';
+import { TagCounterSelector } from '../components/TagCounterSelector';
 
 interface StatisticsPageProps {
     refreshTrigger?: number;
@@ -13,6 +14,8 @@ interface StatisticsPageProps {
 
 export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }) => {
     const [counters, setCounters] = useState<Counter[]>([]);
+    const [tags, setTags] = useState<Tag[]>([]);
+    const [tagCountersMap, setTagCountersMap] = useState<Map<number, number[]>>(new Map());
     const [allCounts, setAllCounts] = useState<Count[]>([]);
     const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
@@ -23,6 +26,8 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
     const {
         selectedCounterId,
         setSelectedCounterId,
+        selectedTagId,
+        setSelectedTagId,
         graphMode,
         setGraphMode,
         frequencyTimeScope,
@@ -31,7 +36,7 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
         setTimelineTimeScope,
         stats,
         currentScope
-    } = useStats(allCounts, counters);
+    } = useStats(allCounts, counters, tagCountersMap);
 
     const setCurrentScope = (scope: TimeScope) => {
         if (graphMode === 'frequency') {
@@ -44,13 +49,23 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [countersData, countsData, accountData] = await Promise.all([
+                const [countersData, countsData, accountData, tagsData] = await Promise.all([
                     api.getCounters(),
                     api.getCounts(),
-                    api.getAccount()
+                    api.getAccount(),
+                    api.getTags()
                 ]);
 
                 setCurrentUserEmail(accountData.email);
+
+                // Fetch counters for each tag
+                const tagMap = new Map<number, number[]>();
+                await Promise.all(tagsData.map(async (tag) => {
+                    const counterIds = await api.getCountersForTag(tag.id);
+                    tagMap.set(tag.id, counterIds);
+                }));
+                setTags(tagsData);
+                setTagCountersMap(tagMap);
 
                 const lastUsedMap = new Map<number, number>();
                 countsData.forEach((count, index) => {
@@ -68,7 +83,7 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                 setCounters(sortedCounters);
                 setAllCounts(countsData);
 
-                if (selectedCounterId === null && sortedCounters.length > 0) {
+                if (selectedCounterId === null && selectedTagId === null && sortedCounters.length > 0) {
                     setSelectedCounterId(sortedCounters[0].id);
                 } else if (selectedCounterId !== null && !sortedCounters.some(c => c.id === selectedCounterId)) {
                     if (sortedCounters.length > 0) {
@@ -118,7 +133,7 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
     return (
         <div className="stats-page">
             <div className="stats-container">
-                {selectedCounterId ? (
+                {selectedCounterId !== null || selectedTagId !== null ? (
                     <>
                         <div style={{ position: 'relative', marginBottom: '1rem' }}>
                             <h1 style={{ textAlign: 'center', margin: 0, fontSize: '1.5rem' }}>Statistics</h1>
@@ -130,27 +145,15 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                             />
                         </div>
                         <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
-                            <select
-                                value={selectedCounterId}
-                                onChange={(e) => setSelectedCounterId(parseInt(e.target.value))}
-                                style={{
-                                    fontSize: '1.2rem',
-                                    fontWeight: 'bold',
-                                    padding: '5px',
-                                    cursor: 'pointer',
-                                    textAlign: 'center',
-                                    width: 'auto',
-                                    margin: '0 auto',
-                                    display: 'block',
-                                    backgroundColor: 'transparent',
-                                    border: 'none',
-                                    color: 'inherit'
-                                }}
-                            >
-                                {counters.map(c => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                            </select>
+                            <TagCounterSelector 
+                                counters={counters}
+                                tags={tags}
+                                tagCountersMap={tagCountersMap}
+                                selectedCounterId={selectedCounterId}
+                                setSelectedCounterId={setSelectedCounterId}
+                                selectedTagId={selectedTagId}
+                                setSelectedTagId={setSelectedTagId}
+                            />
                         </div>
                         <StatsChart stats={stats} currentScope={currentScope} />
                         <div style={{
@@ -244,7 +247,10 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                             fontSize: '0.9rem'
                         }}>
                             <RecentActivityTable
-                                counterId={selectedCounterId!}
+                                counterIds={selectedCounterId !== null 
+                                   ? [selectedCounterId] 
+                                   : (selectedTagId !== null ? (tagCountersMap.get(selectedTagId) || []) : [])
+                               }
                                 counts={allCounts}
                                 currentUserEmail={currentUserEmail}
                                 title="Recent Activity"

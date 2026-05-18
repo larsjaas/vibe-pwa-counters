@@ -7,6 +7,8 @@ export type TimeScope = 'Day' | 'Week' | 'Month' | 'YTD' | 'Year';
 interface UseStatsReturn {
     selectedCounterId: number | null;
     setSelectedCounterId: (id: number | null) => void;
+    selectedTagId: number | null;
+    setSelectedTagId: (id: number | null) => void;
     graphMode: GraphMode;
     setGraphMode: (mode: GraphMode) => void;
     frequencyTimeScope: TimeScope;
@@ -17,15 +19,21 @@ interface UseStatsReturn {
     currentScope: TimeScope;
 }
 
-export const useStats = (allCounts: Count[], counters: any[]): UseStatsReturn => {
+export const useStats = (allCounts: Count[], counters: any[], tagCountersMap: Map<number, number[]>): UseStatsReturn => {
     const [selectedCounterId, setSelectedCounterId] = useState<number | null>(() => {
         const saved = localStorage.getItem('statsSelectedCounterId');
+        return saved ? parseInt(saved, 10) : null;
+    });
+
+    const [selectedTagId, setSelectedTagId] = useState<number | null>(() => {
+        const saved = localStorage.getItem('statsSelectedTagId');
         return saved ? parseInt(saved, 10) : null;
     });
 
     const [graphMode, setGraphMode] = useState<GraphMode>(() => {
         return (localStorage.getItem('statsGraphMode') as GraphMode) || 'frequency';
     });
+
 
     const [frequencyTimeScope, setFrequencyTimeScope] = useState<TimeScope>(() => {
         return (localStorage.getItem('statsFrequencyTimeScope') as TimeScope) || 'Day';
@@ -42,6 +50,12 @@ export const useStats = (allCounts: Count[], counters: any[]): UseStatsReturn =>
     }, [selectedCounterId]);
 
     useEffect(() => {
+        if (selectedTagId !== null) {
+            localStorage.setItem('statsSelectedTagId', selectedTagId.toString());
+        }
+    }, [selectedTagId]);
+
+    useEffect(() => {
         localStorage.setItem('statsGraphMode', graphMode);
     }, [graphMode]);
 
@@ -56,10 +70,17 @@ export const useStats = (allCounts: Count[], counters: any[]): UseStatsReturn =>
     const currentScope = graphMode === 'frequency' ? frequencyTimeScope : timelineTimeScope;
 
     const stats = (() => {
-        if (selectedCounterId === null) return [];
+        if (selectedCounterId === null && selectedTagId === null) return [];
         
         const now = new Date();
-        const filteredCounts = allCounts.filter(c => c.counter === selectedCounterId);
+        let filteredCounts: Count[] = [];
+        if (selectedCounterId !== null) {
+            filteredCounts = allCounts.filter(c => c.counter === selectedCounterId);
+        } else if (selectedTagId !== null) {
+            const tagCounters = tagCountersMap.get(selectedTagId) || [];
+            filteredCounts = allCounts.filter(c => tagCounters.includes(c.counter));
+        }
+        
         let buckets: number[] = [];
 
         if (graphMode === 'frequency') {
@@ -153,6 +174,8 @@ export const useStats = (allCounts: Count[], counters: any[]): UseStatsReturn =>
     return {
         selectedCounterId,
         setSelectedCounterId,
+        selectedTagId,
+        setSelectedTagId,
         graphMode,
         setGraphMode,
         frequencyTimeScope,
