@@ -155,7 +155,7 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                                 setSelectedTagId={setSelectedTagId}
                             />
                         </div>
-                        <StatsChart stats={stats} currentScope={currentScope} />
+                        <StatsChart stats={stats} currentScope={currentScope} graphMode={graphMode} />
                         <div style={{
                             display: 'flex',
                             justifyContent: 'space-between',

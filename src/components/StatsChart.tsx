@@ -3,9 +3,10 @@ import React from 'react';
 interface StatsChartProps {
     stats: number[];
     currentScope: string;
+    graphMode: 'frequency' | 'timeline';
 }
 
-export const StatsChart: React.FC<StatsChartProps> = ({ stats, currentScope }) => {
+export const StatsChart: React.FC<StatsChartProps> = ({ stats, currentScope, graphMode }) => {
     const maxStats = Math.max(...stats);
     
     const getLabels = (max: number) => {
@@ -93,21 +94,55 @@ export const StatsChart: React.FC<StatsChartProps> = ({ stats, currentScope }) =
                 width: '100%',
                 maxWidth: '600px',
             }}>
-                {stats.map((value, index) => (
-                    <div key={index} style={{
-                        flex: 1,
-                        backgroundColor: '#0070f3',
-                        height: `${(value / (maxStats || 1)) * 100}%`,
-                        minHeight: '2px',
-                        borderRadius: '4px 4px 0 0',
-                        position: 'relative',
-                        cursor: 'pointer'
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.title = `${index}:00 - ${value} actions`;
-                    }}
-                    />
-                ))}
+                {stats.map((value, index) => {
+                    const getLabel = () => {
+                        if (graphMode === 'frequency') {
+                            switch (currentScope) {
+                                case 'Day': return `${index}:00`;
+                                case 'Week': return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][index] || '';
+                                case 'Month': return `${index + 1}`;
+                                case 'YTD':
+                                case 'Year': return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][index] || '';
+                                default: return `${index}`;
+                            }
+                        } else {
+                            switch (currentScope) {
+                                case 'Day': return `${index}:00`;
+                                case 'Week': {
+                                    const date = new Date(Date.now() - (7 - index) * 24 * 60 * 60 * 1000);
+                                    return date.toLocaleDateString('en-US', { weekday: 'short' });
+                                }
+                                case 'Month': {
+                                    const date = new Date(Date.now() - (30 - index) * 24 * 60 * 60 * 1000);
+                                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                }
+                                case 'YTD': return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][index] || '';
+                                case 'Year': {
+                                    const date = new Date();
+                                    date.setMonth(date.getMonth() - 11 + index);
+                                    return date.toLocaleDateString('en-US', { month: 'short' });
+                                }
+                                default: return `${index}`;
+                            }
+                        }
+                    };
+
+                    return (
+                        <div key={index} style={{
+                            flex: 1,
+                            backgroundColor: '#0070f3',
+                            height: `${(value / (maxStats || 1)) * 100}%`,
+                            minHeight: '2px',
+                            borderRadius: '4px 4px 0 0',
+                            position: 'relative',
+                            cursor: 'pointer'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.title = `${getLabel()} - ${value} actions`;
+                        }}
+                        />
+                    );
+                })}
             </div>
         </div>
     );
