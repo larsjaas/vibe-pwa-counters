@@ -59,7 +59,8 @@ export const TagCounterSelector: React.FC<TagCounterSelectorProps> = ({
     const currentLabel = () => {
         if (selectedCounterId !== null) {
             const c = counters.find(c => c.id === selectedCounterId);
-            return c ? `Counter: ${c.name}` : 'Select Counter';
+            if (!c) return 'Select Counter';
+            return c.type === 'repeating' ? `Task: ${c.name}` : `Counter: ${c.name}`;
         }
         if (selectedTagId !== null) {
             const t = tags.find(t => t.id === selectedTagId);
