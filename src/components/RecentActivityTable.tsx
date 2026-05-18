@@ -30,8 +30,8 @@ export const RecentActivityTable: React.FC<RecentActivityTableProps> = ({
     title,
     compact = false
 }) => {
-    const filteredCounts = counts
-        .filter(c => counterIds.includes(c.counter))
+    const filteredCounts = (counts || [])
+        .filter(c => counterIds?.includes(c.counter))
         .sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime())
         .slice(0, limit);
 

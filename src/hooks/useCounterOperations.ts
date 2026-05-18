@@ -41,9 +41,9 @@ export const useCounterOperations = ({ onSuccess }: UseCounterOperationsProps) =
 
     const handleResetCounter = async (id: number, initialValue: number) => {
         try {
-            await api.addCount({ counter: id, delta: 0 });
+            await api.addCount(id, 0);
             if (initialValue !== 0) {
-                await api.addCount({ counter: id, delta: initialValue });
+                await api.addCount(id, initialValue);
             }
             onSuccess();
             return { success: true };

@@ -344,7 +344,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                                             <div className="expansion-history-row">
                                                 <span className="expansion-label">Recent activity:</span>
                                                 <RecentActivityTable
-                                                    counterId={c.id}
+                                                    counterIds={[c.id]}
                                                     counts={updates}
                                                     currentUserEmail={userEmail}
                                                     onDelete={handleDeleteUpdate}
