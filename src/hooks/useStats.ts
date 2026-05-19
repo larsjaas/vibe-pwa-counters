@@ -104,7 +104,7 @@ const getBuckets = (allCounts: Count[], counterId: number, scope: TimeScope, mod
             }
             case 'Year': {
                 buckets = new Array(12).fill(0);
-                const year = new Date().getFullYear() - offset - 1;
+                const year = new Date().getFullYear() - offset;
                 const start = new Date(year, 0, 1);
                 const end = new Date(year, 11, 31, 23, 59, 59);
                 filteredCounts.filter(c => {
@@ -133,6 +133,7 @@ interface UseStatsReturn {
     setTimelineTimeScope: (scope: TimeScope) => void;
     timelineOffset: number;
     setTimelineOffset: (offset: number) => void;
+    maxTimelineOffset: number;
     stats: StatsSeries[];
     currentScope: TimeScope;
 }
@@ -196,6 +197,67 @@ export const useStats = (allCounts: Count[], counters: any[], tagCountersMap: Ma
 
     const currentScope = graphMode === 'frequency' ? frequencyTimeScope : timelineTimeScope;
 
+    const maxTimelineOffset = (() => {
+        try {
+            if (selectedCounterId === null && selectedTagId === null) return 0;
+            
+            const relevantCounts = allCounts.filter(c => {
+                if (!c || !c.when) return false;
+                const t = new Date(c.when).getTime();
+                if (isNaN(t)) return false;
+                if (selectedCounterId !== null) return c.counter === selectedCounterId;
+                if (selectedTagId !== null) {
+                    const tagCounters = tagCountersMap.get(selectedTagId) || [];
+                    return tagCounters.includes(c.counter);
+                }
+                return false;
+            });
+
+            if (relevantCounts.length === 0) return 0;
+
+            const timestamps = relevantCounts.map(c => new Date(c.when).getTime()).filter(t => !isNaN(t));
+            if (timestamps.length === 0) return 0;
+
+            const earliestTime = Math.min(...timestamps);
+            if (isNaN(earliestTime)) return 0;
+
+            const earliest = new Date(earliestTime);
+            const now = new Date();
+
+            // Hard limit: do not allow navigating before Jan 1st, 2025
+            const absoluteLimitDate = new Date(2025, 0, 1);
+            const absoluteLimitTime = absoluteLimitDate.getTime();
+
+            switch (currentScope) {
+                case 'Day': {
+                    const dataOffset = Math.ceil((now.getTime() - earliestTime) / (24 * 60 * 60 * 1000));
+                    const hardLimit = Math.ceil((now.getTime() - absoluteLimitTime) / (24 * 60 * 60 * 1000));
+                    return Math.min(dataOffset, hardLimit);
+                }
+                case 'Week': {
+                    const dataOffset = Math.ceil((now.getTime() - earliestTime) / (7 * 24 * 60 * 60 * 1000));
+                    const hardLimit = Math.ceil((now.getTime() - absoluteLimitTime) / (7 * 24 * 60 * 60 * 1000));
+                    return Math.min(dataOffset, hardLimit);
+                }
+                case 'Month': {
+                    const dataOffset = (now.getFullYear() - earliest.getFullYear()) * 12 + (now.getMonth() - earliest.getMonth());
+                    const hardLimit = (now.getFullYear() - 2025) * 12 + now.getMonth();
+                    return Math.min(dataOffset, hardLimit);
+                }
+                case 'YTD': 
+                case 'Year': {
+                    const dataOffset = now.getFullYear() - earliest.getFullYear();
+                    const hardLimit = now.getFullYear() - 2025;
+                    return Math.min(dataOffset, hardLimit);
+                }
+                default: 
+                    return 0;
+            }
+        } catch (e) {
+            return 0;
+        }
+    })();
+
     const stats = (() => {
         if (selectedCounterId === null && selectedTagId === null) return [];
         
@@ -235,6 +297,7 @@ export const useStats = (allCounts: Count[], counters: any[], tagCountersMap: Ma
         setTimelineTimeScope,
         timelineOffset,
         setTimelineOffset,
+        maxTimelineOffset,
         stats,
         currentScope
     };

@@ -37,6 +37,7 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
         setTimelineTimeScope,
         timelineOffset,
         setTimelineOffset,
+        maxTimelineOffset,
         stats,
         currentScope
     } = useStats(allCounts, counters, tagCountersMap);
@@ -147,6 +148,7 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                                 setCurrentScope={setCurrentScope} 
                                 timelineOffset={timelineOffset}
                                 setTimelineOffset={setTimelineOffset}
+                               maxTimelineOffset={maxTimelineOffset}
                             />
                         </div>
                         <div style={{ marginBottom: '2rem', textAlign: 'center' }}>

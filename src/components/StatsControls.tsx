@@ -9,6 +9,7 @@ interface StatsControlsProps {
     setCurrentScope: (scope: TimeScope) => void;
     timelineOffset: number;
     setTimelineOffset: (offset: number) => void;
+    maxTimelineOffset: number;
 }
 
 export const StatsControls: React.FC<StatsControlsProps> = ({ 
@@ -17,7 +18,8 @@ export const StatsControls: React.FC<StatsControlsProps> = ({
     currentScope, 
     setCurrentScope,
     timelineOffset,
-    setTimelineOffset
+    setTimelineOffset,
+    maxTimelineOffset
 }) => {
     const getPeriodLabel = () => {
         if (graphMode !== 'timeline') return null;
@@ -45,10 +47,10 @@ export const StatsControls: React.FC<StatsControlsProps> = ({
             }
             case 'YTD': {
                 const y = new Date().getFullYear() - offset;
-                return `${y} Year-to-Date`;
+                return offset === 0 ? `${y} Year-to-Date` : `${y}`;
             }
             case 'Year': {
-                const y = new Date().getFullYear() - offset - 1;
+                const y = new Date().getFullYear() - offset;
                 return `${y}`;
             }
         }
@@ -134,34 +136,44 @@ export const StatsControls: React.FC<StatsControlsProps> = ({
                         color: '#666'
                     }}>
                         <button 
-                            onClick={() => setTimelineOffset(prev => Math.max(0, prev + 100))}
+                            onClick={() => setTimelineOffset(prev => {
+                               if (isNaN(prev)) return 0;
+                                const next = prev + 100;
+                               const max = typeof maxTimelineOffset === 'number' ? maxTimelineOffset : Infinity;
+                                return Math.min(max, next);
+                            })}
                             style={{ 
                                 padding: '2px 8px', 
-                                cursor: 'pointer', 
+                                cursor: (timelineOffset >= maxTimelineOffset || isNaN(timelineOffset)) ? 'default' : 'pointer', 
                                 borderRadius: '4px', 
                                 border: '1px solid #ccc',
                                 backgroundColor: '#fff',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                color: '#666'
+                                color: (timelineOffset >= maxTimelineOffset || isNaN(timelineOffset)) ? '#ccc' : '#666'
                             }}
                             title="Skip to start"
                         >
                             <ChevronsLeft size={16} />
                         </button>
                         <button 
-                            onClick={() => setTimelineOffset(prev => Math.max(0, prev + 1))}
+                            onClick={() => setTimelineOffset(prev => {
+                                if (isNaN(prev)) return 0;
+                                const next = prev + 1;
+                                const max = typeof maxTimelineOffset === 'number' ? maxTimelineOffset : Infinity;
+                                return Math.min(max, next);
+                            })}
                             style={{ 
                                 padding: '2px 8px', 
-                                cursor: 'pointer', 
+                                cursor: (timelineOffset >= maxTimelineOffset || isNaN(timelineOffset)) ? 'default' : 'pointer', 
                                 borderRadius: '4px', 
                                 border: '1px solid #ccc',
                                 backgroundColor: '#fff',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                color: '#666'
+                                color: (timelineOffset >= maxTimelineOffset || isNaN(timelineOffset)) ? '#ccc' : '#666'
                             }}
                             title="Previous"
                         >
