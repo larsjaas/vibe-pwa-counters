@@ -1,5 +1,5 @@
-import React from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface Count {
     id: number;
@@ -30,12 +30,20 @@ export const RecentActivityTable: React.FC<RecentActivityTableProps> = ({
     title,
     compact = false
 }) => {
-    const filteredCounts = (counts || [])
-        .filter(c => counterIds?.includes(c.counter))
-        .sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime())
-        .slice(0, limit);
+    const [currentPage, setCurrentPage] = useState(0);
 
-    if (filteredCounts.length === 0) {
+    const allFilteredCounts = (counts || [])
+        .filter(c => counterIds?.includes(c.counter))
+        .sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime());
+
+    const filteredCounts = allFilteredCounts.slice(
+        currentPage * limit,
+        (currentPage + 1) * limit
+    );
+
+    const totalPages = Math.ceil(allFilteredCounts.length / limit);
+
+    if (allFilteredCounts.length === 0) {
         return (
             <div style={{ textAlign: 'center', color: '#999', padding: '1rem 0', fontSize: '0.85rem' }}>
                 No activity recorded for this counter.
@@ -100,6 +108,49 @@ export const RecentActivityTable: React.FC<RecentActivityTableProps> = ({
                     ))}
                 </tbody>
             </table>
+            {totalPages > 1 && (
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '10px',
+                    marginTop: '10px',
+                    fontSize: compact ? '0.7rem' : '0.8rem',
+                    color: '#888'
+                }}>
+                    <button
+                        disabled={currentPage === 0}
+                        onClick={() => setCurrentPage(prev => prev - 1)}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: currentPage === 0 ? 'default' : 'pointer',
+                            padding: '2px',
+                            color: currentPage === 0 ? '#ccc' : '#666',
+                            display: 'flex',
+                            alignItems: 'center'
+                        }}
+                    >
+                        <ChevronLeft size={14} />
+                    </button>
+                    <span>Page {currentPage + 1} of {totalPages}</span>
+                    <button
+                        disabled={currentPage === totalPages - 1}
+                        onClick={() => setCurrentPage(prev => prev + 1)}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: currentPage === totalPages - 1 ? 'default' : 'pointer',
+                            padding: '2px',
+                            color: currentPage === totalPages - 1 ? '#ccc' : '#666',
+                            display: 'flex',
+                            alignItems: 'center'
+                        }}
+                    >
+                        <ChevronRight size={14} />
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
