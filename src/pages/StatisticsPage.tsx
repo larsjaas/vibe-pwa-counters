@@ -255,6 +255,7 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                         }}>
                             <StatsSummary stats={stats} />
                             <RecentActivityTable
+                                counters={counters}
                                 counterIds={selectedCounterId !== null 
                                    ? [selectedCounterId] 
                                    : (selectedTagId !== null ? (tagCountersMap.get(selectedTagId) || []) : [])

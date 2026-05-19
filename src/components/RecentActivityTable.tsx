@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Counter, Tag } from '../types';
 import { Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface Count {
@@ -11,6 +12,7 @@ export interface Count {
 
 interface RecentActivityTableProps {
     counterIds: number[];
+    counters: Counter[];
     counts: Count[];
     currentUserEmail: string | null;
     onDelete: (id: number) => void;
@@ -22,6 +24,7 @@ interface RecentActivityTableProps {
 
 export const RecentActivityTable: React.FC<RecentActivityTableProps> = ({
     counterIds,
+    counters,
     counts,
     currentUserEmail,
     onDelete,
@@ -66,6 +69,7 @@ export const RecentActivityTable: React.FC<RecentActivityTableProps> = ({
                 <thead>
                     <tr style={{ borderBottom: '2px solid #eee', color: '#888' }}>
                         <th style={{ padding: '8px 0' }}>Time</th>
+                        {counterIds.length > 1 && <th style={{ padding: '8px 0' }}>Which</th>}
                         <th style={{ padding: '8px 0' }}>Who</th>
                         <th style={{ padding: '8px 0', textAlign: 'right' }}>Delta</th>
                         <th style={{ padding: '8px 0', textAlign: 'right' }}></th>
@@ -77,6 +81,11 @@ export const RecentActivityTable: React.FC<RecentActivityTableProps> = ({
                             <td style={{ padding: '8px 0', color: '#666' }}>
                                 {new Date(entry.when).toLocaleString()}
                             </td>
+                            {counterIds.length > 1 && (
+                                <td style={{ padding: '8px 0', color: '#666' }}>
+                                    {counters.find(c => c.id === entry.counter)?.name || 'Unknown'}
+                                </td>
+                            )}
                             <td style={{ padding: '8px 0', color: '#666' }}>
                                 {entry.user_email}
                             </td>
