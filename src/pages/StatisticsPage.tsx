@@ -34,6 +34,8 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
         setFrequencyTimeScope,
         timelineTimeScope,
         setTimelineTimeScope,
+        timelineOffset,
+        setTimelineOffset,
         stats,
         currentScope
     } = useStats(allCounts, counters, tagCountersMap);
@@ -142,6 +144,8 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                                 setGraphMode={setGraphMode} 
                                 currentScope={currentScope} 
                                 setCurrentScope={setCurrentScope} 
+                                timelineOffset={timelineOffset}
+                                setTimelineOffset={setTimelineOffset}
                             />
                         </div>
                         <div style={{ marginBottom: '2rem', textAlign: 'center' }}>

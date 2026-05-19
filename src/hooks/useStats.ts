@@ -9,7 +9,7 @@ export interface StatsSeries {
     values: number[];
 }
 
-const getBuckets = (allCounts: Count[], counterId: number, scope: TimeScope, mode: GraphMode, now: Date) => {
+const getBuckets = (allCounts: Count[], counterId: number, scope: TimeScope, mode: GraphMode, now: Date, offset: number = 0) => {
     const filteredCounts = allCounts.filter(c => c.counter === counterId);
     let buckets: number[] = [];
 
@@ -45,55 +45,74 @@ const getBuckets = (allCounts: Count[], counterId: number, scope: TimeScope, mod
         switch (scope) {
             case 'Day': {
                 buckets = new Array(24).fill(0);
-                const todayStart = new Date(now.setHours(0,0,0,0));
-                filteredCounts.filter(c => new Date(c.when) >= todayStart)
-                    .forEach(c => {
-                        buckets[new Date(c.when).getHours()] += Math.abs(c.delta);
-                    });
+                const start = new Date();
+                start.setHours(0,0,0,0);
+                start.setDate(start.getDate() - offset);
+                const end = new Date();
+                end.setHours(0,0,0,0);
+                end.setDate(end.getDate() - offset + 1);
+                filteredCounts.filter(c => {
+                    const d = new Date(c.when);
+                    return d >= start && d < end;
+                }).forEach(c => {
+                    buckets[new Date(c.when).getHours()] += Math.abs(c.delta);
+                });
                 break;
             }
             case 'Week': {
                 buckets = new Array(7).fill(0);
-                const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-                filteredCounts.filter(c => new Date(c.when) >= weekAgo)
-                    .forEach(c => {
-                        const diff = Math.floor((new Date(c.when).getTime() - weekAgo.getTime()) / (24 * 60 * 60 * 1000));
-                        if (diff >= 0 && diff < 7) buckets[diff] += Math.abs(c.delta);
-                    });
+                const end = new Date();
+                end.setDate(end.getDate() - offset * 7);
+                const start = new Date(end);
+                start.setDate(start.getDate() - 7);
+                filteredCounts.filter(c => {
+                    const d = new Date(c.when);
+                    return d >= start && d < end;
+                }).forEach(c => {
+                    const diff = Math.floor((new Date(c.when).getTime() - start.getTime()) / (24 * 60 * 60 * 1000));
+                    if (diff >= 0 && diff < 7) buckets[diff] += Math.abs(c.delta);
+                });
                 break;
             }
             case 'Month': {
                 buckets = new Array(30).fill(0);
-                const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-                filteredCounts.filter(c => new Date(c.when) >= monthAgo)
-                    .forEach(c => {
-                        const diff = Math.floor((new Date(c.when).getTime() - monthAgo.getTime()) / (24 * 60 * 60 * 1000));
-                        if (diff >= 0 && diff < 30) buckets[diff] += Math.abs(c.delta);
-                    });
+                const end = new Date();
+                end.setMonth(end.getMonth() - offset);
+                const start = new Date(end);
+                start.setMonth(start.getMonth() - 1);
+                filteredCounts.filter(c => {
+                    const d = new Date(c.when);
+                    return d >= start && d < end;
+                }).forEach(c => {
+                    const diff = Math.floor((new Date(c.when).getTime() - start.getTime()) / (24 * 60 * 60 * 1000));
+                    if (diff >= 0 && diff < 30) buckets[diff] += Math.abs(c.delta);
+                });
                 break;
             }
             case 'YTD': {
-                const currentYear = new Date().getFullYear();
-                const currentMonth = new Date().getMonth();
-                buckets = new Array(currentMonth + 1).fill(0);
-                const startOfYear = new Date(currentYear, 0, 1);
-                filteredCounts.filter(c => new Date(c.when) >= startOfYear)
-                    .forEach(c => {
-                        const m = new Date(c.when).getMonth();
-                        if (m >= 0 && m <= currentMonth) buckets[m] += Math.abs(c.delta);
-                    });
+                const year = new Date().getFullYear() - offset;
+                buckets = new Array(12).fill(0);
+                const start = new Date(year, 0, 1);
+                const end = new Date(year, 11, 31, 23, 59, 59);
+                filteredCounts.filter(c => {
+                    const d = new Date(c.when);
+                    return d >= start && d <= end;
+                }).forEach(c => {
+                    buckets[new Date(c.when).getMonth()] += Math.abs(c.delta);
+                });
                 break;
             }
             case 'Year': {
                 buckets = new Array(12).fill(0);
-                const yearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
-                filteredCounts.filter(c => new Date(c.when) >= yearAgo)
-                    .forEach(c => {
-                        const date = new Date(c.when);
-                        const diffMonths = (date.getFullYear() - new Date().getFullYear()) * 12 + (date.getMonth() - new Date().getMonth());
-                        const bucketIdx = 11 + diffMonths;
-                        if (bucketIdx >= 0 && bucketIdx < 12) buckets[bucketIdx] += Math.abs(c.delta);
-                    });
+                const year = new Date().getFullYear() - offset - 1;
+                const start = new Date(year, 0, 1);
+                const end = new Date(year, 11, 31, 23, 59, 59);
+                filteredCounts.filter(c => {
+                    const d = new Date(c.when);
+                    return d >= start && d <= end;
+                }).forEach(c => {
+                    buckets[new Date(c.when).getMonth()] += Math.abs(c.delta);
+                });
                 break;
             }
         }
@@ -112,6 +131,8 @@ interface UseStatsReturn {
     setFrequencyTimeScope: (scope: TimeScope) => void;
     timelineTimeScope: TimeScope;
     setTimelineTimeScope: (scope: TimeScope) => void;
+    timelineOffset: number;
+    setTimelineOffset: (offset: number) => void;
     stats: StatsSeries[];
     currentScope: TimeScope;
 }
@@ -140,6 +161,11 @@ export const useStats = (allCounts: Count[], counters: any[], tagCountersMap: Ma
         return (localStorage.getItem('statsTimelineTimeScope') as TimeScope) || 'Month';
     });
 
+    const [timelineOffset, setTimelineOffset] = useState<number>(() => {
+        const saved = localStorage.getItem('statsTimelineOffset');
+        return saved ? parseInt(saved, 10) : 0;
+    });
+
     useEffect(() => {
         if (selectedCounterId !== null) {
             localStorage.setItem('statsSelectedCounterId', selectedCounterId.toString());
@@ -164,14 +190,19 @@ export const useStats = (allCounts: Count[], counters: any[], tagCountersMap: Ma
         localStorage.setItem('statsTimelineTimeScope', timelineTimeScope);
     }, [timelineTimeScope]);
 
+    useEffect(() => {
+        localStorage.setItem('statsTimelineOffset', timelineOffset.toString());
+    }, [timelineOffset]);
+
     const currentScope = graphMode === 'frequency' ? frequencyTimeScope : timelineTimeScope;
 
     const stats = (() => {
         if (selectedCounterId === null && selectedTagId === null) return [];
         
         const now = new Date();
+        const offset = graphMode === 'timeline' ? timelineOffset : 0;
         if (selectedCounterId !== null) {
-            const values = getBuckets(allCounts, selectedCounterId, currentScope, graphMode, now);
+            const values = getBuckets(allCounts, selectedCounterId, currentScope, graphMode, now, offset);
             const counter = counters.find(c => c.id === selectedCounterId);
             return [{
                 name: counter?.name || `Counter ${selectedCounterId}`,
@@ -180,7 +211,7 @@ export const useStats = (allCounts: Count[], counters: any[], tagCountersMap: Ma
         } else if (selectedTagId !== null) {
             const tagCounters = tagCountersMap.get(selectedTagId) || [];
             return tagCounters.map(counterId => {
-                const values = getBuckets(allCounts, counterId, currentScope, graphMode, now);
+                const values = getBuckets(allCounts, counterId, currentScope, graphMode, now, offset);
                 const counter = counters.find(c => c.id === counterId);
                 return {
                     name: counter?.name || `Counter ${counterId}`,
@@ -202,6 +233,8 @@ export const useStats = (allCounts: Count[], counters: any[], tagCountersMap: Ma
         setFrequencyTimeScope,
         timelineTimeScope,
         setTimelineTimeScope,
+        timelineOffset,
+        setTimelineOffset,
         stats,
         currentScope
     };
