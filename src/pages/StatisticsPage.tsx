@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Counter, Tag } from '../types';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { RecentActivityTable, Count } from '../components/RecentActivityTable';
+import { StatsSummary } from '../components/StatsSummary';
 import { api } from '../services/api';
 import { useStats, TimeScope, GraphMode } from '../hooks/useStats';
 import { StatsChart } from '../components/StatsChart';
@@ -250,6 +251,7 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                             margin: '3rem auto 0',
                             fontSize: '0.9rem'
                         }}>
+                            <StatsSummary stats={stats} />
                             <RecentActivityTable
                                 counterIds={selectedCounterId !== null 
                                    ? [selectedCounterId] 
