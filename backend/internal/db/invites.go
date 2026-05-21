@@ -466,3 +466,59 @@ func GetInviteByID(inviteID int) (*TagInvite, error) {
 	}
 	return &i, nil
 }
+
+// GetPendingInvitesByTag retrieves all pending invites for a specific tag.
+func GetPendingInvitesByTag(tagID int) ([]*TagInvite, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+
+	const query = `
+		SELECT id, tag_id, email, sender_id, access_level, status, created_at, expires_at, notified_at, reminder_sent_at
+		FROM tag_invites
+		WHERE tag_id = $1 AND status = 'pending' AND expires_at > NOW()
+		ORDER BY created_at DESC`
+	
+	rows, err := db.Query(query, tagID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	invites := make([]*TagInvite, 0)
+	for rows.Next() {
+		var i TagInvite
+		var notifiedAt, reminderSentAt sql.NullTime
+		err := rows.Scan(&i.ID, &i.TagID, &i.Email, &i.SenderID, &i.AccessLevel, &i.Status, &i.CreatedAt, &i.ExpiresAt, &notifiedAt, &reminderSentAt)
+		if err != nil {
+			return nil, err
+		}
+		if notifiedAt.Valid {
+			i.NotifiedAt = &notifiedAt.Time
+		}
+		if reminderSentAt.Valid {
+			i.ReminderSentAt = &reminderSentAt.Time
+		}
+		invites = append(invites, &i)
+	}
+	return invites, nil
+}
+
+// RetractInviteByEmail retracts a pending invite for a specific tag and email.
+func RetractInviteByEmail(senderID int, tagID int, email string) (bool, error) {
+	if db == nil {
+		return false, fmt.Errorf("database not initialized")
+	}
+
+	const query = `UPDATE tag_invites SET status = 'retracted' 
+	               WHERE tag_id = $1 AND sender_id = $2 AND email = $3 AND status = 'pending'`
+	res, err := db.Exec(query, tagID, senderID, email)
+	if err != nil {
+		return false, err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return rows > 0, nil
+}

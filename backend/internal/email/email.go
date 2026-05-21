@@ -26,14 +26,14 @@ func SendEmail(to, subject, body string) error {
 	smtpPortStr := os.Getenv("SMTP_PORT")
 	smtpPort, err := strconv.Atoi(smtpPortStr)
 	if err != nil {
-		log.Printf("Invalid SMTP_PORT: %v. Skipping email to %s.", err, to)
+		log.Printf("Invalid SMTP_PORT: %v. Skipping email to %s (Subject: %s).", err, to, subject)
 		return nil
 	}
 	smtpUser := os.Getenv("SMTP_USER")
 	smtpPass := os.Getenv("SMTP_PASS")
 
 	if smtpHost == "" || smtpUser == "" || smtpPass == "" {
-		log.Printf("SMTP configuration is missing. Skipping email to %s. (Host: %s, User: %s)", to, smtpHost, smtpUser)
+		log.Printf("SMTP configuration is missing. Skipping email to %s (Subject: %s). (Host: %s, User: %s)", to, subject, smtpHost, smtpUser)
 		return nil
 	}
 
@@ -45,9 +45,12 @@ func SendEmail(to, subject, body string) error {
 
 	d := gomail.NewDialer(smtpHost, smtpPort, smtpUser, smtpPass)
 
+	log.Printf("Sending email: To=%s, Subject=%s", to, subject)
 	if err := d.DialAndSend(m); err != nil {
+		log.Printf("Email failed: To=%s, Subject=%s, Error=%v", to, subject, err)
 		return fmt.Errorf("failed to send email: %w", err)
 	}
+	log.Printf("Email sent successfully: To=%s, Subject=%s", to, subject)
 
 	return nil
 }

@@ -8,7 +8,7 @@ interface TagSharingModalProps {
 }
 
 export const TagSharingModal: React.FC<TagSharingModalProps> = ({ tagId, tagName, onClose }) => {
-    const [shares, setShares] = useState<{ email: string; access_level: number }[]>([]);
+    const [shares, setShares] = useState<{ email: string; access_level: number; status: string }[]>([]);
     const [newEmail, setNewEmail] = useState('');
     const [accessLevel, setAccessLevel] = useState<'RO' | 'RW'>('RO');
     const [loading, setLoading] = useState(false);
@@ -162,17 +162,17 @@ export const TagSharingModal: React.FC<TagSharingModalProps> = ({ tagId, tagName
                     </thead>
                     <tbody>
                         {shares.map(share => (
-                            <tr key={share.email} className="table-row">
-                               <td className="table-cell">{share.email}</td>
+                            <tr key={share.email} className="table-row" style={{ color: share.status === 'pending' ? '#999' : 'inherit' }}>
+                               <td className="table-cell">{share.email} {share.status === 'pending' && <span style={{ fontSize: '0.8rem', fontStyle: 'italic' }}>(invited)</span>}</td>
                                <td className="table-cell text-center">
-                                   {share.access_level === 2 && <Check size={16} style={{ color: 'green' }} />}
+                                   {share.access_level === 2 && <Check size={16} style={{ color: share.status === 'pending' ? '#ccc' : 'green' }} />}
                                </td>
                                <td className="table-cell text-right">
                                    <button
                                        onClick={() => handleRemoveUser(share.email)}
                                        className="btn-secondary"
                                        style={{ color: 'var(--color-error)' }}
-                                       title="Remove Access"
+                                       title={share.status === 'pending' ? 'Retract Invite' : 'Remove Access'}
                                    >
                                        <Trash2 size={18} />
                                    </button>

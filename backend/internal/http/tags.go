@@ -302,24 +302,36 @@ func handleShareTag(w http.ResponseWriter, r *http.Request, userID int, tagID in
 }
 
 func handleUnshareTag(w http.ResponseWriter, r *http.Request, userID int, tagID int, email string) {
-	targetUserID, err := db.GetUserIDByEmail(email)
-	if err != nil {
-		http.Error(w, "user not found", http.StatusNotFound)
+	var updated bool
+	var err error
+	targetUserID, userErr := db.GetUserIDByEmail(email)
+
+	if userErr == nil {
+		updated, err = db.UnshareTagFromUser(userID, tagID, targetUserID)
+		if err != nil {
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if !updated {
+		updated, err = db.RetractInviteByEmail(userID, tagID, email)
+		if err != nil {
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if !updated {
+		http.Error(w, "share or invite not found or unauthorized", http.StatusNotFound)
 		return
 	}
 
-	updated, err := db.UnshareTagFromUser(userID, tagID, targetUserID)
-	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
-	}
-	if !updated {
-		http.Error(w, "share not found or unauthorized", http.StatusNotFound)
-		return
-	}
 	PublishEvent(userID, "UPDATED TAG_SHARES")
-	PublishEvent(targetUserID, "UPDATED TAG_SHARES")
-	PublishEvent(targetUserID, "UPDATED COUNTERS")
+	if userErr == nil {
+		PublishEvent(targetUserID, "UPDATED TAG_SHARES")
+		PublishEvent(targetUserID, "UPDATED COUNTERS")
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -330,13 +342,30 @@ func handleGetTagShares(w http.ResponseWriter, r *http.Request, userID int, tagI
 		return
 	}
 
-	emails := make([]string, 0, len(shares))
-	for _, s := range shares {
-		emails = append(emails, s.Email)
+	invites, err := db.GetPendingInvitesByTag(tagID)
+	if err != nil {
+		log.Printf("error fetching pending invites: %v", err)
+		// We continue even if invites fail, as shares are the primary data
 	}
 
+	combined := make([]db.TagShareWithStatus, 0, len(shares)+len(invites))
+	for _, s := range shares {
+		combined = append(combined, *s)
+	}
+	for _, i := range invites {
+		combined = append(combined, db.TagShareWithStatus{
+			Email:       i.Email,
+			AccessLevel: i.AccessLevel,
+			Status:      "pending",
+		})
+	}
+
+	// Sort the combined list by email
+	// In a real app we might do this in SQL, but here it's a small list.
+	// (Optional: I'll skip sorting for now unless it's visibly jarring)
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(emails)
+	json.NewEncoder(w).Encode(combined)
 }
 
 func handleGetUserTagShares(w http.ResponseWriter, r *http.Request, userID int) {

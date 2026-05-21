@@ -21,6 +21,13 @@ type TagShare struct {
 	AccessLevel int    `json:"access_level"`
 }
 
+// TagShareWithStatus represents a sharing record or a pending invite for a tag.
+type TagShareWithStatus struct {
+	Email       string `json:"email"`
+	AccessLevel int    `json:"access_level"`
+	Status      string `json:"status"` // "accepted" or "pending"
+}
+
 // TagShareDetail provides detailed information about a tag share.
 type TagShareDetail struct {
 	TagID       int    `json:"tag_id"`
@@ -303,7 +310,7 @@ func GetTagsForCounter(userID int, counterID int) ([]*Tag, error) {
 
 // GetTagShares retrieves all users who have access to a tag.
 // Only the tag owner can call this.
-func GetTagShares(ownerID int, tagID int) ([]*TagShare, error) {
+func GetTagShares(ownerID int, tagID int) ([]*TagShareWithStatus, error) {
 	if db == nil {
 		return nil, fmt.Errorf("database not initialized")
 	}
@@ -320,13 +327,17 @@ func GetTagShares(ownerID int, tagID int) ([]*TagShare, error) {
 	}
 	defer rows.Close()
 
-	shares := make([]*TagShare, 0)
+	shares := make([]*TagShareWithStatus, 0)
 	for rows.Next() {
 		var s TagShare
 		if err := rows.Scan(&s.Email, &s.AccessLevel); err != nil {
 			return nil, err
 		}
-		shares = append(shares, &s)
+		shares = append(shares, &TagShareWithStatus{
+			Email:       s.Email,
+			AccessLevel: s.AccessLevel,
+			Status:      "accepted",
+		})
 	}
 	return shares, nil
 }

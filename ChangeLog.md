@@ -1,8 +1,9 @@
 # ChangeLog
 
-## Version 0.9.15
+## Version 0.9.15 (2026-05-21)
 * Account setting: alternative notification email address w/verification step.
 * Added OAuth via GitHub.
+* List pending invites (additionally) under tag sharing.
 * Bugfixes: delete counter, email links for test env.
 
 [forgot about this file]
