@@ -1,5 +1,10 @@
 # ChangeLog
 
+## Version 0.9.16 (2026-05-)
+* Log version on startup.
+* [Alerts/popups?]
+* [ChangeLog for users on new versions?]
+
 ## Version 0.9.15 (2026-05-21)
 * Account setting: alternative notification email address w/verification step.
 * Added OAuth via GitHub.

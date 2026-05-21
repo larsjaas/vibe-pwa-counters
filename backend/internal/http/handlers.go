@@ -4,10 +4,9 @@ import (
     "log"
     "net/http"
     "os"
-)
 
-// BackendVersion is the current version of the API.
-const BackendVersion = "0.9.15"
+    "github.com/larsa/pwa-counter/backend/internal/version"
+)
 
 // HealthHandler responds to GET /health requests.
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +38,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
     w.Header().Set("Content-Type", "application/json")
-    w.Write([]byte(`{"version":"` + BackendVersion + `"}`))
+    w.Write([]byte(`{"version":"` + version.BackendVersion + `"}`))
 }
 
 // CatchAllHandler serves the main index.html for authenticated users.

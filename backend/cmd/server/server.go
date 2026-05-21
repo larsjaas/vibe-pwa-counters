@@ -11,6 +11,7 @@ import (
 
 	"github.com/larsa/pwa-counter/backend/internal/db"
 	"github.com/larsa/pwa-counter/backend/internal/email"
+	"github.com/larsa/pwa-counter/backend/internal/version"
 	httpHandlers "github.com/larsa/pwa-counter/backend/internal/http"
 	_ "github.com/lib/pq"
 	redis "github.com/redis/go-redis/v9"
@@ -19,6 +20,8 @@ import (
 var dbConn *sql.DB
 
 func main() {
+    fmt.Printf("Starting Counters Backend version %s\n", version.BackendVersion)
+
     // --- Redis client setup -------------------------------------------------
     // The REST API now leverages a Redis instance for session storage.
     // A global client is shared across request handlers to avoid
