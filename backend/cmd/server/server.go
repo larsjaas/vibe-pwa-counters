@@ -75,7 +75,7 @@ func main() {
 
     // Run database migrations on startup. Delegated to the internal
     // database package for better separation of concerns.
-    db.RunMigrations(dbConn)
+    db.RunMigrations(dbConn, "file://./migrations")
 
     // Start the background worker for initial invite notifications
     go func() {

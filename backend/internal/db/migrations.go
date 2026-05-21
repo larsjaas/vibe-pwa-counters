@@ -16,14 +16,14 @@ import (
 // RunMigrations applies any pending migrations to the supplied database
 // instance. It will log fatally if the migration fails, mimicking the
 // behaviour of the original implementation found in main.go.
-func RunMigrations(db *sql.DB) {
+func RunMigrations(db *sql.DB, path string) {
     log.Println("Checking for database migrations...")
     driver, err := postgres.WithInstance(db, &postgres.Config{})
     if err != nil {
         log.Fatalf("Failed to create postgres driver for migrations: %v", err)
     }
     mig, err := migrate.NewWithDatabaseInstance(
-        "file://./migrations",
+	path,
         "postgres",
         driver,
     )
