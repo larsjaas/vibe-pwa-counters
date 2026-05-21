@@ -6,10 +6,16 @@
   <p style="margin-bottom: 2rem;color: #666;max-width: 400px;line-height: 1.5;">
     A simple web app for counting and keeping track of occurrences of any kind.
   </p>
-  <button id="login" style="display:flex;align-items:center;padding:1rem 2rem;font-size:1.2rem;cursor:pointer;border-radius: 8px;border: 1px solid #ccc;background: white;">
-    <img src="../svg/lucide/log-in.svg" alt="log in icon" style="width:1.5rem;height:1.5rem;margin-right:0.5rem;vertical-align:middle;" />
-    Authenticate
-  </button>
+  <div style="display:flex; gap: 1rem; justify-content: center;">
+    <button id="login-google" style="display:flex;align-items:center;padding:1rem 2rem;font-size:1.2rem;cursor:pointer;border-radius: 8px;border: 1px solid #ccc;background: white;">
+      <img src="../svg/lucide/log-in.svg" alt="log in icon" style="width:1.5rem;height:1.5rem;margin-right:0.5rem;vertical-align:middle;" />
+      Authenticate with Google
+    </button>
+    <button id="login-github" style="display:flex;align-items:center;padding:1rem 2rem;font-size:1.2rem;cursor:pointer;border-radius: 8px;border: 1px solid #ccc;background: white;">
+      <img src="../svg/lucide/log-in.svg" alt="log in icon" style="width:1.5rem;height:1.5rem;margin-right:0.5rem;vertical-align:middle;" />
+      Authenticate with GitHub
+    </button>
+  </div>
   <div style="margin-top: 2rem; font-size: 0.8rem; color: #999; display: flex; flex-direction: column; gap: 0.5rem;">
     <div>
       <a href="/privacy_policy.html" style="color: #999; text-decoration: underline; margin-right: 1rem;">Privacy Policy</a>
@@ -24,8 +30,11 @@
   </div>
 </div>
 <script>
-  document.getElementById('login').addEventListener('click', function() {
+  document.getElementById('login-google').addEventListener('click', function() {
     window.location.href = '/api/login';
+  });
+  document.getElementById('login-github').addEventListener('click', function() {
+    window.location.href = '/api/auth/github';
   });
 </script>
 </body>

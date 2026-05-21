@@ -42,6 +42,7 @@ export const useAccount = (refreshTrigger?: number, fetchInvitesCount?: () => Pr
     const [tagSharing, setTagSharing] = useState(true);
     const [emailAlerts, setEmailAlerts] = useState(false);
     const [inviteReminders, setInviteReminders] = useState(false);
+    const [notificationEmail, setNotificationEmail] = useState('');
 
     const parseBool = (val: any, defaultVal: boolean) => {
         if (val === undefined || val === null) return defaultVal;
@@ -67,6 +68,7 @@ export const useAccount = (refreshTrigger?: number, fetchInvitesCount?: () => Pr
             setTagSharing(parseBool(settingsData.tag_sharing, true));
             setEmailAlerts(parseBool(settingsData.tag_sharing_email, false));
             setInviteReminders(parseBool(settingsData.tag_sharing_reminder, false));
+            setNotificationEmail(settingsData.notification_email || '');
         } catch (e: any) {
             setError(e.message);
         } finally {
@@ -138,6 +140,14 @@ export const useAccount = (refreshTrigger?: number, fetchInvitesCount?: () => Pr
         }
     };
 
+    const handleRequestNotificationEmail = async (email: string) => {
+        try {
+            await api.requestNotificationEmail(email);
+        } catch (e: any) {
+            throw new Error(`Error requesting notification email change: ${e.message}`);
+        }
+    };
+
     const handleSettingChange = async (setting: string, value: boolean, setter: (val: boolean) => void) => {
         setter(value);
         try {
@@ -178,6 +188,9 @@ export const useAccount = (refreshTrigger?: number, fetchInvitesCount?: () => Pr
         handleRetractInvite,
         handleSettingChange,
         handleDeleteAccount,
+        handleRequestNotificationEmail,
+        notificationEmail,
+        setNotificationEmail,
         refreshData: fetchData
     };
 };

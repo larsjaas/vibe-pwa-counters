@@ -1,5 +1,12 @@
 # ChangeLog
 
+## Version 0.9.15
+* Account setting: alternative notification email address w/verification step.
+* Added OAuth via GitHub.
+* Bugfixes: delete counter, email links for test env.
+
+[forgot about this file]
+
 ## Backend 0.8.2 (2026-04-29)
 * Bugfix: Make soft-deleted counters not be returned when querying counters for a user.
 * API-keys: update lastused timestamp when API key is used.

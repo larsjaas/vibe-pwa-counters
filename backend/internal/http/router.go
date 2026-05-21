@@ -20,9 +20,13 @@ func NewRouter() http.Handler {
     // Authentication – login, logout and callbacks
     mux.HandleFunc("/api/logout", LogoutHandler)
     mux.HandleFunc("/api/login", LoginHandler)
+    mux.HandleFunc("/api/auth/github", GitHubLoginHandler)
+    mux.HandleFunc("/api/auth/github/callback", GitHubCallbackHandler)
     mux.HandleFunc("/api/auth/google/callback", AuthCallbackHandler)
     mux.HandleFunc("/api/validate-session", ValidateSessionHandler)
     mux.HandleFunc("/api/account/create", ConfirmSignupHandler)
+    mux.HandleFunc("/api/account/notification-email", RequestNotificationEmailHandler)
+    mux.HandleFunc("/api/verify-notification-email", VerifyNotificationEmailHandler)
     mux.HandleFunc("/api/events", EventsHandler)
 
 

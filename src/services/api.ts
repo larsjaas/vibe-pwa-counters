@@ -6,7 +6,11 @@ async function handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
         throw new Error(`API Error: ${response.status} ${response.statusText}`);
     }
-    return response.json();
+    const text = await response.text();
+    if (!text) {
+        return undefined as any as T;
+    }
+    return JSON.parse(text);
 }
 
 export const api = {
@@ -28,9 +32,9 @@ export const api = {
         return handleResponse<{ version: string }>(res);
     },
 
-    async getSettings(): Promise<{ tag_sharing: string; tag_sharing_email: string; tag_sharing_reminder: string }> {
+    async getSettings(): Promise<Record<string, string>> {
         const res = await fetch(`${BASE_URL}/settings`);
-        return handleResponse<{ tag_sharing: string; tag_sharing_email: string; tag_sharing_reminder: string }>(res);
+        return handleResponse<Record<string, string>>(res);
     },
 
     async updateSetting(setting: string, value: string): Promise<void> {
@@ -38,6 +42,26 @@ export const api = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ setting, value }),
+        });
+        await handleResponse<void>(res);
+    },
+
+    async requestNotificationEmail(email: string): Promise<void> {
+        const res = await fetch(`${BASE_URL}/account/notification-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+        });
+        if (!res.ok) {
+            throw new Error(`API Error: ${res.status} ${res.statusText}`);
+        }
+    },
+
+    async verifyNotificationEmail(token: string): Promise<void> {
+        const res = await fetch(`${BASE_URL}/verify-notification-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token }),
         });
         await handleResponse<void>(res);
     },
@@ -115,12 +139,19 @@ export const api = {
     },
 
     async updateCounter(id: number, payload: UpdateCounterPayload): Promise<void> {
-        // Note: the frontend currently calls onUpdate(id, updates) 
-        // which usually is handled by a top-level state manager in App.tsx or similar.
-        // If we want to move the ACTUAL fetch call here, we need to know where it was.
-        // In CounterDetail.tsx, it's calling onUpdate(counter.id, { ... }).
-        // Let's check where onUpdate is defined.
-        console.warn('updateCounter is defined but the current components use a prop onUpdate');
+        const res = await fetch(`${BASE_URL}/counters`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, ...payload }),
+        });
+        await handleResponse<void>(res);
+    },
+
+    async deleteCounter(id: number): Promise<void> {
+        const res = await fetch(`${BASE_URL}/counters/${id}`, {
+            method: 'DELETE',
+        });
+        await handleResponse<void>(res);
     },
 
     // --- Counts ---

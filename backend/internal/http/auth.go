@@ -154,6 +154,49 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
     http.Redirect(w, r, authURL, http.StatusFound)
 }
 
+// handleAuthSuccess persists user in database if not present,
+// handles pending signups, and creates a session.
+func handleAuthSuccess(w http.ResponseWriter, r *http.Request, email, name, accessToken string) {
+	if email == "" {
+		http.Error(w, "missing email from provider", http.StatusInternalServerError)
+		return
+	}
+
+	var userID int
+	exists, err := db.UserExists(email)
+	if err != nil {
+		log.Printf("DB check failed: %v", err)
+	}
+	if !exists {
+		// Store pending user and redirect to confirmation page.
+		signupToken := GenerateSessionID()
+		pendingUser := map[string]interface{}{
+			"email":        email,
+			"name":         name,
+			"access_token": accessToken,
+		}
+		payload, _ := json.Marshal(pendingUser)
+		if cache != nil {
+			err := cache.Set(context.Background(), "pending_signup:"+signupToken, string(payload), 15*time.Minute)
+			if err != nil {
+				log.Printf("Redis pending store error: %v", err)
+			}
+		}
+		http.Redirect(w, r, "/landing_page/confirm-signup.html?token="+signupToken, http.StatusFound)
+		return
+	}
+	uid, err := db.GetUserIDByEmail(email)
+	if err == nil {
+		userID = uid
+	}
+
+	// Create session and set cookie.
+	createSession(w, r, userID, email, name, accessToken)
+
+	// Redirect the user to the home page.
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
 // AuthCallbackHandler handles the OAuth callback, exchanging the code for
 // tokens, persisting user data, creating a session stored in Redis, and
 // setting a session_id cookie.
@@ -182,42 +225,34 @@ func AuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
         log.Printf("Failed to parse id_token: %v", err)
     }
 
-    // 4. Persist user in database if not present.
-    var userID int
-    if email != "" {
-        exists, err := db.UserExists(email)
-        if err != nil {
-            log.Printf("DB check failed: %v", err)
-        }
-        if !exists {
-            // NEW: Store pending user and redirect to confirmation page.
-            signupToken := generateSessionID()
-            pendingUser := map[string]interface{}{
-                "email":        email,
-                "name":         name,
-                "access_token": accessToken,
-            }
-            payload, _ := json.Marshal(pendingUser)
-            if cache != nil {
-                err := cache.Set(context.Background(), "pending_signup:"+signupToken, string(payload), 15*time.Minute)
-                if err != nil {
-                    log.Printf("Redis pending store error: %v", err)
-                }
-            }
-            http.Redirect(w, r, "/landing_page/confirm-signup.html?token="+signupToken, http.StatusFound)
-            return
-        }
-        uid, err := db.GetUserIDByEmail(email)
-        if err == nil {
-            userID = uid
-        }
+    handleAuthSuccess(w, r, email, name, accessToken)
+}
+
+// parseUserInfoFromIDToken decodes the JWT id_token and extracts the
+// "email" and "name" claims.
+func parseUserInfoFromIDToken(idToken string) (email, name string, err error) {
+    parts := strings.Split(idToken, ".")
+    if len(parts) != 3 {
+        err = fmt.Errorf("invalid id_token format")
+        return
     }
-
-    // 5. Create session and set cookie.
-    createSession(w, r, userID, email, name, accessToken)
-
-    // Redirect the user to the home page.
-    http.Redirect(w, r, "/", http.StatusFound)
+    payload, e := base64.RawURLEncoding.DecodeString(parts[1])
+    if e != nil {
+        err = e
+        return
+    }
+    var claims map[string]interface{}
+    if e = json.Unmarshal(payload, &claims); e != nil {
+        err = e
+        return
+    }
+    if v, ok := claims["email"].(string); ok {
+        email = v
+    }
+    if v, ok := claims["name"].(string); ok {
+        name = v
+    }
+    return
 }
 
 // exchangeCode posts the OAuth authorization code to the token endpoint and
@@ -264,37 +299,161 @@ func exchangeCode(code string) (accessToken string, idToken string, err error) {
     return
 }
 
-// parseUserInfoFromIDToken decodes the JWT id_token and extracts the
-// "email" and "name" claims.
-func parseUserInfoFromIDToken(idToken string) (email, name string, err error) {
-    parts := strings.Split(idToken, ".")
-    if len(parts) != 3 {
-        err = fmt.Errorf("invalid id_token format")
-        return
-    }
-    payload, e := base64.RawURLEncoding.DecodeString(parts[1])
-    if e != nil {
-        err = e
-        return
-    }
-    var claims map[string]interface{}
-    if e = json.Unmarshal(payload, &claims); e != nil {
-        err = e
-        return
-    }
-    if v, ok := claims["email"].(string); ok {
-        email = v
-    }
-    if v, ok := claims["name"].(string); ok {
-        name = v
-    }
-    return
+// GitHubLoginHandler redirects to GitHub's OAuth authorization screen.
+func GitHubLoginHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/auth/github called: method=%s path=%s", r.Method, r.URL.Path)
+	clientID := os.Getenv("GITHUB_CLIENT_ID")
+	if clientID == "" {
+		http.Error(w, "GitHub OAuth config missing", http.StatusInternalServerError)
+		return
+	}
+	// Request read:user and user:email scopes
+	authURL := fmt.Sprintf("https://github.com/login/oauth/authorize?client_id=%s&scope=read:user,user:email", clientID)
+	http.Redirect(w, r, authURL, http.StatusFound)
+}
+
+// GitHubCallbackHandler handles the GitHub OAuth callback.
+func GitHubCallbackHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/auth/github/callback called: method=%s path=%s", r.Method, r.URL.Path)
+
+	code := r.URL.Query().Get("code")
+	if code == "" {
+		http.Error(w, "Missing code", http.StatusBadRequest)
+		return
+	}
+
+	accessToken, err := exchangeGitHubCode(code)
+	if err != nil {
+		log.Printf("GitHub token exchange failed: %v", err)
+		http.Error(w, "Token exchange failed", http.StatusInternalServerError)
+		return
+	}
+
+	user, err := fetchGitHubUser(accessToken)
+	if err != nil {
+		log.Printf("GitHub user fetch failed: %v", err)
+		http.Error(w, "Failed to fetch user info", http.StatusInternalServerError)
+		return
+	}
+
+	email, err := fetchGitHubEmail(accessToken)
+	if err != nil {
+		log.Printf("GitHub email fetch failed: %v", err)
+		// We can try to use the email from user profile if available
+		email = user.Email
+	}
+
+	handleAuthSuccess(w, r, email, user.Name, accessToken)
+}
+
+func exchangeGitHubCode(code string) (string, error) {
+	tokenURL := "https://github.com/login/oauth/access_token"
+	clientID := os.Getenv("GITHUB_CLIENT_ID")
+	clientSecret := os.Getenv("GITHUB_CLIENT_SECRET")
+	if clientID == "" || clientSecret == "" {
+		return "", fmt.Errorf("missing GitHub OAuth credentials")
+	}
+
+	data := fmt.Sprintf("code=%s&client_id=%s&client_secret=%s", code, clientID, clientSecret)
+	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(data))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	var tokenResp struct {
+		AccessToken string `json:"access_token"`
+		Error       string `json:"error"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+		return "", err
+	}
+	if tokenResp.Error != "" {
+		return "", fmt.Errorf("github token error: %s", tokenResp.Error)
+	}
+	return tokenResp.AccessToken, nil
+}
+
+type githubUser struct {
+	Login     string `json:"login"`
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+}
+
+func fetchGitHubUser(token string) (*githubUser, error) {
+	req, err := http.NewRequest("GET", "https://api.github.com/user", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "token "+token)
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("github user api returned %d", resp.StatusCode)
+	}
+
+	var user githubUser
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func fetchGitHubEmail(token string) (string, error) {
+	req, err := http.NewRequest("GET", "https://api.github.com/user/emails", nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", "token "+token)
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("github email api returned %d", resp.StatusCode)
+	}
+
+	var emails []struct {
+		Email    string `json:"email"`
+		Verified bool   `json:"verified"`
+		Primary  bool   `json:"primary"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&emails); err != nil {
+		return "", err
+	}
+
+	for _, e := range emails {
+		if e.Primary && e.Verified {
+			return e.Email, nil
+		}
+	}
+	if len(emails) > 0 {
+		return emails[0].Email, nil
+	}
+	return "", fmt.Errorf("no email found")
 }
 
 
-// generateSessionID creates a cryptographically secure, base64 URL
+// GenerateSessionID creates a cryptographically secure, base64 URL
 // encoded session identifier.
-func generateSessionID() string {
+func GenerateSessionID() string {
     b := make([]byte, 32) // 256 bits
     if _, err := rand.Read(b); err != nil {
         // Fallback to time-based seed; extremely unlikely to hit.
@@ -306,7 +465,7 @@ func generateSessionID() string {
 
 // createSession helper encapsulates the session creation logic.
 func createSession(w http.ResponseWriter, r *http.Request, userID int, email, name, accessToken string) {
-    sessionID := generateSessionID()
+    sessionID := GenerateSessionID()
     session := map[string]interface{}{
         "session_id":   sessionID,
         "user_id":      userID,

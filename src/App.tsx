@@ -7,6 +7,7 @@ import { CounterDetail } from './CounterDetail';
 import { NavBar } from './components/NavBar';
 import { AccountPage } from './pages/AccountPage';
 import { StatisticsPage } from './pages/StatisticsPage';
+import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { AlertModal } from './components/AlertModal';
 import { api } from './services/api';
 import { useSSE } from './hooks/useSSE';
@@ -85,6 +86,7 @@ const App: React.FC = () => {
                         />
                     } />
                     <Route path="/stats" element={<StatisticsPage refreshTrigger={refreshCount} userEmail={userEmail} />} />
+                    <Route path="/verify-email" element={<VerifyEmailPage />} />
                     <Route path="/profile">
                         <Route index element={<AccountPage fetchInvitesCount={fetchInvitesCount} refreshTrigger={accountRefreshCount} />} />
                         <Route path="settings" element={<AccountPage fetchInvitesCount={fetchInvitesCount} refreshTrigger={accountRefreshCount} />} />

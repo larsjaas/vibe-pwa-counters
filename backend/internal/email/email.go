@@ -6,11 +6,19 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/larsa/pwa-counter/backend/internal/db"
 	"gopkg.in/gomail.v2"
 )
 
 // SendEmail sends a simple email with subject and body.
 func SendEmail(to, subject, body string) error {
+	// Check if the recipient is a user and has an alternative email configured
+	if userID, err := db.GetUserIDByEmail(to); err == nil {
+		if altEmail, err := db.GetUserSetting(userID, "notification_email"); err == nil && altEmail != "" {
+			to = altEmail
+		}
+	}
+
 	sender := "CrudBytes Apps <apps@crudbytes.com>"
 	
 	// SMTP configuration from environment variables

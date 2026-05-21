@@ -36,9 +36,11 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
         tagSharing,
         emailAlerts,
         inviteReminders,
+        notificationEmail,
         setTagSharing,
         setEmailAlerts,
         setInviteReminders,
+        setNotificationEmail,
         handleCreateAPIKey,
         handleDeleteAPIKey,
         handleDeleteTagShare,
@@ -46,6 +48,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
         handleRejectInvite,
         handleRetractInvite,
         handleSettingChange,
+        handleRequestNotificationEmail,
         handleDeleteAccount,
     } = useAccount(refreshTrigger, fetchInvitesCount);
 
@@ -118,6 +121,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
                     tagSharing={tagSharing}
                     emailAlerts={emailAlerts}
                     inviteReminders={inviteReminders}
+                    notificationEmail={notificationEmail}
                     onSettingChange={(setting, value) => 
                         handleSettingChange(setting, value, 
                             setting === 'tag_sharing' ? setTagSharing : 
@@ -125,6 +129,14 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
                             setInviteReminders
                         )
                     }
+                    onNotificationEmailChange={async (email) => {
+                        try {
+                            await handleRequestNotificationEmail(email);
+                            alert('Verification email sent!');
+                        } catch (e: any) {
+                            alert(e.message);
+                        }
+                    }}
                 />
             )}
 
