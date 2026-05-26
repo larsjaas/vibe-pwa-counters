@@ -101,7 +101,7 @@ export const AccountSettingsSection: React.FC<AccountSettingsSectionProps> = ({
                             fontSize: '1rem'
                         }}
                     />
-                    <button 
+                    <button
                         onClick={handleSaveEmail}
                         style={{
                             padding: '5px 10px',

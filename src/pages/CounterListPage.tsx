@@ -230,7 +230,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
                                 key={tag.id}
                                 className="tag-filter-label"
                                 onClick={() => setSearchQuery(tag.name)}
-                                style={{ 
+                                style={{
                                     fontWeight: tag.user_email === userEmail ? 'bold' : 'normal',
                                     backgroundColor: isSelected ? '#0070f3' : '',
                                     color: isSelected ? 'white' : '',

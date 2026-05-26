@@ -109,7 +109,7 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
     const handleUpdateTimestamp = async () => {
         if (!countToEdit) return;
         try {
-            // Note: we need a PUT endpoint for counts. 
+            // Note: we need a PUT endpoint for counts.
             // The api.ts doesn't have updateCountTimestamp, so we use fetch or add it.
             await fetch(`/api/counts/${countToEdit.id}`, {
                 method: 'PUT',
@@ -141,18 +141,18 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                     <>
                         <div style={{ position: 'relative', marginBottom: '1rem' }}>
                             <h1 style={{ textAlign: 'center', margin: 0, fontSize: '1.5rem' }}>Statistics</h1>
-                            <StatsControls 
-                                graphMode={graphMode} 
-                                setGraphMode={setGraphMode} 
-                                currentScope={currentScope} 
-                                setCurrentScope={setCurrentScope} 
+                            <StatsControls
+                                graphMode={graphMode}
+                                setGraphMode={setGraphMode}
+                                currentScope={currentScope}
+                                setCurrentScope={setCurrentScope}
                                 timelineOffset={timelineOffset}
                                 setTimelineOffset={setTimelineOffset}
                                maxTimelineOffset={maxTimelineOffset}
                             />
                         </div>
                         <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
-                            <TagCounterSelector 
+                            <TagCounterSelector
                                 counters={counters}
                                 tags={tags}
                                 tagCountersMap={tagCountersMap}
@@ -256,8 +256,8 @@ export const StatisticsPage: React.FC<StatisticsPageProps> = ({ refreshTrigger }
                             <StatsSummary stats={stats} />
                             <RecentActivityTable
                                 counters={counters}
-                                counterIds={selectedCounterId !== null 
-                                   ? [selectedCounterId] 
+                                counterIds={selectedCounterId !== null
+                                   ? [selectedCounterId]
                                    : (selectedTagId !== null ? (tagCountersMap.get(selectedTagId) || []) : [])
                                }
                                 counts={allCounts}

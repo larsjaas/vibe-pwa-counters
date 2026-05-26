@@ -48,11 +48,11 @@ export const TagCounterSelector: React.FC<TagCounterSelectorProps> = ({
         setIsOpen(false);
     };
 
-    const filteredCounters = counters.filter(c => 
+    const filteredCounters = counters.filter(c =>
         c.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const filteredTags = tags.filter(t => 
+    const filteredTags = tags.filter(t =>
         t.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -71,17 +71,17 @@ export const TagCounterSelector: React.FC<TagCounterSelectorProps> = ({
 
     return (
         <div style={{ position: 'relative', width: 'fit-content', margin: '0 auto' }} ref={menuRef}>
-            <button 
+            <button
                 onClick={() => setIsOpen(!isOpen)}
-                style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '8px', 
-                    padding: '6px 12px', 
-                    backgroundColor: 'var(--color-white)', 
-                    border: '1px solid var(--color-border)', 
-                    borderRadius: '6px', 
-                    cursor: 'pointer', 
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '6px 12px',
+                    backgroundColor: 'var(--color-white)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
                     fontWeight: 'bold',
                     fontSize: '1rem',
                     color: 'var(--color-text)'
@@ -108,18 +108,18 @@ export const TagCounterSelector: React.FC<TagCounterSelectorProps> = ({
                     flexDirection: 'column',
                     overflow: 'hidden'
                 }}>
-                    <div style={{ 
-                        display: 'flex', 
-                        borderBottom: '1px solid var(--color-border)', 
+                    <div style={{
+                        display: 'flex',
+                        borderBottom: '1px solid var(--color-border)',
                         backgroundColor: '#f6f8fa',
                         color: 'var(--color-text)'
                     }}>
-                        <button 
+                        <button
                             onClick={() => setActiveTab('counters')}
-                            style={{ 
-                               flex: 1, 
-                               padding: '10px 8px', 
-                               border: 'none', 
+                            style={{
+                               flex: 1,
+                               padding: '10px 8px',
+                               border: 'none',
                                background: activeTab === 'counters' ? 'var(--color-white)' : 'transparent',
                                borderBottom: activeTab === 'counters' ? '2px solid var(--color-primary)' : 'none',
                                cursor: 'pointer',
@@ -131,12 +131,12 @@ export const TagCounterSelector: React.FC<TagCounterSelectorProps> = ({
                         >
                             Counters
                         </button>
-                        <button 
+                        <button
                             onClick={() => setActiveTab('tags')}
-                            style={{ 
-                               flex: 1, 
-                               padding: '10px 8px', 
-                               border: 'none', 
+                            style={{
+                               flex: 1,
+                               padding: '10px 8px',
+                               border: 'none',
                                background: activeTab === 'tags' ? 'var(--color-white)' : 'transparent',
                                 borderBottom: activeTab === 'tags' ? '2px solid var(--color-primary)' : 'none',
                                 cursor: 'pointer',
@@ -152,21 +152,21 @@ export const TagCounterSelector: React.FC<TagCounterSelectorProps> = ({
 
                     <div style={{ padding: '8px', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
                         <Search size={14} color="#888" />
-                        <input 
-                            type="text" 
-                            placeholder="Filter..." 
+                        <input
+                            type="text"
+                            placeholder="Filter..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            style={{ 
-                               border: 'none', 
-                                outline: 'none', 
-                                fontSize: '0.9rem', 
-                                width: '100%', 
-                               padding: '4px 0' 
+                            style={{
+                               border: 'none',
+                                outline: 'none',
+                                fontSize: '0.9rem',
+                                width: '100%',
+                               padding: '4px 0'
                             }}
                         />
                         {searchQuery && (
-                            <button 
+                            <button
                                onClick={() => setSearchQuery('')}
                                style={{
                                    background: 'none',
@@ -187,12 +187,12 @@ export const TagCounterSelector: React.FC<TagCounterSelectorProps> = ({
                     <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
                         {activeTab === 'counters' ? (
                             filteredCounters.map(c => (
-                               <div 
+                               <div
                                    key={c.id}
                                    onClick={() => handleSelectCounter(c.id)}
-                                   style={{ 
-                                        padding: '8px 12px', 
-                                        cursor: 'pointer', 
+                                   style={{
+                                        padding: '8px 12px',
+                                        cursor: 'pointer',
                                         fontSize: '0.9rem',
                                         backgroundColor: selectedCounterId === c.id ? '#f0f7ff' : 'transparent',
                                         color: selectedCounterId === c.id ? 'var(--color-primary)' : 'var(--color-text)',
@@ -207,12 +207,12 @@ export const TagCounterSelector: React.FC<TagCounterSelectorProps> = ({
                             ))
                         ) : (
                             filteredTags.map(t => (
-                               <div 
+                               <div
                                    key={t.id}
                                    onClick={() => handleSelectTag(t.id)}
-                                   style={{ 
-                                        padding: '8px 12px', 
-                                        cursor: 'pointer', 
+                                   style={{
+                                        padding: '8px 12px',
+                                        cursor: 'pointer',
                                         fontSize: '0.9rem',
                                         backgroundColor: selectedTagId === t.id ? '#f0f7ff' : 'transparent',
                                         color: selectedTagId === t.id ? 'var(--color-primary)' : 'var(--color-text)',

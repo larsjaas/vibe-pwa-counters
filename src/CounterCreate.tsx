@@ -60,12 +60,12 @@ export const CounterCreate: React.FC<CounterCreateProps> = ({ onCreated, onCance
                 throw new Error('Invalid Overdue duration format');
             }
 
-            const payload: CreateCounterPayload = { 
-                name, 
-                initial, 
-                step, 
-                type, 
-                last_performed_at: 0 
+            const payload: CreateCounterPayload = {
+                name,
+                initial,
+                step,
+                type,
+                last_performed_at: 0
             };
 
             if (type === 'repeating') {

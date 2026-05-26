@@ -12,10 +12,10 @@ interface StatsControlsProps {
     maxTimelineOffset: number;
 }
 
-export const StatsControls: React.FC<StatsControlsProps> = ({ 
-    graphMode, 
-    setGraphMode, 
-    currentScope, 
+export const StatsControls: React.FC<StatsControlsProps> = ({
+    graphMode,
+    setGraphMode,
+    currentScope,
     setCurrentScope,
     timelineOffset,
     setTimelineOffset,
@@ -23,10 +23,10 @@ export const StatsControls: React.FC<StatsControlsProps> = ({
 }) => {
     const getPeriodLabel = () => {
         if (graphMode !== 'timeline') return null;
-        
+
         const now = new Date();
         const offset = timelineOffset;
-        
+
         switch (currentScope) {
             case 'Day': {
                 const d = new Date();
@@ -135,17 +135,17 @@ export const StatsControls: React.FC<StatsControlsProps> = ({
                         fontSize: '0.8rem',
                         color: '#666'
                     }}>
-                        <button 
+                        <button
                             onClick={() => setTimelineOffset(prev => {
                                if (isNaN(prev)) return 0;
                                 const next = prev + 100;
                                const max = typeof maxTimelineOffset === 'number' ? maxTimelineOffset : Infinity;
                                 return Math.min(max, next);
                             })}
-                            style={{ 
-                                padding: '2px 8px', 
-                                cursor: (timelineOffset >= maxTimelineOffset || isNaN(timelineOffset)) ? 'default' : 'pointer', 
-                                borderRadius: '4px', 
+                            style={{
+                                padding: '2px 8px',
+                                cursor: (timelineOffset >= maxTimelineOffset || isNaN(timelineOffset)) ? 'default' : 'pointer',
+                                borderRadius: '4px',
                                 border: '1px solid #ccc',
                                 backgroundColor: '#fff',
                                 display: 'flex',
@@ -157,17 +157,17 @@ export const StatsControls: React.FC<StatsControlsProps> = ({
                         >
                             <ChevronsLeft size={16} />
                         </button>
-                        <button 
+                        <button
                             onClick={() => setTimelineOffset(prev => {
                                 if (isNaN(prev)) return 0;
                                 const next = prev + 1;
                                 const max = typeof maxTimelineOffset === 'number' ? maxTimelineOffset : Infinity;
                                 return Math.min(max, next);
                             })}
-                            style={{ 
-                                padding: '2px 8px', 
-                                cursor: (timelineOffset >= maxTimelineOffset || isNaN(timelineOffset)) ? 'default' : 'pointer', 
-                                borderRadius: '4px', 
+                            style={{
+                                padding: '2px 8px',
+                                cursor: (timelineOffset >= maxTimelineOffset || isNaN(timelineOffset)) ? 'default' : 'pointer',
+                                borderRadius: '4px',
                                 border: '1px solid #ccc',
                                 backgroundColor: '#fff',
                                 display: 'flex',
@@ -182,12 +182,12 @@ export const StatsControls: React.FC<StatsControlsProps> = ({
                         <span style={{ minWidth: '120px', textAlign: 'center', fontWeight: 'bold', color: '#333' }}>
                             {getPeriodLabel()}
                         </span>
-                        <button 
+                        <button
                             onClick={() => setTimelineOffset(prev => Math.max(0, prev - 1))}
-                            style={{ 
-                                padding: '2px 8px', 
-                                cursor: 'pointer', 
-                                borderRadius: '4px', 
+                            style={{
+                                padding: '2px 8px',
+                                cursor: 'pointer',
+                                borderRadius: '4px',
                                 border: '1px solid #ccc',
                                 backgroundColor: '#fff',
                                 display: 'flex',
@@ -199,12 +199,12 @@ export const StatsControls: React.FC<StatsControlsProps> = ({
                         >
                             <ChevronRight size={16} />
                         </button>
-                        <button 
+                        <button
                             onClick={() => setTimelineOffset(0)}
-                            style={{ 
-                                padding: '2px 8px', 
-                                cursor: 'pointer', 
-                                borderRadius: '4px', 
+                            style={{
+                                padding: '2px 8px',
+                                cursor: 'pointer',
+                                borderRadius: '4px',
                                 border: '1px solid #ccc',
                                 backgroundColor: '#fff',
                                 display: 'flex',

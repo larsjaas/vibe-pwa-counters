@@ -200,7 +200,7 @@ export const useStats = (allCounts: Count[], counters: any[], tagCountersMap: Ma
     const maxTimelineOffset = (() => {
         try {
             if (selectedCounterId === null && selectedTagId === null) return 0;
-            
+
             const relevantCounts = allCounts.filter(c => {
                 if (!c || !c.when) return false;
                 const t = new Date(c.when).getTime();
@@ -244,13 +244,13 @@ export const useStats = (allCounts: Count[], counters: any[], tagCountersMap: Ma
                     const hardLimit = (now.getFullYear() - 2025) * 12 + now.getMonth();
                     return Math.min(dataOffset, hardLimit);
                 }
-                case 'YTD': 
+                case 'YTD':
                 case 'Year': {
                     const dataOffset = now.getFullYear() - earliest.getFullYear();
                     const hardLimit = now.getFullYear() - 2025;
                     return Math.min(dataOffset, hardLimit);
                 }
-                default: 
+                default:
                     return 0;
             }
         } catch (e) {
@@ -260,7 +260,7 @@ export const useStats = (allCounts: Count[], counters: any[], tagCountersMap: Ma
 
     const stats = (() => {
         if (selectedCounterId === null && selectedTagId === null) return [];
-        
+
         const now = new Date();
         const offset = graphMode === 'timeline' ? timelineOffset : 0;
         if (selectedCounterId !== null) {

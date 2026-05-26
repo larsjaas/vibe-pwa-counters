@@ -93,39 +93,39 @@ export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, ref
                 <>
                     <AccountInfoSection user={user} />
 
-                    <TagSharingTable 
-                        tagshares={tagshares} 
-                        onRemoveShare={(share) => setTagShareToDelete(share)} 
+                    <TagSharingTable
+                        tagshares={tagshares}
+                        onRemoveShare={(share) => setTagShareToDelete(share)}
                     />
 
-                    <InvitesTable 
-                        invites={invites} 
-                        onAccept={handleAcceptInvite} 
-                        onReject={handleRejectInvite} 
-                        onRetract={handleRetractInvite} 
+                    <InvitesTable
+                        invites={invites}
+                        onAccept={handleAcceptInvite}
+                        onReject={handleRejectInvite}
+                        onRetract={handleRetractInvite}
                     />
 
-                    <APIKeyTable 
-                        apikeys={apikeys} 
-                        onCreate={handleCreateAPIKey} 
-                        onDelete={(id) => setApiKeyToDelete(id)} 
+                    <APIKeyTable
+                        apikeys={apikeys}
+                        onCreate={handleCreateAPIKey}
+                        onDelete={(id) => setApiKeyToDelete(id)}
                     />
 
-                    <AccountActions 
-                        onLogout={handleLogout} 
-                        onDeleteAccountRequest={() => setShowDeleteModal(true)} 
+                    <AccountActions
+                        onLogout={handleLogout}
+                        onDeleteAccountRequest={() => setShowDeleteModal(true)}
                     />
                 </>
             ) : (
-                <AccountSettingsSection 
+                <AccountSettingsSection
                     tagSharing={tagSharing}
                     emailAlerts={emailAlerts}
                     inviteReminders={inviteReminders}
                     notificationEmail={notificationEmail}
-                    onSettingChange={(setting, value) => 
-                        handleSettingChange(setting, value, 
-                            setting === 'tag_sharing' ? setTagSharing : 
-                            setting === 'tag_sharing_email' ? setEmailAlerts : 
+                    onSettingChange={(setting, value) =>
+                        handleSettingChange(setting, value,
+                            setting === 'tag_sharing' ? setTagSharing :
+                            setting === 'tag_sharing_email' ? setEmailAlerts :
                             setInviteReminders
                         )
                     }

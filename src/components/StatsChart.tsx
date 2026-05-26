@@ -15,7 +15,7 @@ export const StatsChart: React.FC<StatsChartProps> = ({ stats, currentScope, gra
         });
     });
     const maxStats = Math.max(0, ...bucketTotals);
-    
+
     const getLabels = (max: number) => {
         if (max === 0) return [0];
         if (max === 1) return [0, 1];
@@ -38,7 +38,7 @@ export const StatsChart: React.FC<StatsChartProps> = ({ stats, currentScope, gra
     const labels = getLabels(maxStats);
 
     const COLORS = [
-        '#0070f3', '#e91e63', '#4caf50', '#ff9800', '#9c27b0', 
+        '#0070f3', '#e91e63', '#4caf50', '#ff9800', '#9c27b0',
         '#00bcd4', '#f44336', '#795548', '#607d8b', '#ffeb3b'
     ];
 

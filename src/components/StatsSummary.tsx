@@ -21,16 +21,16 @@ export const StatsSummary: React.FC<StatsSummaryProps> = ({ stats }) => {
     const totalAll = summaryData.reduce((sum, item) => sum + item.total, 0);
 
     return (
-        <div style={{ 
-            width: '100%', 
-            maxWidth: '600px', 
+        <div style={{
+            width: '100%',
+            maxWidth: '600px',
             margin: '0 auto 2rem',
             fontSize: '0.9rem'
         }}>
             <h3 style={{ textAlign: 'center', marginBottom: '1rem', color: '#444' }}>Summary</h3>
-            <table style={{ 
-                width: '100%', 
-                borderCollapse: 'collapse', 
+            <table style={{
+                width: '100%',
+                borderCollapse: 'collapse',
                 textAlign: 'left',
                 fontSize: '0.85rem'
             }}>
@@ -50,9 +50,9 @@ export const StatsSummary: React.FC<StatsSummaryProps> = ({ stats }) => {
                         </tr>
                     ))}
                     {stats.length > 1 && (
-                        <tr style={{ 
-                            fontWeight: 'bold', 
-                            borderTop: '2px solid #eee' 
+                        <tr style={{
+                            fontWeight: 'bold',
+                            borderTop: '2px solid #eee'
                         }}>
                             <td style={{ padding: '8px 0', color: '#444' }}>All combined</td>
                             <td style={{ padding: '8px 0', textAlign: 'right', color: '#444' }}>{totalAll}</td>
