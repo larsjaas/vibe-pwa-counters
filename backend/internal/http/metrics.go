@@ -1,9 +1,17 @@
 package http
 
 import (
+	"net/http"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+// MetricsHandler serves the Prometheus metrics.
+func MetricsHandler(w http.ResponseWriter, r *http.Request) {
+	promhttp.Handler().ServeHTTP(w, r)
+}
 
 var (
 	activeSSEClients = promauto.NewGauge(prometheus.GaugeOpts{

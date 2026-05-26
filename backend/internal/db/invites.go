@@ -510,7 +510,7 @@ func RetractInviteByEmail(senderID int, tagID int, email string) (bool, error) {
 		return false, fmt.Errorf("database not initialized")
 	}
 
-	const query = `UPDATE tag_invites SET status = 'retracted' 
+	const query = `UPDATE tag_invites SET status = 'retracted'
 	               WHERE tag_id = $1 AND sender_id = $2 AND email = $3 AND status = 'pending'`
 	res, err := db.Exec(query, tagID, senderID, email)
 	if err != nil {

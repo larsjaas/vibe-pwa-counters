@@ -463,7 +463,32 @@ func GenerateSessionID() string {
     return base64.RawURLEncoding.EncodeToString(b)
 }
 
-// createSession helper encapsulates the session creation logic.
+// WithAuth is a middleware wrapper that authenticates the request and
+// injects the userID into the handler.
+func WithAuth(handler func(http.ResponseWriter, *http.Request, int)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		sess, err := AuthenticateRequest(r)
+		if err != nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		handler(w, r, sess.UserID)
+	}
+}
+
+// WithSessionAuth is a middleware wrapper that authenticates the request
+// using ONLY the session cookie and injects the userID into the handler.
+func WithSessionAuth(handler func(http.ResponseWriter, *http.Request, int)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		sess, err := AuthenticateSessionRequest(r)
+		if err != nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		handler(w, r, sess.UserID)
+	}
+}
+
 func createSession(w http.ResponseWriter, r *http.Request, userID int, email, name, accessToken string) {
     sessionID := GenerateSessionID()
     session := map[string]interface{}{

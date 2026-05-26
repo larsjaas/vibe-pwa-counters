@@ -3,6 +3,9 @@
 ## Version 0.9.16 (2026-05-)
 * Log version on startup.
 * Start using Go testing package.
+* Refactoring: router
+* Bugfixes?
+
 * [Alerts/popups?]
 * [ChangeLog for users on new versions?]
 

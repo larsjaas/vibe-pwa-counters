@@ -8,33 +8,8 @@ import (
 	db "github.com/larsa/pwa-counter/backend/internal/db"
 )
 
-// UserSettingsHandler manages user-specific account settings.
-// GET /api/settings -> List all settings
-// POST /api/settings -> Update/Set a setting
-// DELETE /api/settings?key=... -> Delete a setting
-func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("/api/settings called: method=%s", r.Method)
-
-	sess, err := AuthenticateRequest(r)
-	if err != nil {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-	uid := sess.UserID
-
-	switch r.Method {
-	case http.MethodGet:
-		handleGetSettings(w, r, uid)
-	case http.MethodPost:
-		handlePostSettings(w, r, uid)
-	case http.MethodDelete:
-		handleDeleteSettings(w, r, uid)
-	default:
-		MethodNotAllowed(w, r)
-	}
-}
-
-func handleGetSettings(w http.ResponseWriter, r *http.Request, uid int) {
+// ListUserSettings lists all settings for the authenticated user.
+func ListUserSettings(w http.ResponseWriter, r *http.Request, uid int) {
 	key := r.URL.Query().Get("key")
 	if key != "" {
 		val, err := db.GetUserSetting(uid, key)
@@ -58,7 +33,8 @@ func handleGetSettings(w http.ResponseWriter, r *http.Request, uid int) {
 	json.NewEncoder(w).Encode(settings)
 }
 
-func handlePostSettings(w http.ResponseWriter, r *http.Request, uid int) {
+// SetUserSetting updates or creates a setting for the authenticated user.
+func SetUserSetting(w http.ResponseWriter, r *http.Request, uid int) {
 	var body struct {
 		Setting string `json:"setting"`
 		Value   string `json:"value"`
@@ -81,7 +57,8 @@ func handlePostSettings(w http.ResponseWriter, r *http.Request, uid int) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func handleDeleteSettings(w http.ResponseWriter, r *http.Request, uid int) {
+// DeleteUserSetting deletes a specific setting for the authenticated user.
+func DeleteUserSetting(w http.ResponseWriter, r *http.Request, uid int) {
 	key := r.URL.Query().Get("key")
 	if key == "" {
 		http.Error(w, "key query parameter required", http.StatusBadRequest)

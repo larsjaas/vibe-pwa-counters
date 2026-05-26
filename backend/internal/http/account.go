@@ -12,77 +12,82 @@ import (
     db "github.com/larsa/pwa-counter/backend/internal/db"
 )
 
-// AccountHandler returns JSON information of the authenticated user.
-// It extracts the session cookie or API key, retrieves the user's identity,
-// and responds with a JSON object containing the user's name and email.
-// If authorization fails, it responds with 401 Unauthorized.
-func AccountHandler(w http.ResponseWriter, r *http.Request) {
-    log.Printf("/api/account called: method=%s", r.Method)
-    if r.Method != http.MethodGet && r.Method != http.MethodDelete {
-        MethodNotAllowed(w, r)
+// GetAccountInfo returns JSON information of the authenticated user.
+func GetAccountInfo(w http.ResponseWriter, r *http.Request, uid int) {
+    // Get user details from DB since we need name and email
+    user, err := db.GetUserByID(uid)
+    if err != nil {
+        log.Printf("GetAccountInfo: GetUserByID failed: %v", err)
+        http.Error(w, "internal server error", http.StatusInternalServerError)
         return
     }
 
-    // Authenticate request (Session ONLY)
+    w.Header().Set("Content-Type", "application/json")
+    data := map[string]string{"name": user.Name, "email": user.Email}
+    if err := json.NewEncoder(w).Encode(data); err != nil {
+        log.Printf("GetAccountInfo: json encode failed: %v", err)
+    }
+}
+
+// DeleteAccount anonymizes the user record and clears the session.
+func DeleteAccount(w http.ResponseWriter, r *http.Request, uid int) {
+    user, err := db.GetUserByID(uid)
+    if err != nil {
+        log.Printf("DeleteAccount: GetUserByID failed: %v", err)
+        http.Error(w, "internal server error", http.StatusInternalServerError)
+        return
+    }
+    email := user.Email
+
+    // Soft-delete all API keys for the user
+    if err := db.SoftDeleteAllAPIKeysForUser(uid); err != nil {
+        log.Printf("DeleteAccount: SoftDeleteAllAPIKeysForUser failed: %v", err)
+    }
+
+    // Anonymize the user in the database
+    if err := db.AnonymizeUser(email); err != nil {
+        log.Printf("DeleteAccount: AnonymizeUser failed: %v", err)
+        http.Error(w, "internal server error", http.StatusInternalServerError)
+        return
+    }
+    UsersDeletedCount.Inc()
+
+    // Delete the session cookie
+    http.SetCookie(w, &http.Cookie{
+        Name:     "session_id",
+        Value:    "",
+        Path:     "/",
+        MaxAge:   -1,
+        Expires:  time.Unix(0, 0),
+        HttpOnly: true,
+    })
+
+    // Invalidate session data in Redis if it was used
+    sessionCookie, err := r.Cookie("session_id")
+    if err == nil && cache != nil {
+        _ = cache.Del(r.Context(), sessionCookie.Value)
+    }
+
+    w.WriteHeader(http.StatusNoContent)
+}
+
+// AccountHandler legacy wrapper for backward compatibility.
+func AccountHandler(w http.ResponseWriter, r *http.Request) {
+    log.Printf("/api/account called: method=%s", r.Method)
     sess, err := AuthenticateSessionRequest(r)
     if err != nil {
         http.Error(w, "unauthorized", http.StatusUnauthorized)
         return
     }
-    email := sess.Email
-    name := sess.Name
+    uid := sess.UserID
 
-    if r.Method == http.MethodDelete {
-        // Get user ID before anonymizing since email will change
-        uid, err := db.GetUserIDByEmail(email)
-        if err != nil {
-            log.Printf("AccountHandler: GetUserIDByEmail failed: %v", err)
-            http.Error(w, "internal server error", http.StatusInternalServerError)
-            return
-        }
-
-        // Soft-delete all API keys for the user
-        if err := db.SoftDeleteAllAPIKeysForUser(uid); err != nil {
-            log.Printf("AccountHandler: SoftDeleteAllAPIKeysForUser failed: %v", err)
-            // We continue even if this fails, but we could also return error.
-            // Given it's a cleanup step, it might be okay to log and proceed,
-            // but for consistency let's treat it as an error if we want absolute correctness.
-        }
-
-        // Anonymize the user in the database
-        if err := db.AnonymizeUser(email); err != nil {
-            log.Printf("AccountHandler: AnonymizeUser failed: %v", err)
-            http.Error(w, "internal server error", http.StatusInternalServerError)
-            return
-        }
-        UsersDeletedCount.Inc()
-
-        // Delete the session cookie
-        http.SetCookie(w, &http.Cookie{
-            Name:     "session_id",
-            Value:    "",
-            Path:     "/",
-            MaxAge:   -1,
-            Expires:  time.Unix(0, 0),
-            HttpOnly: true,
-        })
-
-        // Invalidate session data in Redis if it was used
-        sessionCookie, err := r.Cookie("session_id")
-        if err == nil && cache != nil {
-            _ = cache.Del(r.Context(), sessionCookie.Value)
-        }
-
-        // Return success instead of redirecting.
-        // The frontend handles the redirection to the landing page.
-        w.WriteHeader(http.StatusNoContent)
-        return
-    }
-
-    w.Header().Set("Content-Type", "application/json")
-    data := map[string]string{"name": name, "email": email}
-    if err := json.NewEncoder(w).Encode(data); err != nil {
-        log.Printf("AccountHandler: json encode failed: %v", err)
+    switch r.Method {
+    case http.MethodGet:
+        GetAccountInfo(w, r, uid)
+    case http.MethodDelete:
+        DeleteAccount(w, r, uid)
+    default:
+        MethodNotAllowed(w, r)
     }
 }
 
@@ -207,7 +212,7 @@ func RequestNotificationEmailHandler(w http.ResponseWriter, r *http.Request) {
 	
 	if err := email.SendEmail(body.Email, subject, bodyText); err != nil {
 		log.Printf("RequestNotificationEmailHandler: SendEmail failed: %v", err)
-		// We don't necessarily return error because the token is already stored, 
+		// We don't necessarily return error because the token is already stored,
 		// but it's better to tell the user.
 		http.Error(w, "failed to send verification email", http.StatusInternalServerError)
 		return

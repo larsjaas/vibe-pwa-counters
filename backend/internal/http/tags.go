@@ -5,164 +5,12 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	db "github.com/larsa/pwa-counter/backend/internal/db"
 )
 
-// TagsHandler handles requests for tag management, tagging of counters, and sharing.
-// It maps to /api/tags and /api/tags/ and /api/tags/:id
-func TagsHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("/api/tags called: method=%s path=%s", r.Method, r.URL.Path)
-
-	sess, err := AuthenticateRequest(r)
-	if err != nil {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-	userID := sess.UserID
-
-	path := r.URL.Path
-	method := r.Method
-
-	// Handle /api/tags and /api/tags/
-	if path == "/api/tags" || path == "/api/tags/" {
-		switch method {
-		case http.MethodGet:
-			handleGetTags(w, r, userID)
-		case http.MethodPost:
-			handleCreateTag(w, r, userID)
-		default:
-			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		}
-		return
-	}
-
-	// Handle /api/tags/shares/me
-	if path == "/api/tags/shares/me" {
-		if method == http.MethodGet {
-			handleGetUserTagShares(w, r, userID)
-		} else {
-			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		}
-		return
-	}
-
-	// Handle /api/tags/:id ...
-	if strings.HasPrefix(path, "/api/tags/") {
-		parts := strings.Split(strings.TrimPrefix(path, "/api/tags/"), "/")
-		if len(parts) == 0 || parts[0] == "" {
-			http.Error(w, "bad request", http.StatusBadRequest)
-			return
-		}
-
-		tagID, err := strconv.Atoi(parts[0])
-		if err != nil {
-			http.Error(w, "invalid tag ID", http.StatusBadRequest)
-			return
-		}
-
-		// Case: /api/tags/:id
-		if len(parts) == 1 {
-			switch method {
-			case http.MethodPut:
-				handleUpdateTag(w, r, userID, tagID)
-			case http.MethodDelete:
-				handleDeleteTag(w, r, userID, tagID)
-			default:
-				http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-			}
-			return
-		}
-
-		// Case: /api/tags/:id/counters
-		if len(parts) == 2 && parts[1] == "counters" {
-			switch method {
-			case http.MethodGet:
-				handleGetCountersForTag(w, r, userID, tagID)
-			default:
-				http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-			}
-			return
-		}
-
-		// Case: /api/tags/:id/counters/:cid
-		if len(parts) == 3 && parts[1] == "counters" {
-			counterID, err := strconv.Atoi(parts[2])
-			if err != nil {
-				http.Error(w, "invalid counter ID", http.StatusBadRequest)
-				return
-			}
-			switch method {
-			case http.MethodPost:
-				handleAddTagToCounter(w, r, userID, tagID, counterID)
-			case http.MethodDelete:
-				handleRemoveTagFromCounter(w, r, userID, tagID, counterID)
-			default:
-				http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-			}
-			return
-		}
-
-		// Case: /api/tags/:id/invites
-		if len(parts) == 2 && parts[1] == "invites" {
-			switch method {
-			case http.MethodPost:
-				handleCreateInvite(w, r, userID, tagID)
-			default:
-				http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-			}
-			return
-		}
-
-		// Case: /api/tags/:id/shares
-		if len(parts) == 2 && parts[1] == "shares" {
-			switch method {
-			case http.MethodGet:
-				handleGetTagShares(w, r, userID, tagID)
-			case http.MethodPost:
-				handleShareTag(w, r, userID, tagID)
-			default:
-				http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-			}
-			return
-		}
-
-		// Case: /api/tags/:id/shares/:email (or uid)
-		if len(parts) == 3 && parts[1] == "shares" {
-			email := parts[2]
-			switch method {
-			case http.MethodDelete:
-				handleUnshareTag(w, r, userID, tagID, email)
-			default:
-				http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-			}
-			return
-		}
-
-		// Case: /api/tags/:id/settings
-		if len(parts) == 2 && parts[1] == "settings" {
-			switch method {
-			case http.MethodGet:
-				handleGetTagSettings(w, r, userID, tagID)
-			case http.MethodPost:
-				handleSetTagSetting(w, r, userID, tagID)
-			case http.MethodDelete:
-				handleDeleteTagSetting(w, r, userID, tagID)
-			default:
-				http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-			}
-			return
-		}
-
-		http.Error(w, "Not Found", http.StatusNotFound)
-	} else {
-		http.Error(w, "Not Found", http.StatusNotFound)
-	}
-}
-
-func handleGetTags(w http.ResponseWriter, r *http.Request, userID int) {
+func GetTags(w http.ResponseWriter, r *http.Request, userID int) {
 	tags, err := db.GetTagsForUser(userID)
 	if err != nil {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -197,7 +45,7 @@ func handleGetTags(w http.ResponseWriter, r *http.Request, userID int) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func handleCreateTag(w http.ResponseWriter, r *http.Request, userID int) {
+func CreateTag(w http.ResponseWriter, r *http.Request, userID int) {
 	var body struct {
 		Name string `json:"name"`
 	}
@@ -214,7 +62,14 @@ func handleCreateTag(w http.ResponseWriter, r *http.Request, userID int) {
 	json.NewEncoder(w).Encode(tag)
 }
 
-func handleUpdateTag(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
+func UpdateTag(w http.ResponseWriter, r *http.Request, userID int) {
+	tagIDStr := r.PathValue("id")
+	tagID, err := strconv.Atoi(tagIDStr)
+	if err != nil {
+		http.Error(w, "invalid tag ID", http.StatusBadRequest)
+		return
+	}
+
 	var body struct {
 		Name string `json:"name"`
 	}
@@ -234,7 +89,14 @@ func handleUpdateTag(w http.ResponseWriter, r *http.Request, userID int, tagID i
 	w.WriteHeader(http.StatusOK)
 }
 
-func handleDeleteTag(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
+func DeleteTag(w http.ResponseWriter, r *http.Request, userID int) {
+	tagIDStr := r.PathValue("id")
+	tagID, err := strconv.Atoi(tagIDStr)
+	if err != nil {
+		http.Error(w, "invalid tag ID", http.StatusBadRequest)
+		return
+	}
+
 	updated, err := db.SoftDeleteTag(userID, tagID)
 	if err != nil {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -247,7 +109,16 @@ func handleDeleteTag(w http.ResponseWriter, r *http.Request, userID int, tagID i
 	w.WriteHeader(http.StatusOK)
 }
 
-func handleAddTagToCounter(w http.ResponseWriter, r *http.Request, userID int, tagID int, counterID int) {
+func AddTagToCounter(w http.ResponseWriter, r *http.Request, userID int) {
+	tagIDStr := r.PathValue("id")
+	counterIDStr := r.PathValue("cid")
+	tagID, errT := strconv.Atoi(tagIDStr)
+	counterID, errC := strconv.Atoi(counterIDStr)
+	if errT != nil || errC != nil {
+		http.Error(w, "invalid tag or counter ID", http.StatusBadRequest)
+		return
+	}
+
 	err := db.AddTagToCounter(userID, tagID, counterID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
@@ -262,7 +133,16 @@ func handleAddTagToCounter(w http.ResponseWriter, r *http.Request, userID int, t
 	w.WriteHeader(http.StatusOK)
 }
 
-func handleRemoveTagFromCounter(w http.ResponseWriter, r *http.Request, userID int, tagID int, counterID int) {
+func RemoveTagFromCounter(w http.ResponseWriter, r *http.Request, userID int) {
+	tagIDStr := r.PathValue("id")
+	counterIDStr := r.PathValue("cid")
+	tagID, errT := strconv.Atoi(tagIDStr)
+	counterID, errC := strconv.Atoi(counterIDStr)
+	if errT != nil || errC != nil {
+		http.Error(w, "invalid tag or counter ID", http.StatusBadRequest)
+		return
+	}
+
 	updated, err := db.RemoveTagFromCounter(userID, tagID, counterID)
 	if err != nil {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -281,7 +161,14 @@ func handleRemoveTagFromCounter(w http.ResponseWriter, r *http.Request, userID i
 	w.WriteHeader(http.StatusOK)
 }
 
-func handleGetCountersForTag(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
+func GetCountersForTag(w http.ResponseWriter, r *http.Request, userID int) {
+	tagIDStr := r.PathValue("id")
+	tagID, err := strconv.Atoi(tagIDStr)
+	if err != nil {
+		http.Error(w, "invalid tag ID", http.StatusBadRequest)
+		return
+	}
+
 	counters, err := db.GetCountersByTag(userID, tagID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
@@ -295,136 +182,16 @@ func handleGetCountersForTag(w http.ResponseWriter, r *http.Request, userID int,
 	json.NewEncoder(w).Encode(ids)
 }
 
-func handleShareTag(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
-	// Now tag sharing is based on an invite system.
-	// We redirect this to handleCreateInvite logic.
-	handleCreateInvite(w, r, userID, tagID)
-}
-
-func handleUnshareTag(w http.ResponseWriter, r *http.Request, userID int, tagID int, email string) {
-	var updated bool
-	var err error
-	targetUserID, userErr := db.GetUserIDByEmail(email)
-
-	if userErr == nil {
-		updated, err = db.UnshareTagFromUser(userID, tagID, targetUserID)
-		if err != nil {
-			http.Error(w, "internal server error", http.StatusInternalServerError)
-			return
-		}
-	}
-
-	if !updated {
-		updated, err = db.RetractInviteByEmail(userID, tagID, email)
-		if err != nil {
-			http.Error(w, "internal server error", http.StatusInternalServerError)
-			return
-		}
-	}
-
-	if !updated {
-		http.Error(w, "share or invite not found or unauthorized", http.StatusNotFound)
-		return
-	}
-
-	PublishEvent(userID, "UPDATED TAG_SHARES")
-	if userErr == nil {
-		PublishEvent(targetUserID, "UPDATED TAG_SHARES")
-		PublishEvent(targetUserID, "UPDATED COUNTERS")
-	}
-	w.WriteHeader(http.StatusOK)
-}
-
-func handleGetTagShares(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
-	shares, err := db.GetTagShares(userID, tagID)
-	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	invites, err := db.GetPendingInvitesByTag(tagID)
-	if err != nil {
-		log.Printf("error fetching pending invites: %v", err)
-		// We continue even if invites fail, as shares are the primary data
-	}
-
-	combined := make([]db.TagShareWithStatus, 0, len(shares)+len(invites))
-	for _, s := range shares {
-		combined = append(combined, *s)
-	}
-	for _, i := range invites {
-		combined = append(combined, db.TagShareWithStatus{
-			Email:       i.Email,
-			AccessLevel: i.AccessLevel,
-			Status:      "pending",
-		})
-	}
-
-	// Sort the combined list by email
-	// In a real app we might do this in SQL, but here it's a small list.
-	// (Optional: I'll skip sorting for now unless it's visibly jarring)
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(combined)
-}
-
-func handleGetUserTagShares(w http.ResponseWriter, r *http.Request, userID int) {
-	shares, err := db.GetUserTagShares(userID)
-	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(shares)
-}
-
-func handleCreateInvite(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
-	var body struct {
-		Email       string `json:"email"`
-		AccessLevel int    `json:"access_level"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
-		return
-	}
-
-	if body.AccessLevel == 0 {
-		body.AccessLevel = 2 // Default to Edit access
-	}
-
-	// Check if the recipient user exists and has disabled tag sharing.
-	if targetUserID, err := db.GetUserIDByEmail(body.Email); err == nil {
-		enabled, err := db.GetUserSettingBool(targetUserID, "tag_sharing", true)
-		if err != nil {
-			log.Printf("error checking sharing setting for user %d: %v", targetUserID, err)
-		} else if !enabled {
-			// User has explicitly disabled tag sharing.
-			// We return 200 OK but don't create the invite.
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-	}
-
-	invite, err := db.CreateInvite(userID, tagID, body.Email, body.AccessLevel)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-
-	// Notify both parties about the new invite
-	PublishEvent(userID, "UPDATED TAG_INVITES")
-	if targetUserID, err := db.GetUserIDByEmail(body.Email); err == nil {
-		PublishEvent(targetUserID, "UPDATED TAG_INVITES")
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(invite)
-}
-
 // handleGetTagSettings returns all tag-level settings for the authenticated user on a specific tag.
 // Supports an optional ?key=... query to retrieve a single setting.
-func handleGetTagSettings(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
+func GetTagSettings(w http.ResponseWriter, r *http.Request, userID int) {
+	tagIDStr := r.PathValue("id")
+	tagID, err := strconv.Atoi(tagIDStr)
+	if err != nil {
+		http.Error(w, "invalid tag ID", http.StatusBadRequest)
+		return
+	}
+
 	key := r.URL.Query().Get("key")
 	if key != "" {
 		val, err := db.GetTagSetting(tagID, userID, key)
@@ -449,7 +216,14 @@ func handleGetTagSettings(w http.ResponseWriter, r *http.Request, userID int, ta
 }
 
 // handleSetTagSetting creates or updates a single tag-level setting.
-func handleSetTagSetting(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
+func SetTagSetting(w http.ResponseWriter, r *http.Request, userID int) {
+	tagIDStr := r.PathValue("id")
+	tagID, err := strconv.Atoi(tagIDStr)
+	if err != nil {
+		http.Error(w, "invalid tag ID", http.StatusBadRequest)
+		return
+	}
+
 	var body struct {
 		Setting string `json:"setting"`
 		Value   string `json:"value"`
@@ -473,7 +247,14 @@ func handleSetTagSetting(w http.ResponseWriter, r *http.Request, userID int, tag
 }
 
 // handleDeleteTagSetting removes a single tag-level setting.
-func handleDeleteTagSetting(w http.ResponseWriter, r *http.Request, userID int, tagID int) {
+func DeleteTagSetting(w http.ResponseWriter, r *http.Request, userID int) {
+	tagIDStr := r.PathValue("id")
+	tagID, err := strconv.Atoi(tagIDStr)
+	if err != nil {
+		http.Error(w, "invalid tag ID", http.StatusBadRequest)
+		return
+	}
+
 	key := r.URL.Query().Get("key")
 	if key == "" {
 		http.Error(w, "key query parameter required", http.StatusBadRequest)

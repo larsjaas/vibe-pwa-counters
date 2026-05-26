@@ -1,238 +1,202 @@
 package http
 
 import (
-    "encoding/json"
-    "log"
-    "net/http"
-    "strconv"
-    "strings"
-    "time"
+	"encoding/json"
+	"log"
+	"net/http"
+	"strconv"
+	"time"
 
-    db "github.com/larsa/pwa-counter/backend/internal/db"
+	db "github.com/larsa/pwa-counter/backend/internal/db"
 )
 
-// CountersHandler implements CRUD operations for counters. It supports
-// GET, POST, and DELETE on the paths /api/counters and /api/counters/:id.
-func CountersHandler(w http.ResponseWriter, r *http.Request) {
-    log.Printf("/api/counters called: method=%s path=%s", r.Method, r.URL.Path)
+// CreateCounter handles POST /api/counters
+func CreateCounter(w http.ResponseWriter, r *http.Request, userID int) {
+	var body struct {
+		Name        string  `json:"name"`
+		Initial     int     `json:"initial"`
+		Step        int     `json:"step"`
+		Type        string  `json:"type"`
+		Frequency   *int64  `json:"frequency"`
+		AlertWindow *int64  `json:"alert_window"`
+	}
+	if e := json.NewDecoder(r.Body).Decode(&body); e != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	if body.Type == "" {
+		body.Type = "standard"
+	}
+	counter, err := db.InsertCounter(userID, body.Name, body.Step, body.Type, body.Frequency, body.AlertWindow)
+	if err != nil {
+		log.Printf("Insert counter failed: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	CountersTotal.Inc()
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(counter); err != nil {
+		log.Printf("JSON encode failed: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+	}
+}
 
-    // Authenticate request (via API key or session cookie)
-    sess, err := AuthenticateRequest(r)
-    if err != nil {
-        http.Error(w, "unauthorized", http.StatusUnauthorized)
-        return
-    }
-    userID := sess.UserID
+// ListCounters handles GET /api/counters
+func ListCounters(w http.ResponseWriter, r *http.Request, userID int) {
+	tagIDStr := r.URL.Query().Get("tag_id")
+	var counters []*db.Counter
+	var err error
+	if tagIDStr != "" {
+		tagID, err := strconv.Atoi(tagIDStr)
+		if err != nil {
+			http.Error(w, "invalid tag_id", http.StatusBadRequest)
+			return
+		}
+		counters, err = db.GetCountersByTag(userID, tagID)
+	} else {
+		counters, err = db.GetCountersForUser(userID)
+	}
+	if err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
 
-    switch r.Method {
+	type counterResponse struct {
+		ID              int         `json:"id"`
+		UserEmail       string      `json:"user_email"`
+		Name            string      `json:"name"`
+		CreateTime      time.Time   `json:"createtime"`
+		ArchiveTime     interface{} `json:"archivetime"`
+		DeleteTime      interface{} `json:"deletetime"`
+		Step            int         `json:"step"`
+		Type            string      `json:"type"`
+		Frequency       *int64      `json:"frequency"`
+		AlertWindow     *int64      `json:"alert_window"`
+		Overdue         interface{} `json:"overdue"`
+		LastPerformedAt interface{} `json:"last_performed_at"`
+		PriorityScore   float64     `json:"priority_score"`
+		RepeatStatus    string      `json:"repeat_status"`
+	}
 
-    case http.MethodPost:
-        // POST /api/counters
-        if r.URL.Path != "/api/counters" && r.URL.Path != "/api/counters/" {
-            http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-            return
-        }
-        var body struct {
-            Name        string  `json:"name"`
-            Initial     int     `json:"initial"`
-            Step        int     `json:"step"`
-            Type        string  `json:"type"`
-            Frequency   *int64  `json:"frequency"`
-            AlertWindow *int64  `json:"alert_window"`
-        }
-        if e := json.NewDecoder(r.Body).Decode(&body); e != nil {
-            http.Error(w, "bad request", http.StatusBadRequest)
-            return
-        }
-        if body.Type == "" {
-            body.Type = "standard"
-        }
-        // Use the step provided in the request body.
-        counter, err := db.InsertCounter(userID, body.Name, body.Step, body.Type, body.Frequency, body.AlertWindow)
-        if err != nil {
-            log.Printf("Insert counter failed: %v", err)
-            http.Error(w, "internal server error", http.StatusInternalServerError)
-            return
-        }
-        CountersTotal.Inc()
-        w.Header().Set("Content-Type", "application/json")
-        if err := json.NewEncoder(w).Encode(counter); err != nil {
-            log.Printf("JSON encode failed: %v", err)
-            http.Error(w, "internal server error", http.StatusInternalServerError)
-            return
-        }
-        return
-    case http.MethodGet:
-        // GET /api/counters
-        if r.URL.Path != "/api/counters" && r.URL.Path != "/api/counters/" {
-            http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-            return
-        }
-        tagIDStr := r.URL.Query().Get("tag_id")
-        var counters []*db.Counter
-        var err error
-        if tagIDStr != "" {
-            tagID, err := strconv.Atoi(tagIDStr)
-            if err != nil {
-                http.Error(w, "invalid tag_id", http.StatusBadRequest)
-                return
-            }
-            counters, err = db.GetCountersByTag(userID, tagID)
-        } else {
-            counters, err = db.GetCountersForUser(userID)
-        }
-        if err != nil {
-            http.Error(w, "internal server error", http.StatusInternalServerError)
-            return
-        }
+	resp := make([]counterResponse, 0, len(counters))
+	for _, c := range counters {
+		user, err := db.GetUserByID(c.UserID)
+		email := "unknown"
+		if err == nil {
+			email = user.Email
+		}
+		resp = append(resp, counterResponse{
+			ID:              c.ID,
+			UserEmail:       email,
+			Name:            c.Name,
+			CreateTime:      c.CreateTime,
+			ArchiveTime:     c.ArchiveTime,
+			DeleteTime:      c.DeleteTime,
+			Step:            c.Step,
+			Type:            c.Type,
+			Frequency:       c.Frequency,
+			AlertWindow:     c.AlertWindow,
+			Overdue:         c.Overdue,
+			LastPerformedAt: c.LastPerformedAt,
+			PriorityScore:   c.PriorityScore,
+			RepeatStatus:    c.RepeatStatus,
+		})
+	}
 
-        type counterResponse struct {
-            ID             int         `json:"id"`
-            UserEmail      string      `json:"user_email"`
-            Name           string      `json:"name"`
-            CreateTime     time.Time   `json:"createtime"`
-            ArchiveTime    interface{} `json:"archivetime"`
-            DeleteTime     interface{} `json:"deletetime"`
-            Step           int         `json:"step"`
-            Type           string      `json:"type"`
-            Frequency      *int64      `json:"frequency"`
-            AlertWindow    *int64      `json:"alert_window"`
-            Overdue        interface{} `json:"overdue"`
-            LastPerformedAt interface{} `json:"last_performed_at"`
-            PriorityScore  float64     `json:"priority_score"`
-            RepeatStatus   string      `json:"repeat_status"`
-        }
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		log.Printf("JSON encode failed: %v", err)
+	}
+}
 
-        resp := make([]counterResponse, 0, len(counters))
-        for _, c := range counters {
-            user, err := db.GetUserByID(c.UserID)
-            email := "unknown"
-            if err == nil {
-                email = user.Email
-            }
-            resp = append(resp, counterResponse{
-                ID:             c.ID,
-                UserEmail:      email,
-                Name:           c.Name,
-                CreateTime:     c.CreateTime,
-                ArchiveTime:    c.ArchiveTime,
-                DeleteTime:     c.DeleteTime,
-                Step:           c.Step,
-                Type:           c.Type,
-                Frequency:      c.Frequency,
-                AlertWindow:    c.AlertWindow,
-                Overdue:        c.Overdue,
-                LastPerformedAt: c.LastPerformedAt,
-                PriorityScore:  c.PriorityScore,
-                RepeatStatus:   c.RepeatStatus,
-            })
-        }
+// UpdateCounter handles PUT/PATCH /api/counters
+func UpdateCounter(w http.ResponseWriter, r *http.Request, userID int) {
+	var body struct {
+		ID          int     `json:"id"`
+		Name        string  `json:"name"`
+		Step        int     `json:"step"`
+		Type        string  `json:"type"`
+		Frequency   *int64  `json:"frequency"`
+		AlertWindow *int64  `json:"alert_window"`
+		Overdue     *int64  `json:"overdue"`
+	}
+	if e := json.NewDecoder(r.Body).Decode(&body); e != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	if body.Type == "" {
+		body.Type = "standard"
+	}
+	updated, err := db.UpdateCounter(userID, body.ID, body.Name, body.Step, body.Type, body.Frequency, body.AlertWindow, body.Overdue)
+	if err != nil {
+		log.Printf("Update counter failed: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	if updated {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		http.Error(w, "not found", http.StatusNotFound)
+	}
+}
 
-        w.Header().Set("Content-Type", "application/json")
-        if err := json.NewEncoder(w).Encode(resp); err != nil {
-            log.Printf("JSON encode failed: %v", err)
-        }
-        return
-    case http.MethodPatch, http.MethodPut:
-        // PATCH/PUT /api/counters or /api/counters/:id
-        if r.URL.Path == "/api/counters" || r.URL.Path == "/api/counters/" {
-            var body struct {
-                ID          int     `json:"id"`
-                Name        string  `json:"name"`
-                Step        int     `json:"step"`
-                Type        string  `json:"type"`
-                Frequency   *int64  `json:"frequency"`
-                AlertWindow *int64  `json:"alert_window"`
-                Overdue     *int64  `json:"overdue"`
-            }
-            if e := json.NewDecoder(r.Body).Decode(&body); e != nil {
-                http.Error(w, "bad request", http.StatusBadRequest)
-                return
-            }
-            if body.Type == "" {
-                body.Type = "standard"
-            }
-            updated, err := db.UpdateCounter(userID, body.ID, body.Name, body.Step, body.Type, body.Frequency, body.AlertWindow, body.Overdue)
-            if err != nil {
-                log.Printf("Update counter failed: %v", err)
-                http.Error(w, "internal server error", http.StatusInternalServerError)
-                return
-            }
-            if updated {
-                w.WriteHeader(http.StatusOK)
-            } else {
-                http.Error(w, "not found", http.StatusNotFound)
-            }
-            return
-        } else if strings.HasPrefix(r.URL.Path, "/api/counters/") {
-            // PATCH /api/counters/:id for archive time
-            idStr := strings.TrimPrefix(r.URL.Path, "/api/counters/")
-            counterID, err := strconv.Atoi(idStr)
-            if err != nil {
-                http.Error(w, "bad request", http.StatusBadRequest)
-                return
-            }
-            var body struct {
-                ArchiveTime *string `json:"archivetime"`
-            }
-            if e := json.NewDecoder(r.Body).Decode(&body); e != nil {
-                http.Error(w, "bad request", http.StatusBadRequest)
-                return
-            }
+// ArchiveCounter handles PUT/PATCH /api/counters/{id}
+func ArchiveCounter(w http.ResponseWriter, r *http.Request, userID int) {
+	counterIDStr := r.PathValue("id")
+	counterID, err := strconv.Atoi(counterIDStr)
+	if err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
 
-            var t *time.Time
-            if body.ArchiveTime != nil && *body.ArchiveTime != "" {
-                parsed, err := time.Parse(time.RFC3339, *body.ArchiveTime)
-                if err != nil {
-                    http.Error(w, "invalid date format", http.StatusBadRequest)
-                    return
-                }
-                t = &parsed
-            }
+	var body struct {
+		ArchiveTime *string `json:"archivetime"`
+	}
+	if e := json.NewDecoder(r.Body).Decode(&body); e != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
 
-            updated, err := db.SetCounterArchiveTime(userID, counterID, t)
-            if err != nil {
-                log.Printf("Set archive time failed: %v", err)
-                http.Error(w, "internal server error", http.StatusInternalServerError)
-                return
-            }
-            if updated {
-                w.WriteHeader(http.StatusOK)
-            } else {
-                http.Error(w, "not found", http.StatusNotFound)
-            }
-            return
-        } else {
-            http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-            return
-        }
-        return
-    case http.MethodDelete:
-        // DELETE /api/counters/:id
-        if !strings.HasPrefix(r.URL.Path, "/api/counters/") {
-            http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-            return
-        }
-        idStr := strings.TrimPrefix(r.URL.Path, "/api/counters/")
-        counterID, err := strconv.Atoi(idStr)
-        if err != nil {
-            http.Error(w, "bad request", http.StatusBadRequest)
-            return
-        }
-        updated, err := db.SoftDeleteCounter(userID, counterID)
-        if err != nil {
-            http.Error(w, "internal server error", http.StatusInternalServerError)
-            return
-        }
-        if updated {
-            CountersDeletedTotal.Inc()
-            w.WriteHeader(http.StatusOK)
-        } else {
-            http.Error(w, "not found", http.StatusNotFound)
-        }
-        return
-    default:
-        w.WriteHeader(http.StatusMethodNotAllowed)
-        return
-    }
+	var t *time.Time
+	if body.ArchiveTime != nil && *body.ArchiveTime != "" {
+		parsed, err := time.Parse(time.RFC3339, *body.ArchiveTime)
+		if err != nil {
+			http.Error(w, "invalid date format", http.StatusBadRequest)
+			return
+		}
+		t = &parsed
+	}
+
+	updated, err := db.SetCounterArchiveTime(userID, counterID, t)
+	if err != nil {
+		log.Printf("Set archive time failed: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	if updated {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		http.Error(w, "not found", http.StatusNotFound)
+	}
+}
+
+// DeleteCounter handles DELETE /api/counters/{id}
+func DeleteCounter(w http.ResponseWriter, r *http.Request, userID int) {
+	counterIDStr := r.PathValue("id")
+	counterID, err := strconv.Atoi(counterIDStr)
+	if err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	updated, err := db.SoftDeleteCounter(userID, counterID)
+	if err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	if updated {
+		CountersDeletedTotal.Inc()
+		w.WriteHeader(http.StatusOK)
+	} else {
+		http.Error(w, "not found", http.StatusNotFound)
+	}
 }
