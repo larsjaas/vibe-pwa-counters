@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 	"time"
 )
 
@@ -300,9 +301,14 @@ func ProcessReminderInvites(sendEmail func(to, subject, body string) error) (int
 				salutation = fmt.Sprintf("Hello %s,", recipientName)
 			}
 
+			fqhn := os.Getenv("SERVER_FQHN")
+			if fqhn == "" {
+				fqhn = "counters.crudbytes.com"
+			}
+
 			body := fmt.Sprintf(
-				"<p>%s</p><p>This is a reminder that User %s has invited you to share the counters tagged '%s' on counters.crudbytes.com. Log in to your profile to accept or reject the invite, and maybe go to Account Settings if you want to alter your email preferences.</p><p>Best regards,<br>CrudBytes Apps &lt;Apps@CrudBytes.com&gt;</p>",
-				salutation, senderName, tagName,
+				"<p>%s</p><p>This is a reminder that User %s has invited you to share the counters tagged '%s' on %s. Log in to your profile to accept or reject the invite, and maybe go to Account Settings if you want to alter your email preferences.</p><p>Best regards,<br>CrudBytes Apps &lt;Apps@CrudBytes.com&gt;</p>",
+				salutation, senderName, tagName, fqhn,
 			)
 			
 			if err := sendEmail(email, subject, body); err != nil {
@@ -416,9 +422,14 @@ func ProcessInitialInvites(sendEmail func(to, subject, body string) error) (int,
 				salutation = fmt.Sprintf("Hello %s,", recipientName)
 			}
 
+			fqhn := os.Getenv("SERVER_FQHN")
+			if fqhn == "" {
+				fqhn = "counters.crudbytes.com"
+			}
+
 			body := fmt.Sprintf(
-				"<p>%s</p><p>User %s has invited you to share the counters tagged '%s' on counters.crudbytes.com. Log in to your profile to accept or reject the invite, and maybe go to Account Settings if you want to alter your email preferences.</p><p>Best regards,<br>CrudBytes Apps &lt;Apps@CrudBytes.com&gt;</p>",
-				salutation, senderName, tagName,
+				"<p>%s</p><p>User %s has invited you to share the counters tagged '%s' on %s. Log in to your profile to accept or reject the invite, and maybe go to Account Settings if you want to alter your email preferences.</p><p>Best regards,<br>CrudBytes Apps &lt;Apps@CrudBytes.com&gt;</p>",
+				salutation, senderName, tagName, fqhn,
 			)
 			
 			if err := sendEmail(email, subject, body); err != nil {
