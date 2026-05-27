@@ -1,24 +1,14 @@
 package http
 
-// Package http provides authentication handlers for the REST backend.
-// These handlers are exported and used by the main server package.
-// The handlers are deliberately named with a leading capital letter to
-// make them visible across packages. The internal package name is
-// `http` but aliased when imported to avoid clashing with the standard
-// library `net/http`.
-
 import (
-	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"net"
-	"os"
+	"net/http"
 	"strings"
 	"time"
 
@@ -31,7 +21,7 @@ var cache *Cache
 
 // SetRedisClient allows the server bootstrap code to inject a Redis client.
 func SetRedisClient(rdb *redis.Client) {
-    cache = NewCache(rdb)
+	cache = NewCache(rdb)
 }
 
 // UserSession contains authentication and identity information for a request.
@@ -103,55 +93,41 @@ func AuthenticateSessionRequest(r *http.Request) (*UserSession, error) {
 // LogoutHandler clears the session cookie and redirects the user to the
 // landing page.
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
-    log.Printf("/api/logout called: method=%s path=%s", r.Method, r.URL.Path)
-    // Delete the session cookie and remove the session entry from Redis.
-    http.SetCookie(w, &http.Cookie{
-        Name:     "session_id",
-        Value:    "",
-        Path:     "/",
-        MaxAge:   -1,
-        Expires:  time.Unix(0, 0),
-        HttpOnly: true,
-    })
-    cookie, err := r.Cookie("session_id")
-    if err == nil && cache != nil {
-        // Ensure we delete the key to avoid stale entries.
-        _ = cache.Del(context.Background(), cookie.Value)
-        sessionCount.Dec()
-    }
-    http.Redirect(w, r, "/landing_page/index.html", http.StatusFound)
+	log.Printf("/api/logout called: method=%s path=%s", r.Method, r.URL.Path)
+	// Delete the session cookie and remove the session entry from Redis.
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_id",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		Expires:  time.Unix(0, 0),
+		HttpOnly: true,
+	})
+	cookie, err := r.Cookie("session_id")
+	if err == nil && cache != nil {
+		// Ensure we delete the key to avoid stale entries.
+		_ = cache.Del(context.Background(), cookie.Value)
+		sessionCount.Dec()
+	}
+	http.Redirect(w, r, "/landing_page/index.html", http.StatusFound)
 }
 
 // ValidateSessionHandler verifies the presence of a session cookie.
 func ValidateSessionHandler(w http.ResponseWriter, r *http.Request) {
-    log.Printf("/api/validate-session called: method=%s path=%s", r.Method, r.URL.Path)
-    cookie, err := r.Cookie("session_id")
-    if err != nil || cache == nil {
-        http.Error(w, "Invalid session", http.StatusUnauthorized)
-        return
-    }
-    ctx := context.Background()
-    val, err := cache.Get(ctx, cookie.Value)
-    if err != nil {
-        http.Error(w, "Invalid session", http.StatusUnauthorized)
-        return
-    }
-    log.Printf("Session data for %s: %s", cookie.Value, val)
-    fmt.Fprintf(w, "Ping: %s", "ok")
-}
-
-// LoginHandler redirects to Google's OAuth 2.0 consent screen.
-func LoginHandler(w http.ResponseWriter, r *http.Request) {
-    log.Printf("/api/login called: method=%s path=%s", r.Method, r.URL.Path)
-    clientID := os.Getenv("GOOGLE_CLIENT_ID")
-    redirectURI := os.Getenv("GOOGLE_REDIRECT_URI")
-    if clientID == "" || redirectURI == "" {
-        http.Error(w, "Google OAuth config missing", http.StatusInternalServerError)
-        return
-    }
-    scope := "openid email profile"
-    authURL := fmt.Sprintf("https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=%s", clientID, redirectURI, scope)
-    http.Redirect(w, r, authURL, http.StatusFound)
+	log.Printf("/api/validate-session called: method=%s path=%s", r.Method, r.URL.Path)
+	cookie, err := r.Cookie("session_id")
+	if err != nil || cache == nil {
+		http.Error(w, "Invalid session", http.StatusUnauthorized)
+		return
+	}
+	ctx := context.Background()
+	val, err := cache.Get(ctx, cookie.Value)
+	if err != nil {
+		http.Error(w, "Invalid session", http.StatusUnauthorized)
+		return
+	}
+	log.Printf("Session data for %s: %s", cookie.Value, val)
+	fmt.Fprintf(w, "Ping: %s", "ok")
 }
 
 // handleAuthSuccess persists user in database if not present,
@@ -197,39 +173,8 @@ func handleAuthSuccess(w http.ResponseWriter, r *http.Request, email, name, acce
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-// AuthCallbackHandler handles the OAuth callback, exchanging the code for
-// tokens, persisting user data, creating a session stored in Redis, and
-// setting a session_id cookie.
-func AuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
-    // Log request details for tracing.
-    log.Printf("/api/auth/google/callback called: method=%s path=%s", r.Method, r.URL.Path)
-
-    // 1. Extract the authorization code from query string.
-    code := r.URL.Query().Get("code")
-    if code == "" {
-        http.Error(w, "Missing code", http.StatusBadRequest)
-        return
-    }
-
-    // 2. Exchange the code for tokens.
-    accessToken, idToken, err := exchangeCode(code)
-    if err != nil {
-        log.Printf("Token exchange failed: %v", err)
-        http.Error(w, "Token exchange failed", http.StatusInternalServerError)
-        return
-    }
-
-    // 3. Decode user information from id_token.
-    email, name, err := parseUserInfoFromIDToken(idToken)
-    if err != nil {
-        log.Printf("Failed to parse id_token: %v", err)
-    }
-
-    handleAuthSuccess(w, r, email, name, accessToken)
-}
-
 // parseUserInfoFromIDToken decodes the JWT id_token and extracts the
-// "email" and "name" claims.
+// "email" and "name" claims. It is used by Google and Microsoft providers.
 func parseUserInfoFromIDToken(idToken string) (email, name string, err error) {
 	parts := strings.Split(idToken, ".")
 	if len(parts) != 3 {
@@ -258,398 +203,15 @@ func parseUserInfoFromIDToken(idToken string) (email, name string, err error) {
 	return
 }
 
-// exchangeCode posts the OAuth authorization code to the token endpoint and
-// returns the access token and id_token.
-func exchangeCode(code string) (accessToken string, idToken string, err error) {
-    tokenURL := "https://oauth2.googleapis.com/token"
-    clientID := os.Getenv("GOOGLE_CLIENT_ID")
-    clientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
-    redirectURI := os.Getenv("GOOGLE_REDIRECT_URI")
-    if clientID == "" || clientSecret == "" || redirectURI == "" {
-        err = fmt.Errorf("missing OAuth credentials in environment")
-        return
-    }
-
-    data := fmt.Sprintf("code=%s&client_id=%s&client_secret=%s&redirect_uri=%s&grant_type=authorization_code", code, clientID, clientSecret, redirectURI)
-    req, err := http.NewRequest("POST", tokenURL, strings.NewReader(data))
-    if err != nil {
-        return
-    }
-    req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-    resp, err := http.DefaultClient.Do(req)
-    if err != nil {
-        return
-    }
-    defer resp.Body.Close()
-    if resp.StatusCode != http.StatusOK {
-        var buf bytes.Buffer
-        _, _ = io.Copy(&buf, resp.Body)
-        err = fmt.Errorf("token endpoint returned %d: %s", resp.StatusCode, buf.String())
-        return
-    }
-
-    var tokenResp struct {
-        AccessToken string `json:"access_token"`
-        IDToken     string `json:"id_token"`
-    }
-    body, _ := io.ReadAll(resp.Body)
-    if err = json.Unmarshal(body, &tokenResp); err != nil {
-        return
-    }
-    accessToken = tokenResp.AccessToken
-    idToken = tokenResp.IDToken
-    return
-}
-
-// MicrosoftLoginHandler redirects to Microsoft's OAuth 2.0 consent screen.
-func MicrosoftLoginHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("/api/auth/microsoft called: method=%s path=%s", r.Method, r.URL.Path)
-	clientID := os.Getenv("MICROSOFT_CLIENT_ID")
-	redirectURI := os.Getenv("MICROSOFT_REDIRECT_URI")
-	if clientID == "" || redirectURI == "" {
-		http.Error(w, "Microsoft OAuth config missing", http.StatusInternalServerError)
-		return
-	}
-	scope := "openid profile email"
-	authURL := fmt.Sprintf("https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=%s&redirect_uri=%s&response_type=code&scope=%s", clientID, redirectURI, scope)
-	http.Redirect(w, r, authURL, http.StatusFound)
-}
-
-// MicrosoftCallbackHandler handles the Microsoft OAuth callback.
-func MicrosoftCallbackHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("/api/auth/microsoft/callback called: method=%s path=%s", r.Method, r.URL.Path)
-
-	code := r.URL.Query().Get("code")
-	if code == "" {
-		http.Error(w, "Missing code", http.StatusBadRequest)
-		return
-	}
-
-	accessToken, idToken, err := exchangeMicrosoftCode(code)
-	if err != nil {
-		log.Printf("Microsoft token exchange failed: %v", err)
-		http.Error(w, "Token exchange failed", http.StatusInternalServerError)
-		return
-	}
-
-	email, name, err := parseUserInfoFromIDToken(idToken)
-	if err != nil {
-		log.Printf("Failed to parse Microsoft id_token: %v", err)
-	}
-
-	handleAuthSuccess(w, r, email, name, accessToken)
-}
-
-func exchangeMicrosoftCode(code string) (accessToken string, idToken string, err error) {
-	tokenURL := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
-	clientID := os.Getenv("MICROSOFT_CLIENT_ID")
-	clientSecret := os.Getenv("MICROSOFT_CLIENT_SECRET")
-	redirectURI := os.Getenv("MICROSOFT_REDIRECT_URI")
-	if clientID == "" || clientSecret == "" || redirectURI == "" {
-		err = fmt.Errorf("missing Microsoft OAuth credentials in environment")
-		return
-	}
-
-	data := fmt.Sprintf("code=%s&client_id=%s&client_secret=%s&redirect_uri=%s&grant_type=authorization_code", code, clientID, clientSecret, redirectURI)
-	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(data))
-	if err != nil {
-		return
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		var buf bytes.Buffer
-		_, _ = io.Copy(&buf, resp.Body)
-		err = fmt.Errorf("Microsoft token endpoint returned %d: %s", resp.StatusCode, buf.String())
-		return
-	}
-
-	var tokenResp struct {
-		AccessToken string `json:"access_token"`
-		IDToken     string `json:"id_token"`
-	}
-	body, _ := io.ReadAll(resp.Body)
-	if err = json.Unmarshal(body, &tokenResp); err != nil {
-		return
-	}
-	accessToken = tokenResp.AccessToken
-	idToken = tokenResp.IDToken
-	return
-}
-
-// MetaLoginHandler redirects to Meta's OAuth 2.0 consent screen.
-func MetaLoginHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("/api/auth/facebook called: method=%s path=%s", r.Method, r.URL.Path)
-	clientID := os.Getenv("FACEBOOK_APP_ID")
-	redirectURI := os.Getenv("FACEBOOK_REDIRECT_URI")
-	if clientID == "" || redirectURI == "" {
-		http.Error(w, "Meta OAuth config missing", http.StatusInternalServerError)
-		return
-	}
-	// Request public_profile and email scopes
-	authURL := fmt.Sprintf("https://www.facebook.com/v18.0/dialog/oauth?client_id=%s&redirect_uri=%s&scope=email,public_profile&response_type=code", clientID, redirectURI)
-	http.Redirect(w, r, authURL, http.StatusFound)
-}
-
-// MetaCallbackHandler handles the Meta OAuth callback.
-func MetaCallbackHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("/api/auth/facebook/callback called: method=%s path=%s", r.Method, r.URL.Path)
-
-	code := r.URL.Query().Get("code")
-	if code == "" {
-		http.Error(w, "Missing code", http.StatusBadRequest)
-		return
-	}
-
-	accessToken, err := exchangeMetaCode(code)
-	if err != nil {
-		log.Printf("Meta token exchange failed: %v", err)
-		http.Error(w, "Token exchange failed", http.StatusInternalServerError)
-		return
-	}
-
-	user, err := fetchMetaUser(accessToken)
-	if err != nil {
-		log.Printf("Meta user fetch failed: %v", err)
-		http.Error(w, "Failed to fetch user info", http.StatusInternalServerError)
-		return
-	}
-
-	handleAuthSuccess(w, r, user.Email, user.Name, accessToken)
-}
-
-func exchangeMetaCode(code string) (string, error) {
-	tokenURL := "https://graph.facebook.com/v18.0/oauth/access_token"
-	clientID := os.Getenv("FACEBOOK_APP_ID")
-	clientSecret := os.Getenv("FACEBOOK_APP_SECRET")
-	redirectURI := os.Getenv("FACEBOOK_REDIRECT_URI")
-	if clientID == "" || clientSecret == "" || redirectURI == "" {
-		return "", fmt.Errorf("missing Meta OAuth credentials in environment")
-	}
-
-	data := fmt.Sprintf("client_id=%s&client_secret=%s&code=%s&redirect_uri=%s", clientID, clientSecret, code, redirectURI)
-	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(data))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	var tokenResp struct {
-		AccessToken string `json:"access_token"`
-		Error       struct {
-			Message string `json:"message"`
-		} `json:"error"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return "", err
-	}
-
-	if tokenResp.Error.Message != "" {
-		return "", fmt.Errorf("meta token error: %s", tokenResp.Error.Message)
-	}
-	return tokenResp.AccessToken, nil
-}
-
-type metaUser struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
-func fetchMetaUser(token string) (*metaUser, error) {
-	url := fmt.Sprintf("https://graph.facebook.com/me?fields=id,name,email&access_token=%s", token)
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("meta user api returned %d", resp.StatusCode)
-	}
-
-	var user metaUser
-	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
-		return nil, err
-	}
-	return &user, nil
-}
-
-// GitHubLoginHandler redirects to GitHub's OAuth authorization screen.
-func GitHubLoginHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("/api/auth/github called: method=%s path=%s", r.Method, r.URL.Path)
-	clientID := os.Getenv("GITHUB_CLIENT_ID")
-	if clientID == "" {
-		http.Error(w, "GitHub OAuth config missing", http.StatusInternalServerError)
-		return
-	}
-	// Request read:user and user:email scopes
-	authURL := fmt.Sprintf("https://github.com/login/oauth/authorize?client_id=%s&scope=read:user,user:email", clientID)
-	http.Redirect(w, r, authURL, http.StatusFound)
-}
-
-// GitHubCallbackHandler handles the GitHub OAuth callback.
-func GitHubCallbackHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("/api/auth/github/callback called: method=%s path=%s", r.Method, r.URL.Path)
-
-	code := r.URL.Query().Get("code")
-	if code == "" {
-		http.Error(w, "Missing code", http.StatusBadRequest)
-		return
-	}
-
-	accessToken, err := exchangeGitHubCode(code)
-	if err != nil {
-		log.Printf("GitHub token exchange failed: %v", err)
-		http.Error(w, "Token exchange failed", http.StatusInternalServerError)
-		return
-	}
-
-	user, err := fetchGitHubUser(accessToken)
-	if err != nil {
-		log.Printf("GitHub user fetch failed: %v", err)
-		http.Error(w, "Failed to fetch user info", http.StatusInternalServerError)
-		return
-	}
-
-	email, err := fetchGitHubEmail(accessToken)
-	if err != nil {
-		log.Printf("GitHub email fetch failed: %v", err)
-		// We can try to use the email from user profile if available
-		email = user.Email
-	}
-
-	handleAuthSuccess(w, r, email, user.Name, accessToken)
-}
-
-func exchangeGitHubCode(code string) (string, error) {
-	tokenURL := "https://github.com/login/oauth/access_token"
-	clientID := os.Getenv("GITHUB_CLIENT_ID")
-	clientSecret := os.Getenv("GITHUB_CLIENT_SECRET")
-	if clientID == "" || clientSecret == "" {
-		return "", fmt.Errorf("missing GitHub OAuth credentials")
-	}
-
-	data := fmt.Sprintf("code=%s&client_id=%s&client_secret=%s", code, clientID, clientSecret)
-	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(data))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	var tokenResp struct {
-		AccessToken string `json:"access_token"`
-		Error       string `json:"error"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return "", err
-	}
-	if tokenResp.Error != "" {
-		return "", fmt.Errorf("github token error: %s", tokenResp.Error)
-	}
-	return tokenResp.AccessToken, nil
-}
-
-type githubUser struct {
-	Login     string `json:"login"`
-	Name      string `json:"name"`
-	Email     string `json:"email"`
-}
-
-func fetchGitHubUser(token string) (*githubUser, error) {
-	req, err := http.NewRequest("GET", "https://api.github.com/user", nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", "token "+token)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("github user api returned %d", resp.StatusCode)
-	}
-
-	var user githubUser
-	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
-		return nil, err
-	}
-	return &user, nil
-}
-
-func fetchGitHubEmail(token string) (string, error) {
-	req, err := http.NewRequest("GET", "https://api.github.com/user/emails", nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Authorization", "token "+token)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("github email api returned %d", resp.StatusCode)
-	}
-
-	var emails []struct {
-		Email    string `json:"email"`
-		Verified bool   `json:"verified"`
-		Primary  bool   `json:"primary"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&emails); err != nil {
-		return "", err
-	}
-
-	for _, e := range emails {
-		if e.Primary && e.Verified {
-			return e.Email, nil
-		}
-	}
-	if len(emails) > 0 {
-		return emails[0].Email, nil
-	}
-	return "", fmt.Errorf("no email found")
-}
-
-
 // GenerateSessionID creates a cryptographically secure, base64 URL
 // encoded session identifier.
 func GenerateSessionID() string {
-    b := make([]byte, 32) // 256 bits
-    if _, err := rand.Read(b); err != nil {
-        // Fallback to time-based seed; extremely unlikely to hit.
-        now := time.Now().UnixNano()
-        return base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf("%d", now)))
-    }
-    return base64.RawURLEncoding.EncodeToString(b)
+	b := make([]byte, 32) // 256 bits
+	if _, err := rand.Read(b); err != nil {
+		now := time.Now().UnixNano()
+		return base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf("%d", now)))
+	}
+	return base64.RawURLEncoding.EncodeToString(b)
 }
 
 // WithAuth is a middleware wrapper that authenticates the request and
@@ -679,47 +241,47 @@ func WithSessionAuth(handler func(http.ResponseWriter, *http.Request, int)) http
 }
 
 func createSession(w http.ResponseWriter, r *http.Request, userID int, email, name, accessToken string) {
-    sessionID := GenerateSessionID()
-    session := map[string]interface{}{
-        "session_id":   sessionID,
-        "user_id":      userID,
-        "user_email":   email,
-        "user_name":    name,
-        "access_token": accessToken,
-        "created_at":   time.Now().Format(time.RFC3339),
-        "expires_at":   time.Now().Add(72 * time.Hour).Format(time.RFC3339),
-    }
+	sessionID := GenerateSessionID()
+	session := map[string]interface{}{
+		"session_id":   sessionID,
+		"user_id":      userID,
+		"user_email":   email,
+		"user_name":    name,
+		"access_token": accessToken,
+		"created_at":   time.Now().Format(time.RFC3339),
+		"expires_at":   time.Now().Add(72 * time.Hour).Format(time.RFC3339),
+	}
 
-    ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-    if ip == "" {
-        ip = r.RemoteAddr
-    }
-    session["user_ip"] = ip
-    session["user_agent"] = r.Header.Get("User-Agent")
+	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+	if ip == "" {
+		ip = r.RemoteAddr
+	}
+	session["user_ip"] = ip
+	session["user_agent"] = r.Header.Get("User-Agent")
 
-    if cache != nil {
-        ctx := context.Background()
-        payload, _ := json.Marshal(session)
-        err := cache.Set(ctx, sessionID, string(payload), 72*time.Hour)
-        if err != nil {
-            log.Printf("Redis session store error: %v", err)
-        }
-        sessionCount.Inc()
+	if cache != nil {
+		ctx := context.Background()
+		payload, _ := json.Marshal(session)
+		err := cache.Set(ctx, sessionID, string(payload), 72*time.Hour)
+		if err != nil {
+			log.Printf("Redis session store error: %v", err)
+		}
+		sessionCount.Inc()
 
-        // Update last login time in database
-        if userID != 0 {
-            if err := db.UpdateLastLogin(userID); err != nil {
-                log.Printf("DB last-login update error: %v", err)
-            }
-        }
-    }
+		// Update last login time in database
+		if userID != 0 {
+			if err := db.UpdateLastLogin(userID); err != nil {
+				log.Printf("DB last-login update error: %v", err)
+			}
+		}
+	}
 
-    http.SetCookie(w, &http.Cookie{
-        Name:     "session_id",
-        Value:    sessionID,
-        Path:     "/",
-        HttpOnly: true,
-        Secure:   true,
-        SameSite: http.SameSiteLaxMode,
-    })
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_id",
+		Value:    sessionID,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
 }
