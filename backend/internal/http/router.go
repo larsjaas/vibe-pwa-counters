@@ -87,7 +87,7 @@ var apiRoutes = []Route{
 	{Method: http.MethodPost, Path: "/api/settings", Handler: SetUserSetting, Description: "Set user setting", Auth: true, SessionAuth: false},
 	{Method: http.MethodDelete, Path: "/api/settings", Handler: DeleteUserSetting, Description: "Delete user setting", Auth: true, SessionAuth: false},
 	{Method: http.MethodGet, Path: "/api/metrics", Handler: MetricsHandler, Description: "Prometheus metrics", Auth: false, SessionAuth: false},
-	{Method: http.MethodGet, Path: "/api/account", Handler: GetAccountInfo, Description: "Get account information", Auth: false, SessionAuth: true},
+	{Method: http.MethodGet, Path: "/api/account", Handler: GetAccountInfo, Description: "Get account information", Auth: true, SessionAuth: false},
 	{Method: http.MethodDelete, Path: "/api/account", Handler: DeleteAccount, Description: "Delete account", Auth: false, SessionAuth: true},
 	{Method: http.MethodPost, Path: "/api/account/create", Handler: ConfirmSignupHandler, Description: "Finalize account creation", Auth: false, SessionAuth: false},
 	{Method: http.MethodPost, Path: "/api/account/notification-email", Handler: RequestNotificationEmailHandler, Description: "Request notification email change", Auth: true, SessionAuth: false},
