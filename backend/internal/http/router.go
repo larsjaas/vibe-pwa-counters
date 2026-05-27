@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -36,7 +37,7 @@ type Route struct {
 // GetHandler returns the appropriate http.HandlerFunc for the route.
 func (r Route) GetHandler() http.HandlerFunc {
 	switch h := r.Handler.(type) {
-	case http.HandlerFunc:
+	case func(http.ResponseWriter, *http.Request):
 		if r.SessionAuth {
 			return WithSessionAuth(func(w http.ResponseWriter, req *http.Request, uid int) {
 				h(w, req)
@@ -62,7 +63,7 @@ func (r Route) GetHandler() http.HandlerFunc {
 }
 
 var apiRoutes = []Route{
-	{Method: http.MethodGet, Path: "/health", Handler: HealthHandler, Description: "Health check endpoint", Auth: false, SessionAuth: false},
+	{Method: http.MethodGet, Path: "/api/health", Handler: HealthHandler, Description: "Health check endpoint", Auth: false, SessionAuth: false},
 	{Method: http.MethodGet, Path: "/api/ping", Handler: PingHandler, Description: "Ping endpoint", Auth: false, SessionAuth: false},
 	{Method: http.MethodPost, Path: "/api/logout", Handler: LogoutHandler, Description: "Logout user", Auth: false, SessionAuth: false},
 	{Method: http.MethodGet, Path: "/api/login", Handler: LoginHandler, Description: "Initiate login", Auth: false, SessionAuth: false},
@@ -109,6 +110,10 @@ var apiRoutes = []Route{
 	{Method: http.MethodPost, Path: "/api/tags/{id}/settings", Handler: SetTagSetting, Description: "Set tag setting", Auth: true, SessionAuth: false},
 	{Method: http.MethodDelete, Path: "/api/tags/{id}/settings", Handler: DeleteTagSetting, Description: "Delete tag setting", Auth: true, SessionAuth: false},
 	{Method: http.MethodGet, Path: "/api/tags/shares/me", Handler: GetUserTagShares, Description: "List tags shared with me", Auth: true, SessionAuth: false},
+	{Method: http.MethodGet, Path: "/api/info", Handler: InfoHandler, Description: "Backend information", Auth: false, SessionAuth: false},
+	{Method: http.MethodGet, Path: "/api/validate-session", Handler: ValidateSessionHandler, Description: "Validate session cookie", Auth: false, SessionAuth: false},
+	{Method: http.MethodGet, Path: "/api/events", Handler: EventsHandler, Description: "Event stream endpoint", Auth: true, SessionAuth: false},
+	{Method: http.MethodGet, Path: "/", Handler: CatchAllHandler, Description: "Catch-all app entry point", Auth: false, SessionAuth: false},
 }
 
 // NewRouter instantiates a new ServeMux and registers all
@@ -122,12 +127,14 @@ func NewRouter() http.Handler {
         handler := r.GetHandler()
         if handler != nil {
             pattern := fmt.Sprintf("%s %s", r.Method, r.Path)
+			log.Printf("Registering route %s", pattern)
             mux.HandleFunc(pattern, handler)
         }
     }
 
     // Register discovery endpoint manually to avoid initialization cycle
-    mux.HandleFunc("/api/routes", RoutesDiscoveryHandler)
+    log.Printf("Registering route GET /api/routes")
+    mux.HandleFunc("GET /api/routes", RoutesDiscoveryHandler)
 
     fmt.Println("HTTP routes registered – listening on :8081")
     return mux
