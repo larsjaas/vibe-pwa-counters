@@ -231,28 +231,31 @@ func AuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 // parseUserInfoFromIDToken decodes the JWT id_token and extracts the
 // "email" and "name" claims.
 func parseUserInfoFromIDToken(idToken string) (email, name string, err error) {
-    parts := strings.Split(idToken, ".")
-    if len(parts) != 3 {
-        err = fmt.Errorf("invalid id_token format")
-        return
-    }
-    payload, e := base64.RawURLEncoding.DecodeString(parts[1])
-    if e != nil {
-        err = e
-        return
-    }
-    var claims map[string]interface{}
-    if e = json.Unmarshal(payload, &claims); e != nil {
-        err = e
-        return
-    }
-    if v, ok := claims["email"].(string); ok {
-        email = v
-    }
-    if v, ok := claims["name"].(string); ok {
-        name = v
-    }
-    return
+	parts := strings.Split(idToken, ".")
+	if len(parts) != 3 {
+		err = fmt.Errorf("invalid id_token format")
+		return
+	}
+	payload, e := base64.RawURLEncoding.DecodeString(parts[1])
+	if e != nil {
+		err = e
+		return
+	}
+	var claims map[string]interface{}
+	if e = json.Unmarshal(payload, &claims); e != nil {
+		err = e
+		return
+	}
+	if v, ok := claims["email"].(string); ok {
+		email = v
+	} else if v, ok := claims["preferred_username"].(string); ok {
+		// Fallback for Microsoft Entra ID
+		email = v
+	}
+	if v, ok := claims["name"].(string); ok {
+		name = v
+	}
+	return
 }
 
 // exchangeCode posts the OAuth authorization code to the token endpoint and
@@ -297,6 +300,192 @@ func exchangeCode(code string) (accessToken string, idToken string, err error) {
     accessToken = tokenResp.AccessToken
     idToken = tokenResp.IDToken
     return
+}
+
+// MicrosoftLoginHandler redirects to Microsoft's OAuth 2.0 consent screen.
+func MicrosoftLoginHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/auth/microsoft called: method=%s path=%s", r.Method, r.URL.Path)
+	clientID := os.Getenv("MICROSOFT_CLIENT_ID")
+	redirectURI := os.Getenv("MICROSOFT_REDIRECT_URI")
+	if clientID == "" || redirectURI == "" {
+		http.Error(w, "Microsoft OAuth config missing", http.StatusInternalServerError)
+		return
+	}
+	scope := "openid profile email"
+	authURL := fmt.Sprintf("https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=%s&redirect_uri=%s&response_type=code&scope=%s", clientID, redirectURI, scope)
+	http.Redirect(w, r, authURL, http.StatusFound)
+}
+
+// MicrosoftCallbackHandler handles the Microsoft OAuth callback.
+func MicrosoftCallbackHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/auth/microsoft/callback called: method=%s path=%s", r.Method, r.URL.Path)
+
+	code := r.URL.Query().Get("code")
+	if code == "" {
+		http.Error(w, "Missing code", http.StatusBadRequest)
+		return
+	}
+
+	accessToken, idToken, err := exchangeMicrosoftCode(code)
+	if err != nil {
+		log.Printf("Microsoft token exchange failed: %v", err)
+		http.Error(w, "Token exchange failed", http.StatusInternalServerError)
+		return
+	}
+
+	email, name, err := parseUserInfoFromIDToken(idToken)
+	if err != nil {
+		log.Printf("Failed to parse Microsoft id_token: %v", err)
+	}
+
+	handleAuthSuccess(w, r, email, name, accessToken)
+}
+
+func exchangeMicrosoftCode(code string) (accessToken string, idToken string, err error) {
+	tokenURL := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+	clientID := os.Getenv("MICROSOFT_CLIENT_ID")
+	clientSecret := os.Getenv("MICROSOFT_CLIENT_SECRET")
+	redirectURI := os.Getenv("MICROSOFT_REDIRECT_URI")
+	if clientID == "" || clientSecret == "" || redirectURI == "" {
+		err = fmt.Errorf("missing Microsoft OAuth credentials in environment")
+		return
+	}
+
+	data := fmt.Sprintf("code=%s&client_id=%s&client_secret=%s&redirect_uri=%s&grant_type=authorization_code", code, clientID, clientSecret, redirectURI)
+	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(data))
+	if err != nil {
+		return
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		var buf bytes.Buffer
+		_, _ = io.Copy(&buf, resp.Body)
+		err = fmt.Errorf("Microsoft token endpoint returned %d: %s", resp.StatusCode, buf.String())
+		return
+	}
+
+	var tokenResp struct {
+		AccessToken string `json:"access_token"`
+		IDToken     string `json:"id_token"`
+	}
+	body, _ := io.ReadAll(resp.Body)
+	if err = json.Unmarshal(body, &tokenResp); err != nil {
+		return
+	}
+	accessToken = tokenResp.AccessToken
+	idToken = tokenResp.IDToken
+	return
+}
+
+// MetaLoginHandler redirects to Meta's OAuth 2.0 consent screen.
+func MetaLoginHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/auth/facebook called: method=%s path=%s", r.Method, r.URL.Path)
+	clientID := os.Getenv("FACEBOOK_APP_ID")
+	redirectURI := os.Getenv("FACEBOOK_REDIRECT_URI")
+	if clientID == "" || redirectURI == "" {
+		http.Error(w, "Meta OAuth config missing", http.StatusInternalServerError)
+		return
+	}
+	// Request public_profile and email scopes
+	authURL := fmt.Sprintf("https://www.facebook.com/v18.0/dialog/oauth?client_id=%s&redirect_uri=%s&scope=email,public_profile&response_type=code", clientID, redirectURI)
+	http.Redirect(w, r, authURL, http.StatusFound)
+}
+
+// MetaCallbackHandler handles the Meta OAuth callback.
+func MetaCallbackHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/auth/facebook/callback called: method=%s path=%s", r.Method, r.URL.Path)
+
+	code := r.URL.Query().Get("code")
+	if code == "" {
+		http.Error(w, "Missing code", http.StatusBadRequest)
+		return
+	}
+
+	accessToken, err := exchangeMetaCode(code)
+	if err != nil {
+		log.Printf("Meta token exchange failed: %v", err)
+		http.Error(w, "Token exchange failed", http.StatusInternalServerError)
+		return
+	}
+
+	user, err := fetchMetaUser(accessToken)
+	if err != nil {
+		log.Printf("Meta user fetch failed: %v", err)
+		http.Error(w, "Failed to fetch user info", http.StatusInternalServerError)
+		return
+	}
+
+	handleAuthSuccess(w, r, user.Email, user.Name, accessToken)
+}
+
+func exchangeMetaCode(code string) (string, error) {
+	tokenURL := "https://graph.facebook.com/v18.0/oauth/access_token"
+	clientID := os.Getenv("FACEBOOK_APP_ID")
+	clientSecret := os.Getenv("FACEBOOK_APP_SECRET")
+	redirectURI := os.Getenv("FACEBOOK_REDIRECT_URI")
+	if clientID == "" || clientSecret == "" || redirectURI == "" {
+		return "", fmt.Errorf("missing Meta OAuth credentials in environment")
+	}
+
+	data := fmt.Sprintf("client_id=%s&client_secret=%s&code=%s&redirect_uri=%s", clientID, clientSecret, code, redirectURI)
+	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(data))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	var tokenResp struct {
+		AccessToken string `json:"access_token"`
+		Error       struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+		return "", err
+	}
+
+	if tokenResp.Error.Message != "" {
+		return "", fmt.Errorf("meta token error: %s", tokenResp.Error.Message)
+	}
+	return tokenResp.AccessToken, nil
+}
+
+type metaUser struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+func fetchMetaUser(token string) (*metaUser, error) {
+	url := fmt.Sprintf("https://graph.facebook.com/me?fields=id,name,email&access_token=%s", token)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("meta user api returned %d", resp.StatusCode)
+	}
+
+	var user metaUser
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 // GitHubLoginHandler redirects to GitHub's OAuth authorization screen.
