@@ -317,6 +317,27 @@ security:
         '401':
           description: Unauthorized
 
+  /auth-providers:
+    get:
+      summary: List available auth providers
+      description: Returns the OAuth providers configured on this server. No authentication required.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      example: "google"
+                    name:
+                      type: string
+                      example: "Google"
+
   /apikeys:
     get:
       summary: List API keys

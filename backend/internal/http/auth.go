@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -284,4 +285,49 @@ func createSession(w http.ResponseWriter, r *http.Request, userID int, email, na
 		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
 	})
+}
+
+// AuthProvider represents a configured OAuth provider.
+type AuthProvider struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// AuthProvidersHandler returns the list of configured OAuth providers.
+func AuthProvidersHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/auth-providers called: method=%s", r.Method)
+	if r.Method != http.MethodGet {
+		MethodNotAllowed(w, r)
+		return
+	}
+
+	providers := []AuthProvider{}
+
+	if os.Getenv("GOOGLE_CLIENT_ID") != "" && os.Getenv("GOOGLE_REDIRECT_URI") != "" {
+		providers = append(providers, AuthProvider{ID: "google", Name: "Google"})
+	}
+	if os.Getenv("GITHUB_CLIENT_ID") != "" {
+		providers = append(providers, AuthProvider{ID: "github", Name: "GitHub"})
+	}
+	if os.Getenv("MICROSOFT_CLIENT_ID") != "" && os.Getenv("MICROSOFT_REDIRECT_URI") != "" {
+		providers = append(providers, AuthProvider{ID: "microsoft", Name: "Microsoft"})
+	}
+	if os.Getenv("FACEBOOK_APP_ID") != "" && os.Getenv("FACEBOOK_REDIRECT_URI") != "" {
+		providers = append(providers, AuthProvider{ID: "facebook", Name: "Facebook"})
+	}
+	if os.Getenv("GITLAB_CLIENT_ID") != "" && os.Getenv("GITLAB_REDIRECT_URI") != "" {
+		providers = append(providers, AuthProvider{ID: "gitlab", Name: "GitLab"})
+	}
+	if os.Getenv("LINKEDIN_CLIENT_ID") != "" && os.Getenv("LINKEDIN_REDIRECT_URI") != "" {
+		providers = append(providers, AuthProvider{ID: "linkedin", Name: "LinkedIn"})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	payload, err := json.Marshal(providers)
+	if err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(payload)
 }

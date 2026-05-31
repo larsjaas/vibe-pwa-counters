@@ -9,9 +9,10 @@ import { AccountPage } from './pages/AccountPage';
 import { StatisticsPage } from './pages/StatisticsPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { AlertModal } from './components/AlertModal';
-import { api } from './services/api';
+import { api, AuthError } from './services/api';
 import { useSSE } from './hooks/useSSE';
 import { useCounterOperations } from './hooks/useCounterOperations';
+import { clearRedirectPath } from './services/auth';
 
 
 const App: React.FC = () => {
@@ -53,7 +54,13 @@ const App: React.FC = () => {
                 const data = await api.getAccount();
                 setUserEmail(data.email);
                 await fetchInvitesCount();
+                // Clear the redirect path since we successfully loaded
+                clearRedirectPath();
             } catch (e) {
+                // AuthError is handled globally by the API layer (redirects to login)
+                if (e instanceof AuthError) {
+                    return; // Don't log — redirect already triggered
+                }
                 console.error('Failed to fetch account info', e);
             }
         };

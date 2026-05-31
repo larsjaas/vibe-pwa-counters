@@ -1,14 +1,149 @@
 <!doctype html>
 <html lang="en">
-<body style="display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:Arial,sans-serif;">
-<button id="login" style="display:flex;align-items:center;padding:1rem 2rem;font-size:1.2rem;cursor:pointer;">
-  <img src="../svg/lucide/log-in.svg" alt="log in icon" style="width:1.5rem;height:1.5rem;margin-right:0.5rem;vertical-align:middle;" />
-  Log In
-</button>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Counters — Sign In</title>
+<style>
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+  }
+  .auth-container {
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+    padding: 20px;
+  }
+  .auth-container h1 {
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+    color: #333;
+  }
+  .auth-container p {
+    margin-bottom: 24px;
+    color: #666;
+  }
+  .auth-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+  .auth-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    width: 100%;
+  }
+  .auth-button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+  .auth-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+  }
+  .fallback-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 24px;
+    border: 2px solid #4285F4;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #4285F4;
+    cursor: pointer;
+    background: transparent;
+    transition: background 0.2s;
+    width: 100%;
+  }
+  .fallback-button:hover {
+    background: #4285F4;
+    color: #fff;
+  }
+</style>
+</head>
+<body>
+<div class="auth-container">
+  <h1>Welcome to Counters</h1>
+  <p>Sign in with one of the following:</p>
+  <div id="auth-buttons" class="auth-buttons">
+    <p>Loading login options...</p>
+  </div>
+</div>
 <script>
-  document.getElementById('login').addEventListener('click', function() {
-    window.location.href = '/api/login';
-  });
+  const PROVIDERS = {
+    google:    { name: 'Google',    color: '#4285F4', icon: 'G',  url: '/api/login' },
+    github:    { name: 'GitHub',    color: '#24292e', icon: 'GH', url: '/api/auth/github' },
+    microsoft: { name: 'Microsoft', color: '#00a4ef', icon: 'MS', url: '/api/auth/microsoft' },
+    facebook:  { name: 'Facebook',  color: '#1877F2', icon: 'f',  url: '/api/auth/facebook' },
+    gitlab:    { name: 'GitLab',    color: '#FC6D26', icon: 'GL', url: '/api/auth/gitlab' },
+    linkedin:  { name: 'LinkedIn',  color: '#0A66C2', icon: 'in', url: '/api/auth/linkedin' },
+  };
+
+  function rememberProvider(id) {
+    try { localStorage.setItem('counters_auth_provider', id); } catch(e) {}
+  }
+
+  function renderButtons(providers) {
+    var container = document.getElementById('auth-buttons');
+    if (!providers || providers.length === 0) {
+      // Fallback: just show the Google login button
+      container.innerHTML = '<button class="fallback-button" onclick="rememberProvider(\'google\'); window.location.href=\'/api/login\';">' +
+        '<img src="../svg/lucide/log-in.svg" alt="" style="width:1.2rem;height:1.2rem;" />' +
+        'Log In with Google</button>';
+      return;
+    }
+    container.innerHTML = '';
+    providers.forEach(function(p) {
+      var info = PROVIDERS[p.id];
+      if (!info) return;
+      var btn = document.createElement('button');
+      btn.className = 'auth-button';
+      btn.style.backgroundColor = info.color;
+      btn.innerHTML = '<span class="auth-icon">' + info.icon + '</span>' + info.name;
+      btn.addEventListener('click', function() {
+        rememberProvider(p.id);
+        window.location.href = info.url;
+      });
+      container.appendChild(btn);
+    });
+  }
+
+  fetch('/api/auth-providers')
+    .then(function(res) {
+      if (!res.ok) throw new Error('Failed');
+      return res.json();
+    })
+    .then(renderButtons)
+    .catch(function() {
+      // If the API is unreachable, fall back to Google login
+      renderButtons([]);
+    });
 </script>
 </body>
 </html>

@@ -1,8 +1,30 @@
 import { Counter, Tag, CountUpdate, CreateCounterPayload, UpdateCounterPayload } from '../types';
+import { redirectToAuth } from './auth';
 
 const BASE_URL = '/api';
 
+/**
+ * Custom error to signal an authentication failure so callers
+ * can distinguish it from other API errors.
+ */
+export class AuthError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'AuthError';
+    }
+}
+
+let isRedirecting = false;
+
 async function handleResponse<T>(response: Response): Promise<T> {
+    if (response.status === 401) {
+        // Session expired or invalid — redirect to auth
+        if (!isRedirecting) {
+            isRedirecting = true;
+            redirectToAuth();
+        }
+        throw new AuthError('Session expired');
+    }
     if (!response.ok) {
         throw new Error(`API Error: ${response.status} ${response.statusText}`);
     }

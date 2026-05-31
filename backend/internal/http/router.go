@@ -1,28 +1,10 @@
 package http
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 )
-
-// RoutesDiscoveryHandler returns a JSON list of available API routes.
-func RoutesDiscoveryHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	var info []map[string]any
-	for _, route := range apiRoutes {
-		info = append(info, map[string]any{
-			"method":      route.Method,
-			"path":        route.Path,
-			"description": route.Description,
-			"auth":        route.Auth,
-		})
-	}
-	if err := json.NewEncoder(w).Encode(info); err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-	}
-}
 
 // Route defines a single API endpoint and its associated metadata.
 type Route struct {
@@ -67,6 +49,7 @@ var apiRoutes = []Route{
 	{Method: http.MethodGet, Path: "/api/ping", Handler: PingHandler, Description: "Ping endpoint", Auth: false, SessionAuth: false},
 	{Method: http.MethodPost, Path: "/api/logout", Handler: LogoutHandler, Description: "Logout user", Auth: false, SessionAuth: false},
 	{Method: http.MethodGet, Path: "/api/login", Handler: LoginHandler, Description: "Initiate login", Auth: false, SessionAuth: false},
+	{Method: http.MethodGet, Path: "/api/auth-providers", Handler: AuthProvidersHandler, Description: "List available auth providers", Auth: false, SessionAuth: false},
 	{Method: http.MethodGet, Path: "/api/auth/github", Handler: GitHubLoginHandler, Description: "GitHub login", Auth: false, SessionAuth: false},
 	{Method: http.MethodGet, Path: "/api/auth/github/callback", Handler: GitHubCallbackHandler, Description: "GitHub OAuth callback", Auth: false, SessionAuth: false},
 	{Method: http.MethodGet, Path: "/api/auth/microsoft", Handler: MicrosoftLoginHandler, Description: "Microsoft login", Auth: false, SessionAuth: false},
@@ -121,29 +104,28 @@ var apiRoutes = []Route{
 	{Method: http.MethodGet, Path: "/api/info", Handler: InfoHandler, Description: "Backend information", Auth: false, SessionAuth: false},
 	{Method: http.MethodGet, Path: "/api/validate-session", Handler: ValidateSessionHandler, Description: "Validate session cookie", Auth: false, SessionAuth: false},
 	{Method: http.MethodGet, Path: "/api/events", Handler: EventsHandler, Description: "Event stream endpoint", Auth: true, SessionAuth: false},
-	{Method: http.MethodGet, Path: "/", Handler: CatchAllHandler, Description: "Catch-all app entry point", Auth: false, SessionAuth: false},
 }
 
 // NewRouter instantiates a new ServeMux and registers all
 // routes used by the REST backend.  It centralises route wiring so
 // that the main server bootstrap remains lightweight.
 func NewRouter() http.Handler {
-    mux := http.NewServeMux()
+	mux := http.NewServeMux()
 
-    // Register routes from the registry
-    for _, r := range apiRoutes {
-        handler := r.GetHandler()
-        if handler != nil {
-            pattern := fmt.Sprintf("%s %s", r.Method, r.Path)
+	// Register routes from the registry
+	for _, r := range apiRoutes {
+		handler := r.GetHandler()
+		if handler != nil {
+			pattern := fmt.Sprintf("%s %s", r.Method, r.Path)
 			log.Printf("Registering route %s", pattern)
-            mux.HandleFunc(pattern, handler)
-        }
-    }
+			mux.HandleFunc(pattern, handler)
+		}
+	}
 
-    // Register discovery endpoint manually to avoid initialization cycle
-    log.Printf("Registering route GET /api/routes")
-    mux.HandleFunc("GET /api/routes", RoutesDiscoveryHandler)
+	// Register discovery endpoint manually to avoid initialization cycle
+	log.Printf("Registering route GET /api/routes")
+	mux.HandleFunc("GET /api/routes", RoutesDiscoveryHandler)
 
-    fmt.Println("HTTP routes registered – listening on :8081")
-    return mux
+	fmt.Println("HTTP routes registered – listening on :8081")
+	return mux
 }
