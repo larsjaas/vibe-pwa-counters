@@ -48,15 +48,74 @@ First impression was that I am at least getting more speed out of this setup, an
 
 ## gemma4:31b-mlx for ollama
 
-Just a variant of gemma4:31b, but MLX is machine learning especially for unified memory Apple silicon, which is what I am using. It ought to have given me a small efficiency boost switching to this one. It seems equally good as plain Gemma4:31B and equally prone to run out of memory when context grows, and to make aborted/logged tool calls.
+Just a variant of gemma4:31b, but MLX is machine learning especially for unified memory Apple silicon, which is what I am using. It ought to have given me a small efficiency boost switching to this one, and it seemed equally good as plain Gemma4:31B and equally prone to run out of memory when context grows, and to make aborted/logged tool calls.
 
 ## unsloth/Qwen3.6-27B-MTP-GGUF:UD-Q4_K_XL with llama.cpp/llama-server (current)
 
-I have big hopes for this model, speed- and performance-wise, with all the hype around MTP. Not sure if 4-bit quantizitation is a good idea or not, but I am starting with this model. The initial few prompts have not failed me, and the speed is ok (as opposed to "slow", which I will categorize the other models as).
+I had big hopes for this model, speed- and performance-wise, with all the hype around MTP. Not sure if 4-bit quantizitation is a good idea or not, but I started with this model. Very impressive, it did not fail me once on the first set of prompts on multiple projects after getting the config options usable. This one can go on really long problem solving runs on a single prompt. The speed is now good (as opposed to "slow", which I categorize the other models as), and with preserve_thinking enabled it can pick up and continue on a context track very fast for the followup prompts.
 
-## Not-A-Conclusion
+Dumping my config here since this one doesn't have to require geek-level interest to be usable. Not saying these settings are optimal for a 48GB MacBook Pro M4, but they have been highly usable for my case. Mostly based on https://unsloth.ai/docs/models/qwen3.6
 
-Up till now, Gemma4 31B has overall been the most successful model for this project. My guess though is that MTP will probably bump Qwen3.6 ahead (until the next advance in technology comes along), which is why I have switched over to it for now.
+Build llama.cpp/llama-server with:
+
+    git clone https://github.com/ggml-org/llama.cpp
+    cmake llama.cpp -B llama.cpp/build \
+        -DBUILD_SHARED_LIBS=OFF -DGGML_CUDA=OFF
+    cmake --build llama.cpp/build --config Release -j --clean-first \
+        --target llama-cli llama-mtmd-cli llama-server llama-gguf-split
+    cp llama.cpp/build/bin/llama-* llama.cpp
+
+Launch llama-server with the following command:
+
+    #!/bin/bash -x
+
+    export LLAMA_CACHE=$HOME/LLMs/llama.cpp/unsloth/Qwen3.6-27B-MTP-GGUF"
+    mkdir -p $LLAMA_CACHE
+
+    ./llama.cpp/llama-server \
+      -hf unsloth/Qwen3.6-27B-MTP-GGUF:UD-Q4_K_XL \
+      -ngl 99 \
+      -c $[144*1024] \
+      -fa on \
+      -np 1 \
+      --spec-type draft-mtp \
+      --spec-draft-n-max 2 \
+      --chat-template-kwargs '{"preserve_thinking": true}' \
+      --host 10.108.x.xx \
+      --port 8090
+
+The `.pi/agent/models.json` section:
+
+    "providers": {
+      "llama-cpp": {
+        "baseUrl": "http://100.108.x.xx:8090/v1",
+        "api": "openai-completions",
+        "apiKey": "none",
+        "models": [
+          {
+            "id": "unsloth/Qwen3.6-27B-MTP-GGUF:UD-Q4_K_XL",
+            "name": "Qwen 3.6 27B 4bit (self-hosted llama.cpp)",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "contextWindow": 147456,
+            "maxTokens": 4096,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            }
+          }
+        ]
+      }
+    }
+
+
+## [Not-A-]Conclusion
+
+Up till now, Gemma4 31B has overall been the most successful model for this project, and is a very capable coding LLM for running locally, as long as speed isn't the most important factor. My feeling though is that Qwen 3.6 MTP will jump ahead (until the next advance in technology comes along), which is why I have switched over to it for now.
 
 
 # Purpose
@@ -65,7 +124,7 @@ Up till now, Gemma4 31B has overall been the most successful model for this proj
 - Set up OAuth 2.0 with Google++ for a Web service from scratch
 - Learn to set up a PWA that will behave like an app on mobile, and also work offline
 - Create the mobile app equivalent of the @larsjaas/vibe-cmdline-counters utility
-- Familiarize myself with AI-agentic coding and how far it can be pushed with local/self-hosted models
+- Familiarize myself with AI-agentic coding and how far it can be pushed with local/self-hosted models.
 
 
 # Development
