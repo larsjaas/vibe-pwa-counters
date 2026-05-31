@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Counter, Tag } from '../types';
+import { Counter, Count, Tag } from '../types';
 import { ConfirmationModal } from '../components/ConfirmationModal';
-import { RecentActivityTable, Count } from '../components/RecentActivityTable';
+import { RecentActivityTable } from '../components/RecentActivityTable';
 import { StatsSummary } from '../components/StatsSummary';
 import { api } from '../services/api';
 import { useStats, TimeScope, GraphMode } from '../hooks/useStats';

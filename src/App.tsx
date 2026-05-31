@@ -31,6 +31,7 @@ const App: React.FC = () => {
         handleDeleteCounter,
         handleArchiveCounter,
         handleResetCounter,
+        handlePuntCounter,
     } = useCounterOperations({
         onSuccess: () => {
             setEditingCounter(null);
@@ -135,6 +136,7 @@ const App: React.FC = () => {
                             onDelete={handleDeleteCounter}
                             onArchive={(id) => handleArchiveCounter(id, editingCounter?.archivetime !== null)}
                             onReset={handleResetCounter}
+                            onPunt={handlePuntCounter}
                         />
                     </div>
                 </div>

@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Counter, Tag } from '../types';
+import { Counter, Count, Tag } from '../types';
 import { Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
-
-export interface Count {
-    id: number;
-    counter: number;
-    delta: number;
-    when?: string;
-    user_email?: string;
-}
 
 interface RecentActivityTableProps {
     counterIds: number[];
@@ -93,9 +85,9 @@ export const RecentActivityTable: React.FC<RecentActivityTableProps> = ({
                                 padding: '8px 0',
                                 textAlign: 'right',
                                 fontWeight: 'bold',
-                                color: entry.delta >= 0 ? '#2ecc71' : '#e74c3c'
+                                color: entry.operation === 'punt' ? '#f39c12' : (entry.delta >= 0 ? '#2ecc71' : '#e74c3c')
                             }}>
-                                {entry.delta === 0 ? 'reset' : (entry.delta > 0 ? `+${entry.delta}` : entry.delta)}
+                                {entry.operation === 'punt' ? 'punt' : (entry.operation === 'init' ? `${entry.delta} (init)` : (entry.delta === 0 ? 'reset' : (entry.delta > 0 ? `+${entry.delta}` : entry.delta)))}
                             </td>
                             <td style={{ padding: '8px 0', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '8px', alignItems: 'center' }}>
                                 {entry.user_email === currentUserEmail && onEdit && (

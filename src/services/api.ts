@@ -1,4 +1,4 @@
-import { Counter, Tag, CountUpdate, CreateCounterPayload, UpdateCounterPayload } from '../types';
+import { Counter, Count, Tag, CreateCounterPayload, UpdateCounterPayload } from '../types';
 import { redirectToAuth } from './auth';
 
 const BASE_URL = '/api';
@@ -177,16 +177,16 @@ export const api = {
     },
 
     // --- Counts ---
-    async getCounts(): Promise<CountUpdate[]> {
+    async getCounts(): Promise<Count[]> {
         const res = await fetch(`${BASE_URL}/counts`);
-        return handleResponse<CountUpdate[]>(res);
+        return handleResponse<Count[]>(res);
     },
 
-    async addCount(counterId: number, delta: number): Promise<void> {
+    async addCount(counterId: number, delta: number, operation?: string): Promise<void> {
         const res = await fetch(`${BASE_URL}/counts`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ counter: counterId, delta }),
+            body: JSON.stringify({ counter: counterId, delta, operation }),
         });
         await handleResponse<void>(res);
     },

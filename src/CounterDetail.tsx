@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { IconButton } from './components/IconButton';
 import { ConfirmationModal } from './components/ConfirmationModal';
-import { Archive, ArchiveRestore, Trash2, RotateCcw } from 'lucide-react';
+import { Archive, ArchiveRestore, Trash2, RotateCcw, RedoDot } from 'lucide-react';
 import { parseDurationToSeconds, formatSecondsToDuration } from './utils/duration';
 import { Counter, Tag } from './types';
 import { api } from './services/api';
@@ -13,9 +13,10 @@ interface CounterDetailProps {
     onDelete: (id: number) => void;
     onArchive: (id: number) => void;
     onReset: (id: number, initialValue: number) => void;
+    onPunt?: (id: number) => void;
 }
 
-export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, onUpdate, onDelete, onArchive, onReset }) => {
+export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, onUpdate, onDelete, onArchive, onReset, onPunt }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [name, setName] = useState(counter.name);
     const [step, setStep] = useState(counter.step);
@@ -23,7 +24,7 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
     const [frequency, setFrequency] = useState(formatSecondsToDuration(counter.frequency || 3600));
     const [alertWindow, setAlertWindow] = useState(formatSecondsToDuration(counter.alert_window || 0));
     const [overdue, setOverdue] = useState(formatSecondsToDuration(counter.overdue || 0).replace('0s', ''));
-    const [initialValue, setInitialValue] = useState<number>(0);
+    const [initialValue, setInitialValue] = useState<number>(counter.initial_value || 0);
     const [tags, setTags] = useState('');
     const [loadingTags, setLoadingTags] = useState(true);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -55,19 +56,7 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [allTags, counts] = await Promise.all([
-                    api.getTags(),
-                    api.getCounts()
-                ]);
-
-                // Determine Initial Value
-                // Initial value is the first count created within 300ms of counter creation
-                const counterCreateTime = new Date(counter.createtime).getTime();
-                const initialCount = counts.find(c =>
-                    c.counter === counter.id &&
-                    Math.abs(new Date(c.when || '').getTime() - counterCreateTime) <= 300
-                );
-                setInitialValue(initialCount ? initialCount.delta : 0);
+                const allTags = await api.getTags();
 
                 const counterTags: string[] = [];
                 for (const tag of allTags) {
@@ -86,6 +75,11 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
 
         loadData();
     }, [counter.id]);
+
+    // Sync local state when the counter prop changes (e.g. after save)
+    useEffect(() => {
+        setInitialValue(counter.initial_value || 0);
+    }, [counter.initial_value]);
 
     const executeSaveTags = async (currentTags: string) => {
         try {
@@ -153,6 +147,7 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                 onUpdate(counter.id, {
                     name,
                     step,
+                    initial_value: initialValue,
                     type,
                     frequency: type === 'repeating' ? parsedFrequency : 0,
                     alert_window: type === 'repeating' ? parsedAlertWindow : 0,
@@ -184,6 +179,7 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
             onUpdate(counter.id, {
                 name,
                 step,
+                initial_value: initialValue,
                 type,
                 frequency: type === 'repeating' ? parsedFrequency : 0,
                 alert_window: type === 'repeating' ? parsedAlertWindow : 0,
@@ -266,6 +262,15 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                         />
                     </div>
                     <div className="form-field">
+                        <label className="form-label">Initial Value:</label>
+                        <input
+                            type="number"
+                            value={initialValue}
+                            onChange={(e) => setInitialValue(parseInt(e.target.value) || 0)}
+                            className="form-input"
+                        />
+                    </div>
+                    <div className="form-field">
                         <label className="form-label">Tags:</label>
                         <input
                             type="text"
@@ -276,7 +281,7 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                         />
                     </div>
                     <div className="form-actions">
-                        <button onClick={() => { setIsEditing(false); setName(counter.name); setStep(counter.step); }} className="btn-secondary">Cancel</button>
+                        <button onClick={() => { setIsEditing(false); setName(counter.name); setStep(counter.step); setInitialValue(counter.initial_value || 0); }} className="btn-secondary">Cancel</button>
                         <button onClick={handleSave} className="btn-primary">Save</button>
                     </div>
                 </div>
@@ -310,6 +315,17 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
                         onClick={() => setShowResetConfirmModal(true)}
                         title="Reset"
                     />
+                    {counter.type === 'repeating' && onPunt && (
+                        <IconButton
+                            icon={RedoDot}
+                            onClick={() => {
+                                if (confirm(`Punt "${counter.name}"? This will defer the task until the next cycle.`)) {
+                                    onPunt(counter.id);
+                                }
+                            }}
+                            title="Punt"
+                        />
+                    )}
                     <IconButton
                         icon={Trash2}
                         onClick={() => { if(confirm('Delete this counter?')) onDelete(counter.id); }}
@@ -332,7 +348,7 @@ export const CounterDetail: React.FC<CounterDetailProps> = ({ counter, onBack, o
 
             {showResetConfirmModal && (
                 <ConfirmationModal
-                    message={`Are you sure you want to reset the count for "${counter.name}"? This will set the current count to 0.`}
+                    message={`Are you sure you want to reset the count for "${counter.name}"? This will set the count to 0, then to the initial value (${initialValue}).`}
                     confirmText="Reset"
                     cancelText="Cancel"
                     onConfirm={() => {

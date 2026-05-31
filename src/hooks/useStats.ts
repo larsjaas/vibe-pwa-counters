@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Count } from '../components/RecentActivityTable';
+import { Count } from '../types';
 
 export type GraphMode = 'frequency' | 'timeline';
 export type TimeScope = 'Day' | 'Week' | 'Month' | 'YTD' | 'Year';

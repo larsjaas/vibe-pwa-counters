@@ -41,9 +41,9 @@ export const useCounterOperations = ({ onSuccess }: UseCounterOperationsProps) =
 
     const handleResetCounter = async (id: number, initialValue: number) => {
         try {
-            await api.addCount(id, 0);
+            await api.addCount(id, 0, 'reset');
             if (initialValue !== 0) {
-                await api.addCount(id, initialValue);
+                await api.addCount(id, initialValue, 'init');
             }
             onSuccess();
             return { success: true };
@@ -53,10 +53,22 @@ export const useCounterOperations = ({ onSuccess }: UseCounterOperationsProps) =
         }
     };
 
+    const handlePuntCounter = async (id: number) => {
+        try {
+            await api.addCount(id, 0, 'punt');
+            onSuccess();
+            return { success: true };
+        } catch (e) {
+            alert('Failed to punt counter');
+            return { success: false, error: e };
+        }
+    };
+
     return {
         handleUpdateCounter,
         handleDeleteCounter,
         handleArchiveCounter,
         handleResetCounter,
+        handlePuntCounter,
     };
 };

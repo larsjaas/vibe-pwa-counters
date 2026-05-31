@@ -1,35 +1,8 @@
 import { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { UserInfo, APIKey, TagShare, TagInvite } from '../types';
 
-export interface UserInfo {
-    email: string;
-    name?: string;
-}
-
-export interface APIKey {
-    id: number;
-    apikey: string;
-    createtime: string;
-    lastused: string | null;
-}
-
-export interface TagShare {
-    tag_id: number;
-    tag_name: string;
-    owner_email: string;
-    user_email: string;
-    access_level: number;
-}
-
-export interface TagInvite {
-    id: number;
-    tag_name: string;
-    other_party_email: string;
-    sender_id: number;
-    access_level: number;
-    is_sender: boolean;
-    status: string;
-}
+export type { UserInfo, APIKey, TagShare, TagInvite };
 
 export const useAccount = (refreshTrigger?: number, fetchInvitesCount?: () => Promise<void>) => {
     const [user, setUser] = useState<UserInfo | null>(null);

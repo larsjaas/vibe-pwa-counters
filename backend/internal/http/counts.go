@@ -19,11 +19,12 @@ func ListCounts(w http.ResponseWriter, r *http.Request, userID int) {
 	}
 
 	type countResponse struct {
-		ID         int       `json:"id"`
-		CounterID  int       `json:"counter"`
-		UserEmail  string    `json:"user_email"`
-		Delta      int       `json:"delta"`
-		When       time.Time `json:"when"`
+		ID        int           `json:"id"`
+		CounterID int           `json:"counter"`
+		UserEmail string        `json:"user_email"`
+		Delta     int           `json:"delta"`
+		Operation string        `json:"operation"`
+		When      time.Time     `json:"when"`
 		DeleteTime interface{} `json:"deletetime"`
 	}
 
@@ -39,6 +40,7 @@ func ListCounts(w http.ResponseWriter, r *http.Request, userID int) {
 			CounterID: c.CounterID,
 			UserEmail: email,
 			Delta:     c.Delta,
+			Operation: c.Operation,
 			When:      c.When,
 			DeleteTime: c.DeleteTime,
 		})
@@ -53,8 +55,9 @@ func ListCounts(w http.ResponseWriter, r *http.Request, userID int) {
 // CreateCount inserts a new record into the `counts` table.
 func CreateCount(w http.ResponseWriter, r *http.Request, userID int) {
 	var payload struct {
-		Counter int `json:"counter"`
-		Delta   int `json:"delta"`
+		Counter   int    `json:"counter"`
+		Delta     int    `json:"delta"`
+		Operation string `json:"operation"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		http.Error(w, "bad request", http.StatusBadRequest)
@@ -73,7 +76,7 @@ func CreateCount(w http.ResponseWriter, r *http.Request, userID int) {
 	}
 
 	// Insert count.
-	c, err := db.InsertCount(payload.Counter, userID, payload.Delta)
+	c, err := db.InsertCount(payload.Counter, userID, payload.Delta, payload.Operation)
 	if err != nil {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return

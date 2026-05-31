@@ -40,6 +40,7 @@ type Count struct {
     CounterID  int            `json:"counter"`
     UserID     int            `json:"user_id"`
     Delta      int            `json:"delta"`
+    Operation  string         `json:"operation"`
     When       time.Time      `json:"when"`
     DeleteTime sql.NullTime   `json:"deletetime"`
 }
@@ -59,12 +60,25 @@ func GetCounterIDForCount(countID int) (int, error) {
 }
 
 // InsertCount creates a new row in the count table for the supplied
-// counter, user and delta. If the delta is positive and the counter is
-// of type 'repeating', it also updates the last_performed_at timestamp.
-// It returns the full Count struct with the newly generated ID and timestamp.
-func InsertCount(counterID int, userID int, delta int) (*Count, error) {
+// counter, user, delta and operation. Supported operations are:
+//   "count"  – normal increment/decrement
+//   "reset"  – reset the running count to zero (delta must be 0)
+//   "punt"   – defer a repeating task without changing the count (delta must be 0)
+// If the delta is positive and the counter is of type 'repeating', it also
+// updates the last_performed_at timestamp.  A punt also bumps
+// last_performed_at for repeating counters.  It returns the full Count
+// struct with the newly generated ID and timestamp.
+func InsertCount(counterID int, userID int, delta int, operation string) (*Count, error) {
     if db == nil {
         return nil, fmt.Errorf("database not initialized")
+    }
+
+    // Validate operation
+    switch operation {
+    case "count", "reset", "punt", "init":
+        // valid
+    default:
+        operation = "count"
     }
 
     tx, err := db.Begin()
@@ -73,19 +87,21 @@ func InsertCount(counterID int, userID int, delta int) (*Count, error) {
     }
     defer tx.Rollback()
 
-    const query = `INSERT INTO counts ("counter", user_id, delta) VALUES ($1, $2, $3)
-        RETURNING id, "counter", user_id, delta, "when", deletetime`
+    const query = `INSERT INTO counts ("counter", user_id, delta, operation) VALUES ($1, $2, $3, $4)
+        RETURNING id, "counter", user_id, delta, operation, "when", deletetime`
     var c Count
     var del int
     var uid int
+    var op string
     var when time.Time
     var deleteTime sql.NullTime
-    err = tx.QueryRow(query, counterID, userID, delta).Scan(&c.ID, &c.CounterID, &uid, &del, &when, &deleteTime)
+    err = tx.QueryRow(query, counterID, userID, delta, operation).Scan(&c.ID, &c.CounterID, &uid, &del, &op, &when, &deleteTime)
     if err != nil {
         return nil, err
     }
 
-    if delta > 0 {
+    // Bump last_performed_at for positive counts or punts
+    if (delta > 0 && operation == "count") || operation == "punt" {
         const updateQuery = `UPDATE counters SET last_performed_at = now() WHERE id = $1 AND type = 'repeating'`
         _, err = tx.Exec(updateQuery, counterID)
         if err != nil {
@@ -100,6 +116,7 @@ func InsertCount(counterID int, userID int, delta int) (*Count, error) {
     c.CounterID = counterID
     c.UserID = uid
     c.Delta = del
+    c.Operation = op
     c.When = when
     c.DeleteTime = deleteTime
     return &c, nil
@@ -111,7 +128,7 @@ func GetCountsForUser(userID int) ([]*Count, error) {
 		return nil, fmt.Errorf("database not initialized")
 	}
 	const query = `
-		SELECT DISTINCT c.id, c.counter, c.user_id, c.delta, c.when, c.deletetime
+		SELECT DISTINCT c.id, c.counter, c.user_id, c.delta, c.operation, c.when, c.deletetime
 		FROM counts c
 		JOIN counters ct ON c.counter = ct.id
 		LEFT JOIN counter_tags ctag ON ct.id = ctag.counter_id
@@ -130,7 +147,7 @@ func GetCountsForUser(userID int) ([]*Count, error) {
 	counts := make([]*Count, 0)
 	for rows.Next() {
 		var c Count
-		if err := rows.Scan(&c.ID, &c.CounterID, &c.UserID, &c.Delta, &c.When, &c.DeleteTime); err != nil {
+		if err := rows.Scan(&c.ID, &c.CounterID, &c.UserID, &c.Delta, &c.Operation, &c.When, &c.DeleteTime); err != nil {
 			return nil, err
 		}
 		counts = append(counts, &c)

@@ -44,6 +44,10 @@ components:
         step:
           type: integer
           example: 1
+        initial_value:
+          type: integer
+          description: "Value to set when the counter is reset. Defaults to 0."
+          example: 0
         archivetime:
           type: string
           format: date-time
@@ -133,6 +137,11 @@ components:
         delta:
           type: integer
           example: 1
+        operation:
+          type: string
+          enum: [count, reset, punt, init]
+          description: "Type of operation. 'count' is a normal increment/decrement. 'reset' zeroes the running total. 'punt' defers a repeating task without changing the count. 'init' sets the starting value for a counter or a new cycle after a reset."
+          example: "count"
         when:
           type: string
           format: date-time
@@ -517,6 +526,11 @@ security:
                 delta:
                   type: integer
                   description: The integer change to record.
+                operation:
+                  type: string
+                  enum: [count, reset, punt, init]
+                  description: "Type of operation. Defaults to 'count'. Use 'reset' to zero the running total, 'punt' to defer a repeating task, or 'init' to set a starting value."
+                  example: "count"
       responses:
         '200':
           description: Successfully recorded the count change
@@ -640,6 +654,9 @@ security:
                   type: string
                 step:
                   type: integer
+                initial_value:
+                  type: integer
+                  description: "Value to set when the counter is reset. Defaults to 0."
                 type:
                   type: string
                   enum: [standard, repeating]

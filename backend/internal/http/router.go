@@ -63,6 +63,7 @@ var apiRoutes = []Route{
 	{Method: http.MethodGet, Path: "/api/auth/google/callback", Handler: AuthCallbackHandler, Description: "Google OAuth callback", Auth: false, SessionAuth: false},
 	{Method: http.MethodPost, Path: "/api/counters", Handler: CreateCounter, Description: "Create a new counter", Auth: true, SessionAuth: false},
 	{Method: http.MethodGet, Path: "/api/counters", Handler: ListCounters, Description: "List user counters", Auth: true, SessionAuth: false},
+	{Method: http.MethodPatch, Path: "/api/counters", Handler: UpdateCounter, Description: "Update a counter", Auth: true, SessionAuth: false},
 	{Method: http.MethodPatch, Path: "/api/counters/{id}", Handler: ArchiveCounter, Description: "Archive a counter", Auth: true, SessionAuth: false},
 	{Method: http.MethodPut, Path: "/api/counters/{id}", Handler: ArchiveCounter, Description: "Archive a counter", Auth: true, SessionAuth: false},
 	{Method: http.MethodDelete, Path: "/api/counters/{id}", Handler: DeleteCounter, Description: "Delete a counter", Auth: true, SessionAuth: false},

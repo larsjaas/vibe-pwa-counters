@@ -4,7 +4,7 @@ import { IconButton } from '../components/IconButton';
 import { RecentActivityTable } from '../components/RecentActivityTable';
 import { Plus, Edit2, SquareCheckBig, Search, X, UserRoundPlus, ChevronDown, ChevronUp, Trash2, ChevronsUpDown, Eye, EyeOff } from 'lucide-react';
 import { TagSharingModal } from '../components/TagSharingModal';
-import { Counter, Tag } from '../types';
+import { Counter, Count, Tag } from '../types';
 import { api } from '../services/api';
 import { isOverdue, filterAndSortCounters } from '../counters';
 
@@ -17,7 +17,7 @@ interface CounterListProps {
 
 export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refreshTrigger, userEmail }) => {
     const [counters, setCounters] = useState<Counter[]>([]);
-    const [updates, setUpdates] = useState<Array<{ id: number; counter: number; delta: number; user_email?: string; when?: string }>>([]);
+    const [updates, setUpdates] = useState<Count[]>([]);
     const [counterTags, setCounterTags] = useState<Record<number, string[]>>({});
     const [allTags, setAllTags] = useState<Tag[]>([]);
     const [tagFocusMode, setTagFocusMode] = useState<Record<string, boolean>>({});
@@ -71,7 +71,7 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
             const countersWithCount = countersData.map(c => {
                 const count = updates
                     .filter(u => u.counter === c.id)
-                    .reduce((sum, u) => (u.delta === 0 ? 0 : sum + u.delta), 0);
+                    .reduce((sum, u) => (u.operation === 'reset' ? 0 : sum + u.delta), 0);
                 return { ...c, count };
             });
 
