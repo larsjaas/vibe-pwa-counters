@@ -1,13 +1,12 @@
 # ChangeLog
 
-## Version 0.9.16 (2026-05-)
+## Version 0.9.16 (2026-05-31)
+* New feature: edit Initial Value.
+* New feature: punt repeating tasks.
 * Log version on startup.
+* Refactoring: router and REST handlers
 * Start using Go testing package.
-* Refactoring: router
-* Bugfixes?
-
-* [Alerts/popups?]
-* [ChangeLog for users on new versions?]
+* Initial work on backend-using command-line version.
 
 ## Version 0.9.15 (2026-05-21)
 * Account setting: alternative notification email address w/verification step.

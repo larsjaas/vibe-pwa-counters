@@ -10,13 +10,12 @@ import { InvitesTable } from '../components/InvitesTable';
 import { APIKeyTable } from '../components/APIKeyTable';
 import { AccountSettingsSection } from '../components/AccountSettingsSection';
 import { AccountActions } from '../components/AccountActions';
+import { FRONTEND_VERSION } from '../version';
 
 interface AccountPageProps {
     fetchInvitesCount?: () => Promise<void>;
     refreshTrigger?: number;
 }
-
-const FRONTEND_VERSION = "0.9.15";
 
 export const AccountPage: React.FC<AccountPageProps> = ({ fetchInvitesCount, refreshTrigger }) => {
     const location = useLocation();
