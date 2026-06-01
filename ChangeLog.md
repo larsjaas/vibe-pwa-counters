@@ -1,7 +1,10 @@
 # ChangeLog
 
+## Version 0.9.18 (2026-06-??)
+* Filter separation between counters and tasks.
+
 ## Version 0.9.17 (2026-06-01)
-* Bugfix: Fixed editing of counters shared with you.
+* Bugfix: Fixed editing of counters shared with the user.
 
 ## Version 0.9.16 (2026-05-31)
 * New feature: edit Initial Value.

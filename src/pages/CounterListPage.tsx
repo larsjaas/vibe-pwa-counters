@@ -23,7 +23,8 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
     const [tagFocusMode, setTagFocusMode] = useState<Record<string, boolean>>({});
     const [loading, setLoading] = useState(true);
     const [showArchived, setShowArchived] = useLocalStorage('counter-list-show-archived', false);
-    const [searchQuery, setSearchQuery] = useLocalStorage('counter-list-search-query', '');
+    const [counterSearchQuery, setCounterSearchQuery] = useLocalStorage('counter-list-search-query-counters', '');
+    const [taskSearchQuery, setTaskSearchQuery] = useLocalStorage('counter-list-search-query-tasks', '');
     const [viewMode, setViewMode] = useLocalStorage<'counters' | 'tasks'>('counter-list-view-mode', 'counters');
     const [selectedTagForSharing, setSelectedTagForSharing] = useState<{ id: number; name: string } | null>(null);
     const [expandedCounterId, setExpandedCounterId] = useLocalStorage<number | null>('counter-list-expanded-id', null);
@@ -34,9 +35,11 @@ export const CounterList: React.FC<CounterListProps> = ({ onEdit, onCreate, refr
 
     const nameSort = viewMode === 'counters' ? counterNameSort : taskNameSort;
     const valueSort = viewMode === 'counters' ? counterValueSort : taskValueSort;
+    const searchQuery = viewMode === 'counters' ? counterSearchQuery : taskSearchQuery;
 
     const setNameSort = viewMode === 'counters' ? setCounterNameSort : setTaskNameSort;
     const setValueSort = viewMode === 'counters' ? setCounterValueSort : setTaskValueSort;
+    const setSearchQuery = viewMode === 'counters' ? setCounterSearchQuery : setTaskSearchQuery;
 
     const loadCounters = async () => {
         try {
