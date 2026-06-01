@@ -175,15 +175,15 @@ func GetCountersForUser(userID int) ([]*Counter, error) {
 	return counters, nil
 }
 
-// UpdateCounter updates the name and step of a counter.
-// It returns true if the counter was updated, false if it wasn't found or belongs to another user.
-func UpdateCounter(userID int, counterID int, name string, step int, initialValue int, cType string, frequency *int64, alertWindow *int64, overdue *int64) (bool, error) {
+// UpdateCounter updates a counter's properties.
+// Permission is checked by the caller via CanUserEditCounter.
+func UpdateCounter(counterID int, name string, step int, initialValue int, cType string, frequency *int64, alertWindow *int64, overdue *int64) (bool, error) {
 	if db == nil {
 		return false, fmt.Errorf("database not initialized")
 	}
 	const query = `UPDATE counters SET name = $1, step = $2, initial_value = $3, type = $4, frequency = $5, alert_window = $6, overdue = $7
-	WHERE "user" = $8 AND id = $9 AND deletetime IS NULL`
-	res, err := db.Exec(query, name, step, initialValue, cType, frequency, alertWindow, overdue, userID, counterID)
+	WHERE id = $8 AND deletetime IS NULL`
+	res, err := db.Exec(query, name, step, initialValue, cType, frequency, alertWindow, overdue, counterID)
 	if err != nil {
 		return false, err
 	}

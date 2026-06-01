@@ -1,5 +1,8 @@
 # ChangeLog
 
+## Version 0.9.17 (2026-06-01)
+* Bugfix: Fixed editing of counters shared with you.
+
 ## Version 0.9.16 (2026-05-31)
 * New feature: edit Initial Value.
 * New feature: punt repeating tasks.

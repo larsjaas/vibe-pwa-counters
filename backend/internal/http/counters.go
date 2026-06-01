@@ -130,7 +130,19 @@ func UpdateCounter(w http.ResponseWriter, r *http.Request, userID int) {
 	if body.Type == "" {
 		body.Type = "standard"
 	}
-	updated, err := db.UpdateCounter(userID, body.ID, body.Name, body.Step, body.InitialValue, body.Type, body.Frequency, body.AlertWindow, body.Overdue)
+
+	// Validate edit permission (owner or shared via tag).
+	canEdit, err := db.CanUserEditCounter(userID, body.ID)
+	if err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	if !canEdit {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	updated, err := db.UpdateCounter(body.ID, body.Name, body.Step, body.InitialValue, body.Type, body.Frequency, body.AlertWindow, body.Overdue)
 	if err != nil {
 		log.Printf("Update counter failed: %v", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
